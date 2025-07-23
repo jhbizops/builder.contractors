@@ -1,0 +1,243 @@
+🚀 Complete Replit Build Guide for ELYMENT Partner Platform (v1.0)
+🧱 TECH STACK
+Layer	Technology
+Frontend	React + Tailwind CSS
+Backend	Firebase (Auth, Firestore, Storage, Functions)
+Hosting (Replit Preview / Vercel for Prod)	Replit
+Storage (Files/Images)	Firebase Storage
+Authentication	Firebase Auth (email/password, roles)
+Optional	Firebase Functions for automation
+
+⚙️ STEP 1: INITIALISE REPLIT PROJECT
+Go to https://replit.com
+
+Click “+ Create” → Choose React.js template
+
+Name your project something like:
+elyment-partner-system
+
+Click “Create Repl”
+
+📦 STEP 2: INSTALL REQUIRED DEPENDENCIES
+In the Replit shell or package.json, install:
+
+bash
+Copy
+Edit
+npm install firebase react-router-dom uuid
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+🖌️ STEP 3: SETUP TAILWIND CSS
+In tailwind.config.js:
+
+js
+Copy
+Edit
+module.exports = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+In src/index.css, replace everything with:
+
+css
+Copy
+Edit
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+🔥 STEP 4: SETUP FIREBASE PROJECT
+Go to https://console.firebase.google.com
+
+Create a new project: ELYMENT Partner Portal
+
+Enable the following:
+
+Authentication → Email/Password
+
+Firestore Database → Start in production mode
+
+Storage → Create default bucket
+
+In Project Settings:
+
+Go to the “General” tab → Scroll to Your apps
+
+Click “</>” to add a Web App
+
+Copy your Firebase config object
+
+🔌 STEP 5: INITIALISE FIREBASE IN REPLIT
+In src/firebase.js:
+
+js
+Copy
+Edit
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "XXXX",
+  authDomain: "XXXX.firebaseapp.com",
+  projectId: "XXXX",
+  storageBucket: "XXXX.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+🧠 STEP 6: FIRESTORE DATA STRUCTURE
+Create the following Firestore collections:
+
+🔐 users
+email
+
+role: sales, builder, admin, or dual
+
+approved: true/false
+
+createdAt
+
+📋 leads
+partnerId
+
+clientName
+
+status (string)
+
+location
+
+notes (array)
+
+files (array of file URLs)
+
+createdBy, updatedBy
+
+💬 lead_comments
+leadId
+
+body
+
+author
+
+timestamp
+
+🧾 services
+name, description
+
+unit
+
+basePrice
+
+imageUrl
+
+active (true/false)
+
+💰 custom_pricing
+userId
+
+serviceId
+
+price
+
+notes
+
+📜 logs
+leadId
+
+action
+
+performedBy
+
+timestamp
+
+🧩 STEP 7: ROUTING STRUCTURE (React Router)
+Install react-router-dom if you haven’t.
+
+Suggested route structure in App.js:
+
+jsx
+Copy
+Edit
+<BrowserRouter>
+  <Routes>
+    <Route path="/" element={<Landing />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/dashboard" element={<Dashboard />}>
+      <Route path="sales" element={<SalesDashboard />} />
+      <Route path="builder" element={<BuilderDashboard />} />
+      <Route path="admin" element={<AdminPanel />} />
+    </Route>
+  </Routes>
+</BrowserRouter>
+🔐 STEP 8: AUTH & ROLE MANAGEMENT
+In Login.jsx:
+
+Authenticate using Firebase Auth
+
+Fetch user data from users collection
+
+Route based on role(s):
+
+sales → /dashboard/sales
+
+builder → /dashboard/builder
+
+admin → /dashboard/admin
+
+dual → show role toggle UI
+
+🗂️ STEP 9: DASHBOARDS
+✅ Sales Dashboard
+Lead cards (not spreadsheet)
+
+Status dropdown (color-coded)
+
+Log viewer (history)
+
+Commenting system
+
+File uploads
+
+✅ Builder Dashboard
+Custom service list with pricing
+
+Booking form
+
+Pricing download
+
+Status updates
+
+✅ Admin Panel
+User approval panel
+
+Service management
+
+Pricing override
+
+Lead visibility
+
+Activity logs
+
+🖼️ STEP 10: FILE & IMAGE UPLOAD
+Use Firebase Storage:
+
+js
+Copy
+Edit
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+// usage
+const storageRef = ref(storage, `leads/${leadId}/${file.name}`);
+await uploadBytes(storageRef, file);
+const url = await getDownloadURL(storageRef);
+Store this url in the lead.files array.
+
