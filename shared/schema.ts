@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   role: text("role").notNull(), // 'sales', 'builder', 'admin', 'dual'
+  country: text("country"), // User's country for regional filtering
+  region: text("region"), // Auto-populated based on country
   approved: boolean("approved").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -18,6 +20,8 @@ export const leads = pgTable("leads", {
   clientName: text("client_name").notNull(),
   status: text("status").notNull().default("new"), // 'new', 'in_progress', 'completed', 'on_hold'
   location: text("location"),
+  country: text("country"), // Lead's country
+  region: text("region"), // Auto-populated based on country
   notes: jsonb("notes").$type<string[]>().default([]),
   files: jsonb("files").$type<string[]>().default([]),
   createdBy: text("created_by").notNull(),

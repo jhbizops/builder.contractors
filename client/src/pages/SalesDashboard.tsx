@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LeadCard } from '@/components/LeadCard';
 import { LeadModal } from '@/components/modals/LeadModal';
-import { Plus, Download, Filter, Users, Handshake, Clock, TrendingUp } from 'lucide-react';
+import { CountrySelector } from '@/components/CountrySelector';
+import { RegionFilter } from '@/components/RegionFilter';
+import { Plus, Download, Filter, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
 import { Lead } from '@/types';
 import { useFirestore } from '@/hooks/useFirestore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +23,8 @@ import { useGlobalization } from '@/contexts/GlobalizationContext';
 const leadSchema = z.object({
   clientName: z.string().min(1, 'Client name is required'),
   location: z.string().optional(),
+  country: z.string().optional(),
+  region: z.string().optional(),
   status: z.string().default('new'),
 });
 
@@ -30,6 +34,9 @@ export default function SalesDashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
   const { userData } = useAuth();
   const { data: leads, loading, add, update, remove } = useFirestore<Lead>('leads');
   const { formatNumber } = useGlobalization();
@@ -44,8 +51,13 @@ export default function SalesDashboard() {
   });
 
   const filteredLeads = leads.filter(lead => {
-    if (statusFilter === 'all') return true;
-    return lead.status === statusFilter;
+    // Filter by status
+    if (statusFilter !== 'all' && lead.status !== statusFilter) return false;
+    
+    // Filter by region
+    if (regionFilter !== 'all' && lead.region !== regionFilter) return false;
+    
+    return true;
   });
 
   const stats = {
@@ -61,6 +73,8 @@ export default function SalesDashboard() {
     try {
       await add({
         ...data,
+        country: selectedCountry || undefined,
+        region: selectedRegion || undefined,
         status: data.status as 'new' | 'in_progress' | 'completed' | 'on_hold',
         partnerId: userData.id,
         createdBy: userData.email,
@@ -70,6 +84,8 @@ export default function SalesDashboard() {
         updatedAt: new Date(),
       });
       setIsAddDialogOpen(false);
+      setSelectedCountry('');
+      setSelectedRegion('');
       reset();
     } catch (error) {
       console.error('Error creating lead:', error);
@@ -149,6 +165,18 @@ export default function SalesDashboard() {
                           id="location"
                           {...register('location')}
                           placeholder="City, State"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="country">Country</Label>
+                        <CountrySelector
+                          value={selectedCountry}
+                          onValueChange={(country, region) => {
+                            setSelectedCountry(country);
+                            setSelectedRegion(region);
+                          }}
+                          placeholder="Select a country"
                         />
                       </div>
 
@@ -247,6 +275,11 @@ export default function SalesDashboard() {
               <div className="flex justify-between items-center">
                 <CardTitle>Recent Leads</CardTitle>
                 <div className="flex space-x-2">
+                  <RegionFilter
+                    value={regionFilter}
+                    onValueChange={setRegionFilter}
+                    className="w-[160px]"
+                  />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[140px]">
                       <SelectValue />
@@ -259,8 +292,8 @@ export default function SalesDashboard() {
                       <SelectItem value="on_hold">On Hold</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="sm">
-                    <Filter className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" title="More filters">
+                    <Globe className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
