@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { BrandLogo } from '@/components/BrandLogo';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,6 +50,7 @@ export default function Login() {
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
           <p className="text-slate-600 mt-2">Sign in to Builder.Contractors</p>
         </CardHeader>

@@ -1,7 +1,8 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Building2, Hammer, Share2 } from 'lucide-react';
+import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Hammer, Share2 } from 'lucide-react';
+import { BrandLogo } from '@/components/BrandLogo';
 
 export default function Home() {
   return (
@@ -11,8 +12,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Building2 className="h-8 w-8 text-primary mr-2" />
-              <h1 className="text-2xl font-bold text-slate-900">Builder.Contractors</h1>
+              <Link href="/">
+                <span className="inline-flex items-center" aria-label="Builder.Contractors home">
+                  <BrandLogo size="md" alt="Builder.Contractors home" />
+                </span>
+              </Link>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" asChild data-testid="button-login">
