@@ -90,10 +90,12 @@ export const ServiceManagement: React.FC = () => {
   };
 
   const formatPrice = (price: number, unit: string) => {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(price);
+    // Format as a simple number with 2 decimal places for international use
+    // Users can apply their local currency symbol
+    const formatted = price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
     
     return `${formatted} per ${unit}`;
   };
@@ -162,8 +164,11 @@ export const ServiceManagement: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="project">Project</SelectItem>
                       <SelectItem value="sq_ft">Square Foot</SelectItem>
+                      <SelectItem value="sq_m">Square Meter</SelectItem>
                       <SelectItem value="hour">Hour</SelectItem>
+                      <SelectItem value="day">Day</SelectItem>
                       <SelectItem value="linear_ft">Linear Foot</SelectItem>
+                      <SelectItem value="linear_m">Linear Meter</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.unit && (
@@ -172,7 +177,7 @@ export const ServiceManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="basePrice">Base Price ($)</Label>
+                  <Label htmlFor="basePrice">Base Price</Label>
                   <Input
                     id="basePrice"
                     type="number"

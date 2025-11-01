@@ -78,7 +78,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Avg Price</p>
-                    <p className="text-2xl font-bold text-slate-900">${stats.avgPrice.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.avgPrice.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>

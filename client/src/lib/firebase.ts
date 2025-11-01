@@ -3,6 +3,10 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+// Firebase configuration for Builder.Contractors global platform
+// Note: Firebase project URLs still reference the original project name.
+// When ready to migrate, create a new Firebase project at firebase.google.com
+// and update these values with the new project credentials.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "GOOGLE_API_KEY",
   authDomain: "elyment-partner-platform.firebaseapp.com",
