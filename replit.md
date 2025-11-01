@@ -1,8 +1,10 @@
-# ELYMENT Partner Platform - Replit Build Guide
+# Builder.Contractors - Global Partner Platform
 
 ## Overview
 
-This is a full-stack React application built for managing partner leads and services in a construction/building industry context. The application features role-based access control with different dashboards for sales partners, builders, and administrators. The frontend is built with React, TypeScript, and Tailwind CSS using shadcn/ui components, while the backend uses Express.js with Drizzle ORM and PostgreSQL.
+Builder.Contractors (www.builder.contractors) is a global full-stack React application built for managing contractor partnerships, leads, and services in the construction and building industry. The platform features role-based access control with different dashboards for sales partners, builders, and administrators. The frontend is built with React, TypeScript, and Tailwind CSS using shadcn/ui components, while the backend uses Express.js with Drizzle ORM and PostgreSQL.
+
+The platform is designed to work internationally, supporting contractors and builders from any country to collaborate, share leads, and manage work contracts.
 
 ## User Preferences
 
@@ -97,3 +99,10 @@ Preferred communication style: Simple, everyday language.
 - **Build**: `NODE_ENV` for development/production switching
 
 The application is architected as a modern full-stack TypeScript application with clear separation of concerns, role-based access control, and a focus on construction industry partner management workflows.
+
+## Branding
+
+- **Platform Name**: Builder.Contractors
+- **Domain**: www.builder.contractors
+- **Target Market**: Global construction and building industry
+- **Key Value Proposition**: Connecting builders and contractors worldwide to share leads, exchange work opportunities, and support each other's growth
