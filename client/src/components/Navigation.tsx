@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User, LogOut } from 'lucide-react';
 import { GlobalizationSettingsDialog } from '@/components/GlobalizationSettingsDialog';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { BrandLogo } from '@/components/BrandLogo';
 
 export const Navigation: React.FC = () => {
   const [location] = useLocation();
@@ -58,7 +59,9 @@ export const Navigation: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <Link href="/dashboard">
-                <h1 className="text-xl font-bold text-primary cursor-pointer">Builder.Contractors</h1>
+                <span className="inline-flex items-center" aria-label="Builder.Contractors dashboard">
+                  <BrandLogo size="sm" className="cursor-pointer" alt="Builder.Contractors dashboard" />
+                </span>
               </Link>
             </div>
             <div className="hidden md:block">

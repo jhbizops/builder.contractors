@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { BrandLogo } from '@/components/BrandLogo';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,6 +68,7 @@ export default function Register() {
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Join Builder.Contractors</CardTitle>
           <p className="text-slate-600 mt-2">Create your contractor account</p>
         </CardHeader>
