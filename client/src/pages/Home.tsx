@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Hammer, Share2 } from 'lucide-react';
+import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Building2, Hammer, Share2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 
 export default function Home() {
@@ -214,7 +214,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <Building2 className="h-6 w-6 text-primary mr-2" />
+              <BrandLogo size="sm" className="mr-2" alt="Builder.Contractors" />
               <span className="text-white font-bold">Builder.Contractors</span>
             </div>
             <div className="text-sm">
