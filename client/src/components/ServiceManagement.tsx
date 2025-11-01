@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit } from 'lucide-react';
 import { Service } from '@/types';
 import { useFirestore } from '@/hooks/useFirestore';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,6 +30,17 @@ export const ServiceManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const { data: services, loading, add, update } = useFirestore<Service>('services');
+  const { formatCurrency, settings } = useGlobalization();
+  const measurementLabel = useMemo(() => {
+    switch (settings.measurementSystem) {
+      case 'metric':
+        return 'Metric';
+      case 'imperial':
+        return 'Imperial';
+      default:
+        return 'US customary';
+    }
+  }, [settings.measurementSystem]);
 
   const {
     register,
@@ -89,15 +101,29 @@ export const ServiceManagement: React.FC = () => {
     reset();
   };
 
+  const getUnitLabel = (unit: string) => {
+    switch (unit) {
+      case 'sq_ft':
+        return 'square foot (imperial)';
+      case 'sq_m':
+        return 'square meter (metric)';
+      case 'hour':
+        return 'hour';
+      case 'day':
+        return 'day';
+      case 'linear_ft':
+        return 'linear foot (imperial)';
+      case 'linear_m':
+        return 'linear meter (metric)';
+      case 'project':
+      default:
+        return 'project';
+    }
+  };
+
   const formatPrice = (price: number, unit: string) => {
-    // Format as a simple number with 2 decimal places for international use
-    // Users can apply their local currency symbol
-    const formatted = price.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    
-    return `${formatted} per ${unit}`;
+    const humanUnit = getUnitLabel(unit);
+    return `${formatCurrency(price)} per ${humanUnit}`;
   };
 
   if (loading) {
@@ -119,7 +145,12 @@ export const ServiceManagement: React.FC = () => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Service Management</CardTitle>
+          <div>
+            <CardTitle>Service Management</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Prices shown in {settings.currency} · {measurementLabel} units
+            </p>
+          </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleAddService} size="sm">

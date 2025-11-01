@@ -11,12 +11,14 @@ import { Plus, Download, Users, Handshake, Clock, TrendingUp } from 'lucide-reac
 import { Lead, User, Service } from '@/types';
 import { useFirestore } from '@/hooks/useFirestore';
 import { useState } from 'react';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const { data: leads, update } = useFirestore<Lead>('leads');
   const { data: users } = useFirestore<User>('users');
   const { data: services } = useFirestore<Service>('services');
+  const { formatCurrency, formatNumber } = useGlobalization();
 
   const stats = {
     totalUsers: users.length,
@@ -90,7 +92,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Total Users</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.totalUsers}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.totalUsers)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Active Leads</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.activeLeads}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.activeLeads)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -122,7 +124,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Pending Approvals</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.pendingApprovals}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.pendingApprovals)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -139,7 +141,7 @@ export default function AdminDashboard() {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Monthly Revenue</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {stats.monthlyRevenue.toLocaleString()}
+                      {formatCurrency(stats.monthlyRevenue)}
                     </p>
                   </div>
                 </div>

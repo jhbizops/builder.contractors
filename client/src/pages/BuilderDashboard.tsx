@@ -6,9 +6,11 @@ import { ServiceManagement } from '@/components/ServiceManagement';
 import { Settings, DollarSign, FileText, Wrench } from 'lucide-react';
 import { useFirestore } from '@/hooks/useFirestore';
 import { Service } from '@/types';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 export default function BuilderDashboard() {
   const { data: services } = useFirestore<Service>('services');
+  const { formatCurrency, formatNumber, settings } = useGlobalization();
 
   const stats = {
     totalServices: services.length,
@@ -22,14 +24,16 @@ export default function BuilderDashboard() {
     <ProtectedRoute requiredRole={['builder', 'dual']}>
       <div className="min-h-screen bg-slate-50">
         <Navigation />
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Dashboard Header */}
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Builder Dashboard</h2>
-                <p className="text-slate-600 mt-1">Manage services, pricing, and project details</p>
+                <p className="text-slate-600 mt-1">
+                  Manage services, pricing, and project details · Displaying {settings.currency} pricing
+                </p>
               </div>
             </div>
           </div>
@@ -46,7 +50,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Total Services</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.totalServices}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.totalServices)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -62,7 +66,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Active Services</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.activeServices}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.activeServices)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -78,7 +82,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Avg Price</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.avgPrice.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.avgPrice)}</p>
                   </div>
                 </div>
               </CardContent>
