@@ -4,6 +4,7 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@/lib/utils"
+import { useGlobalization } from "@/contexts/GlobalizationContext"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -132,6 +133,7 @@ const ChartTooltipContent = React.forwardRef<
     ref
   ) => {
     const { config } = useChart()
+    const { formatNumber } = useGlobalization()
 
     const tooltipLabel = React.useMemo(() => {
       if (hideLabel || !payload?.length) {
@@ -238,9 +240,17 @@ const ChartTooltipContent = React.forwardRef<
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
-                      {item.value && (
+                      {item.value !== undefined && item.value !== null && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {(() => {
+                            const numericValue =
+                              typeof item.value === 'number'
+                                ? item.value
+                                : Number.parseFloat(String(item.value));
+                            return Number.isFinite(numericValue)
+                              ? formatNumber(numericValue)
+                              : String(item.value);
+                          })()}
                         </span>
                       )}
                     </div>

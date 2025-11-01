@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 const leadSchema = z.object({
   clientName: z.string().min(1, 'Client name is required'),
@@ -31,6 +32,7 @@ export default function SalesDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { userData } = useAuth();
   const { data: leads, loading, add, update, remove } = useFirestore<Lead>('leads');
+  const { formatNumber } = useGlobalization();
 
   const {
     register,
@@ -184,7 +186,7 @@ export default function SalesDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Total Leads</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.totalLeads}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.totalLeads)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -200,7 +202,7 @@ export default function SalesDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Active Leads</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.activeLeads}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.activeLeads)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -216,7 +218,7 @@ export default function SalesDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Completed</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.completedLeads}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.completedLeads)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -232,7 +234,7 @@ export default function SalesDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">New Leads</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.newLeads}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.newLeads)}</p>
                   </div>
                 </div>
               </CardContent>

@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 interface LeadModalProps {
   lead: Lead | null;
@@ -29,6 +29,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userData } = useAuth();
+  const { formatDateTime } = useGlobalization();
   
   const { add: addComment } = useFirestore<LeadComment>('lead_comments');
   const { add: addLog } = useFirestore<ActivityLog>('activity_logs');
@@ -302,7 +303,12 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
                         </span>
                       </div>
                       <span className="text-xs text-slate-500">
-                        {format(comment.timestamp, 'MMM d, h:mm a')}
+                        {formatDateTime(comment.timestamp, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
                     <p className="text-slate-700 text-sm">{comment.body}</p>
@@ -325,7 +331,12 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
                   <span className="text-slate-400">by</span>
                   <span>{log.performedBy}</span>
                   <span className="text-slate-400">
-                    {format(log.timestamp, 'MMM d, h:mm a')}
+                    {formatDateTime(log.timestamp, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
               ))}

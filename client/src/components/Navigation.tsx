@@ -4,11 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, LogOut } from 'lucide-react';
+import { GlobalizationSettingsDialog } from '@/components/GlobalizationSettingsDialog';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 export const Navigation: React.FC = () => {
   const [location] = useLocation();
   const { userData, logout } = useAuth();
   const [currentView, setCurrentView] = useState<string>(userData?.role || 'sales');
+  const { settings } = useGlobalization();
 
   const handleLogout = async () => {
     try {
@@ -96,14 +99,27 @@ export const Navigation: React.FC = () => {
             )}
             
             <div className="flex items-center space-x-2">
+              <div className="hidden lg:flex flex-col items-end mr-2 text-xs text-muted-foreground">
+                <span>
+                  {settings.locale} · {settings.currency}
+                </span>
+                <span>{settings.timeZone}</span>
+              </div>
+              <GlobalizationSettingsDialog />
               <span className="text-sm text-slate-600 hidden sm:block">
                 {userData?.email}
               </span>
               <div className="flex items-center space-x-1">
-                <Button variant="ghost" size="sm" className="p-2">
+                <Button variant="ghost" size="sm" className="p-2" aria-label="Account">
                   <User className="h-4 w-4 text-slate-600" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="p-2"
+                  aria-label="Sign out"
+                >
                   <LogOut className="h-4 w-4 text-slate-600" />
                 </Button>
               </div>

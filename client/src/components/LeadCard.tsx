@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Trash2, User, Calendar, Paperclip } from 'lucide-react';
 import { Lead } from '@/types';
-import { format } from 'date-fns';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 interface LeadCardProps {
   lead: Lead;
@@ -44,6 +44,8 @@ const getStatusLabel = (status: string) => {
 };
 
 export const LeadCard: React.FC<LeadCardProps> = ({ lead, onView, onEdit, onDelete }) => {
+  const { formatDateTime } = useGlobalization();
+
   return (
     <Card className="border border-slate-200 hover:shadow-md transition-shadow">
       <CardContent className="p-4">
@@ -67,7 +69,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onView, onEdit, onDele
             </span>
             <span className="flex items-center">
               <Calendar className="h-3 w-3 mr-1" />
-              {format(lead.createdAt, 'MMM d')}
+              {formatDateTime(lead.createdAt, { month: 'short', day: 'numeric' })}
             </span>
             <span className="flex items-center">
               <Paperclip className="h-3 w-3 mr-1" />
