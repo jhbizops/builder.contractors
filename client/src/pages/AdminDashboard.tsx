@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Monthly Revenue</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      ${stats.monthlyRevenue.toLocaleString()}
+                      {stats.monthlyRevenue.toLocaleString()}
                     </p>
                   </div>
                 </div>
