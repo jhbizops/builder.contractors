@@ -17,3 +17,20 @@ Object.defineProperty(window, 'localStorage', {
     },
   },
 });
+
+class ResizeObserver {
+  observe() {
+    // no-op for jsdom
+  }
+
+  unobserve() {
+    // no-op for jsdom
+  }
+
+  disconnect() {
+    // no-op for jsdom
+  }
+}
+
+// @ts-expect-error - provide minimal polyfill for tests
+global.ResizeObserver = ResizeObserver;

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -34,12 +34,16 @@ export default function Register() {
 
   const {
     register,
+    control,
     handleSubmit,
     setValue,
     watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      agreeToTerms: false,
+    },
   });
 
   const watchedRole = watch('role');
@@ -113,7 +117,7 @@ export default function Register() {
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">Role</Label>
               <RadioGroup
-                value={watchedRole}
+                value={watchedRole ?? ''}
                 onValueChange={(value) => setValue('role', value as 'sales' | 'builder' | 'dual')}
                 className="space-y-2"
               >
@@ -135,12 +139,23 @@ export default function Register() {
               )}
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox id="agreeToTerms" {...register('agreeToTerms')} />
-              <Label htmlFor="agreeToTerms" className="text-sm">
-                I agree to the Terms of Service and Privacy Policy
-              </Label>
-            </div>
+            <Controller
+              control={control}
+              name="agreeToTerms"
+              render={({ field: { value, onChange, onBlur } }) => (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="agreeToTerms"
+                    checked={value}
+                    onCheckedChange={(checked) => onChange(checked === true)}
+                    onBlur={onBlur}
+                  />
+                  <Label htmlFor="agreeToTerms" className="text-sm">
+                    I agree to the Terms of Service and Privacy Policy
+                  </Label>
+                </div>
+              )}
+            />
             {errors.agreeToTerms && (
               <p className="text-sm text-red-500">{errors.agreeToTerms.message}</p>
             )}
