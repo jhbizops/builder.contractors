@@ -15,12 +15,12 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-slate-900">Builder.Contractors</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="ghost" data-testid="button-login">Sign In</Button>
-              </Link>
-              <Link href="/register">
-                <Button data-testid="button-register">Get Started</Button>
-              </Link>
+              <Button variant="ghost" asChild data-testid="button-login">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild data-testid="button-register">
+                <Link href="/register">Get Started</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -42,17 +42,15 @@ export default function Home() {
               Join the global network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg" className="text-lg px-8 py-6" data-testid="button-hero-signup">
+              <Button size="lg" className="text-lg px-8 py-6" asChild data-testid="button-hero-signup">
+                <Link href="/register">
                   Start Exchanging Projects
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6" data-testid="button-hero-login">
-                  Sign In
-                </Button>
-              </Link>
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild data-testid="button-hero-login">
+                <Link href="/login">Sign In</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -198,12 +196,12 @@ export default function Home() {
           <p className="text-xl mb-8 text-blue-100">
             Join thousands of builders and contractors worldwide who are growing their business together
           </p>
-          <Link href="/register">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6" data-testid="button-cta-signup">
+          <Button size="lg" variant="secondary" className="text-lg px-8 py-6" asChild data-testid="button-cta-signup">
+            <Link href="/register">
               Create Free Account
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </section>
 
