@@ -218,7 +218,15 @@ export default function Home() {
               <span className="text-white font-bold">Builder.Contractors</span>
             </div>
             <div className="text-sm">
-              © 2024 Builder.Contractors. Connecting builders worldwide.
+              © 2025 Builder.Contractors. Connecting builders worldwide. Powered by{' '}
+              <a 
+                href="https://elyment.com.au" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                Elyment
+              </a>
             </div>
           </div>
         </div>
