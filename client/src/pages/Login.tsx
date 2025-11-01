@@ -50,7 +50,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
-          <p className="text-slate-600 mt-2">Sign in to your ELYMENT account</p>
+          <p className="text-slate-600 mt-2">Sign in to Builder.Contractors</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

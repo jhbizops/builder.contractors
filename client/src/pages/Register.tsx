@@ -63,8 +63,8 @@ export default function Register() {
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-slate-900">Join ELYMENT</CardTitle>
-          <p className="text-slate-600 mt-2">Create your partner account</p>
+          <CardTitle className="text-2xl font-bold text-slate-900">Join Builder.Contractors</CardTitle>
+          <p className="text-slate-600 mt-2">Create your contractor account</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

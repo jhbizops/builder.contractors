@@ -55,7 +55,7 @@ export const Navigation: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <Link href="/dashboard">
-                <h1 className="text-xl font-bold text-primary cursor-pointer">ELYMENT</h1>
+                <h1 className="text-xl font-bold text-primary cursor-pointer">Builder.Contractors</h1>
               </Link>
             </div>
             <div className="hidden md:block">
