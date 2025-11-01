@@ -2,6 +2,8 @@ export interface User {
   id: string;
   email: string;
   role: 'sales' | 'builder' | 'admin' | 'dual';
+  country?: string;
+  region?: string;
   approved: boolean;
   createdAt: Date;
 }
@@ -12,6 +14,8 @@ export interface Lead {
   clientName: string;
   status: 'new' | 'in_progress' | 'completed' | 'on_hold';
   location?: string;
+  country?: string;
+  region?: string;
   notes: string[];
   files: string[];
   createdBy: string;
