@@ -55,11 +55,11 @@ export const Navigation: React.FC = () => {
   return (
     <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center py-6">
           <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 mt-2">
               <Link href="/dashboard">
-                <span className="inline-flex items-center p-2 rounded-lg hover:bg-slate-50 transition-colors" aria-label="Builder.Contractors dashboard">
+                <span className="inline-flex items-center p-3 rounded-lg hover:bg-slate-50 transition-colors" aria-label="Builder.Contractors dashboard">
                   <BrandLogo size="sm" className="cursor-pointer" alt="Builder.Contractors dashboard" />
                 </span>
               </Link>
