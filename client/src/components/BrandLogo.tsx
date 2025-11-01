@@ -883,9 +883,9 @@ type BrandLogoProps = {
 };
 
 const sizeClassMap: Record<BrandLogoSize, string> = {
-  sm: 'h-8',
-  md: 'h-10',
-  lg: 'h-14',
+  sm: 'h-16',
+  md: 'h-20',
+  lg: 'h-28',
 };
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
