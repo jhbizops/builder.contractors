@@ -883,7 +883,7 @@ type BrandLogoProps = {
 };
 
 const sizeClassMap: Record<BrandLogoSize, string> = {
-  sm: 'h-16',
+  sm: 'h-12',
   md: 'h-20',
   lg: 'h-28',
 };
