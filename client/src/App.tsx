@@ -14,6 +14,9 @@ import BuilderDashboard from "@/pages/BuilderDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/not-found";
 
+// Auto-seed admin account in development
+import "@/lib/seedAdmin";
+
 function Router() {
   return (
     <Switch>
