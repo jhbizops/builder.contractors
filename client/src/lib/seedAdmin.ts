@@ -41,10 +41,14 @@ export async function seedAdminAccount() {
   const raw = localStorage.getItem(USERS_KEY);
   const users: StoredLocalUser[] = raw ? JSON.parse(raw) : [];
   
-  // Check if admin already exists
-  const existingAdmin = users.find(u => u.email === adminEmail);
-  if (existingAdmin) {
-    console.log('Admin account already exists');
+  // Check if admin already exists and update if needed
+  const existingAdminIndex = users.findIndex(u => u.email === adminEmail);
+  if (existingAdminIndex >= 0) {
+    // Update existing admin to ensure it's approved
+    users[existingAdminIndex].approved = true;
+    users[existingAdminIndex].role = 'admin';
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    console.log('Admin account updated');
     return { email: adminEmail, password: adminPassword };
   }
   
