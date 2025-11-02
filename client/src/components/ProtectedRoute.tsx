@@ -47,7 +47,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (requireApproval && !userData.approved) {
+  const isAdmin = userData.role === 'admin';
+
+  if (requireApproval && !isAdmin && !userData.approved) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
         <Card className="w-full max-w-md mx-4">
