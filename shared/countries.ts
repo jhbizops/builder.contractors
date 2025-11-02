@@ -63,9 +63,10 @@ export function getAllCountries(): Country[] {
 
 // Helper function to get region for a country
 export function getRegionForCountry(country: Country): Region | undefined {
-  for (const [region, countries] of Object.entries(countriesByRegion)) {
-    if (countries.includes(country)) {
-      return region as Region;
+  const entries = Object.entries(countriesByRegion) as [Region, readonly Country[]][];
+  for (const [region, regionCountries] of entries) {
+    if (regionCountries.includes(country)) {
+      return region;
     }
   }
   return undefined;

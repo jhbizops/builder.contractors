@@ -17,11 +17,20 @@ export interface Lead {
   country?: string;
   region?: string;
   notes: string[];
-  files: string[];
+  files: LeadFile[];
   createdBy: string;
   updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface LeadFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  dataUrl: string;
+  uploadedAt: Date;
 }
 
 export interface LeadComment {

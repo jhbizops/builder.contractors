@@ -3,7 +3,7 @@ import { User } from '@/types';
 const USERS_KEY = 'bc_local_auth_users_v1';
 const SESSION_KEY = 'bc_local_auth_session_v1';
 
-type StoredLocalUser = User & {
+type StoredLocalUser = Omit<User, 'createdAt'> & {
   createdAt: string;
   passwordHash: string;
   passwordSalt: string;
