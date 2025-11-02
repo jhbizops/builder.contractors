@@ -1,14 +1,10 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
-// Firebase configuration for Builder.Contractors global platform
-// Note: Firebase project URLs still reference the original project name.
-// When ready to migrate, create a new Firebase project at firebase.google.com
-// and update these values with the new project credentials.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "GOOGLE_API_KEY",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "elyment-partner-platform.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "elyment-partner-platform",
   storageBucket: "elyment-partner-platform.firebasestorage.app",
@@ -17,9 +13,25 @@ const firebaseConfig = {
   measurementId: "G-HEN1V6W8SE"
 };
 
-const app = initializeApp(firebaseConfig);
+export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+let app: FirebaseApp | null = null;
+let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
+let storageInstance: FirebaseStorage | null = null;
+
+if (isFirebaseConfigured) {
+  app = initializeApp(firebaseConfig);
+  authInstance = getAuth(app);
+  dbInstance = getFirestore(app);
+  storageInstance = getStorage(app);
+} else if (typeof window !== "undefined") {
+  console.warn(
+    "Firebase credentials are missing. Falling back to local authentication for this session.",
+  );
+}
+
+export const auth = authInstance;
+export const db = dbInstance;
+export const storage = storageInstance;
 export default app;

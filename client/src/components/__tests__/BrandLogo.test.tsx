@@ -15,11 +15,11 @@ describe('BrandLogo', () => {
     const { rerender } = render(<BrandLogo size="sm" />);
 
     const smallLogo = screen.getByRole('img', { name: /builder\.contractors logo/i });
-    expect(smallLogo).toHaveClass('h-8');
+    expect(smallLogo).toHaveClass('h-12');
 
     rerender(<BrandLogo size="lg" />);
 
     const largeLogo = screen.getByRole('img', { name: /builder\.contractors logo/i });
-    expect(largeLogo).toHaveClass('h-14');
+    expect(largeLogo).toHaveClass('h-28');
   });
 });
