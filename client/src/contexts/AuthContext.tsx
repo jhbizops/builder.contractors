@@ -6,19 +6,10 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
+import { useQueryClient } from '@tanstack/react-query';
 import { User } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import {
-  clearLocalAuthStore,
-  isLocalAuthAvailable,
-  loadLocalSession,
-  loginLocalUser,
-  logoutLocalUser,
-  registerLocalUser,
-} from '@/lib/localAuth';
+import { apiRequest } from '@/lib/queryClient';
 
 type AuthenticatedUser = Pick<User, 'id' | 'email'>;
 
@@ -35,8 +26,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export { AuthContext };
 
-const isLocalAuthEnabled = !isFirebaseConfigured && isLocalAuthAvailable;
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -45,15 +34,43 @@ export const useAuth = () => {
   return context;
 };
 
+interface RawUser {
+  id: string;
+  email: string;
+  role: User['role'];
+  country: string | null;
+  region: string | null;
+  approved: boolean;
+  createdAt: string;
+}
+
+function parseUser(raw: RawUser): User {
+  return {
+    id: raw.id,
+    email: raw.email,
+    role: raw.role,
+    country: raw.country ?? undefined,
+    region: raw.region ?? undefined,
+    approved: raw.approved,
+    createdAt: new Date(raw.createdAt),
+  };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const login = useCallback(async (email: string, password: string) => {
-    if (isFirebaseConfigured && auth) {
+  const login = useCallback(
+    async (email: string, password: string) => {
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const res = await apiRequest('POST', '/api/auth/login', { email, password });
+        const data = (await res.json()) as RawUser;
+        const user = parseUser(data);
+        setCurrentUser({ id: user.id, email: user.email });
+        setUserData(user);
+        await queryClient.invalidateQueries();
         toast({
           title: 'Success',
           description: 'Successfully signed in',
@@ -61,55 +78,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error: any) {
         toast({
           title: 'Error',
-          description: error.message,
+          description: error instanceof Error ? error.message : 'Failed to sign in',
           variant: 'destructive',
         });
         throw error;
       }
-      return;
-    }
+    },
+    [queryClient],
+  );
 
-    if (!isLocalAuthEnabled) {
-      toast({
-        title: 'Authentication unavailable',
-        description: 'Authentication services are not configured.',
-        variant: 'destructive',
-      });
-      throw new Error('Authentication services are not configured.');
-    }
-
-    try {
-      const user = await loginLocalUser(email, password);
-      setCurrentUser({ id: user.id, email: user.email });
-      setUserData(user);
-      toast({
-        title: 'Success',
-        description: 'Successfully signed in',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  }, []);
-
-  const register = useCallback(async (email: string, password: string, role: string) => {
-    if (isFirebaseConfigured && auth && db) {
+  const register = useCallback(
+    async (email: string, password: string, role: string) => {
       try {
-        const { user } = await createUserWithEmailAndPassword(auth, email, password);
-
-        const userProfile: Omit<User, 'id'> = {
+        const res = await apiRequest('POST', '/api/auth/register', {
           email,
-          role: role as User['role'],
-          approved: false,
-          createdAt: new Date(),
-        };
-
-        await setDoc(doc(db, 'users', user.uid), userProfile);
-
+          password,
+          role,
+        });
+        const data = (await res.json()) as RawUser;
+        const user = parseUser(data);
+        setCurrentUser({ id: user.id, email: user.email });
+        setUserData(user);
+        await queryClient.invalidateQueries();
         toast({
           title: 'Success',
           description: 'Account created successfully. Waiting for admin approval.',
@@ -117,124 +107,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error: any) {
         toast({
           title: 'Error',
-          description: error.message,
+          description: error instanceof Error ? error.message : 'Failed to register account',
           variant: 'destructive',
         });
         throw error;
       }
-      return;
-    }
+    },
+    [queryClient],
+  );
 
-    if (!isLocalAuthEnabled) {
-      toast({
-        title: 'Authentication unavailable',
-        description: 'Authentication services are not configured.',
-        variant: 'destructive',
-      });
-      throw new Error('Authentication services are not configured.');
-    }
-
+  const logout = useCallback(async () => {
     try {
-      const user = await registerLocalUser(email, password, role as User['role']);
-      setCurrentUser({ id: user.id, email: user.email });
-      setUserData(user);
+      await apiRequest('POST', '/api/auth/logout');
+      setCurrentUser(null);
+      setUserData(null);
+      queryClient.clear();
       toast({
         title: 'Success',
-        description: 'Account created successfully. Waiting for admin approval.',
+        description: 'Successfully signed out',
       });
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Failed to sign out',
         variant: 'destructive',
       });
       throw error;
     }
-  }, []);
-
-  const logout = useCallback(async () => {
-    if (isFirebaseConfigured && auth) {
-      try {
-        await signOut(auth);
-        setUserData(null);
-        toast({
-          title: 'Success',
-          description: 'Successfully signed out',
-        });
-      } catch (error: any) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-        throw error;
-      }
-      return;
-    }
-
-    if (!isLocalAuthEnabled) {
-      toast({
-        title: 'Authentication unavailable',
-        description: 'Authentication services are not configured.',
-        variant: 'destructive',
-      });
-      throw new Error('Authentication services are not configured.');
-    }
-
-    logoutLocalUser();
-    setCurrentUser(null);
-    setUserData(null);
-    toast({
-      title: 'Success',
-      description: 'Successfully signed out',
-    });
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
-    if (isFirebaseConfigured && auth && db) {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setCurrentUser(user ? { id: user.uid, email: user.email ?? '' } : null);
+    let active = true;
 
-        if (user) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              setUserData({
-                id: user.uid,
-                email: data.email,
-                role: data.role,
-                approved: data.approved,
-                createdAt: data.createdAt?.toDate() || new Date(),
-              });
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        } else {
-          setUserData(null);
+    const fetchSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session', { credentials: 'include' });
+        if (!res.ok) {
+          return;
         }
 
-        setLoading(false);
-      });
+        const data = (await res.json()) as RawUser;
+        if (!active) {
+          return;
+        }
 
-      return unsubscribe;
-    }
-
-    if (isLocalAuthEnabled) {
-      const sessionUser = loadLocalSession();
-      if (sessionUser) {
-        setCurrentUser({ id: sessionUser.id, email: sessionUser.email });
-        setUserData(sessionUser);
-      } else {
-        clearLocalAuthStore();
+        const user = parseUser(data);
+        setCurrentUser({ id: user.id, email: user.email });
+        setUserData(user);
+      } catch (error) {
+        console.error('Failed to load session', error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
-      return () => undefined;
-    }
+    };
 
-    setLoading(false);
-    return () => undefined;
+    fetchSession();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const value = useMemo<AuthContextType>(
@@ -246,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       register,
       logout,
     }),
-    [currentUser, loading, logout, login, register, userData],
+    [currentUser, userData, loading, login, register, logout],
   );
 
   return (

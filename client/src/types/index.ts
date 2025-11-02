@@ -8,6 +8,13 @@ export interface User {
   createdAt: Date;
 }
 
+export interface LeadFile {
+  id: string;
+  name: string;
+  dataUrl: string;
+  uploadedAt: Date;
+}
+
 export interface Lead {
   id: string;
   partnerId: string;
@@ -17,7 +24,7 @@ export interface Lead {
   country?: string;
   region?: string;
   notes: string[];
-  files: string[];
+  files: LeadFile[];
   createdBy: string;
   updatedBy?: string;
   createdAt: Date;

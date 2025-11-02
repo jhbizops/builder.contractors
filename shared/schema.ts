@@ -2,6 +2,15 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const leadFileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  dataUrl: z.string(),
+  uploadedAt: z.string(),
+});
+
+export type LeadFile = z.infer<typeof leadFileSchema>;
+
 // Users table
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -23,7 +32,7 @@ export const leads = pgTable("leads", {
   country: text("country"), // Lead's country
   region: text("region"), // Auto-populated based on country
   notes: jsonb("notes").$type<string[]>().default([]),
-  files: jsonb("files").$type<string[]>().default([]),
+  files: jsonb("files").$type<LeadFile[]>().default([]),
   createdBy: text("created_by").notNull(),
   updatedBy: text("updated_by"),
   createdAt: timestamp("created_at").defaultNow(),
