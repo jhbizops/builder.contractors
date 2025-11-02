@@ -4,12 +4,12 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceManagement } from '@/components/ServiceManagement';
 import { Settings, DollarSign, FileText, Wrench } from 'lucide-react';
-import { useFirestore } from '@/hooks/useFirestore';
+import { useCollection } from '@/hooks/useCollection';
 import { Service } from '@/types';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 export default function BuilderDashboard() {
-  const { data: services } = useFirestore<Service>('services');
+  const { data: services } = useCollection<Service>('services');
   const { formatCurrency, formatNumber, settings } = useGlobalization();
 
   const stats = {

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit } from 'lucide-react';
 import { Service } from '@/types';
-import { useFirestore } from '@/hooks/useFirestore';
+import { useCollection } from '@/hooks/useCollection';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +29,7 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 export const ServiceManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const { data: services, loading, add, update } = useFirestore<Service>('services');
+  const { data: services, loading, add, update } = useCollection<Service>('services');
   const { formatCurrency, settings } = useGlobalization();
   const measurementLabel = useMemo(() => {
     switch (settings.measurementSystem) {

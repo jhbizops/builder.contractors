@@ -13,7 +13,7 @@ import { CountrySelector } from '@/components/CountrySelector';
 import { RegionFilter } from '@/components/RegionFilter';
 import { Plus, Download, Filter, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
 import { Lead } from '@/types';
-import { useFirestore } from '@/hooks/useFirestore';
+import { useCollection } from '@/hooks/useCollection';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,7 @@ export default function SalesDashboard() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const { userData } = useAuth();
-  const { data: leads, loading, add, update, remove } = useFirestore<Lead>('leads');
+  const { data: leads, loading, add, update, remove } = useCollection<Lead>('leads');
   const { formatNumber } = useGlobalization();
 
   const {

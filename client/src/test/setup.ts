@@ -32,5 +32,4 @@ class ResizeObserver {
   }
 }
 
-// @ts-expect-error - provide minimal polyfill for tests
 global.ResizeObserver = ResizeObserver;

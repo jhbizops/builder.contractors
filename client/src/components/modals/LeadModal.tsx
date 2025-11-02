@@ -8,11 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CloudUpload, Download, Trash2, FileText, User, Circle } from 'lucide-react';
-import { Lead, LeadComment, ActivityLog } from '@/types';
-import { useFirestore, useFirestoreQuery } from '@/hooks/useFirestore';
+import { Lead, LeadComment, ActivityLog, LeadFile } from '@/types';
+import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
 import { useAuth } from '@/contexts/AuthContext';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 
@@ -20,7 +18,7 @@ interface LeadModalProps {
   lead: Lead | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (leadData: Partial<Lead>) => void;
+  onSave: (leadData: Partial<Lead>) => Promise<void>;
 }
 
 export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) => {
@@ -31,13 +29,15 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
   const { userData } = useAuth();
   const { formatDateTime } = useGlobalization();
   
-  const { add: addComment } = useFirestore<LeadComment>('lead_comments');
-  const { add: addLog } = useFirestore<ActivityLog>('activity_logs');
-  const { data: comments } = useFirestoreQuery<LeadComment>('lead_comments', 
-    lead ? [['leadId', '==', lead.id]] : []
+  const { add: addComment } = useCollection<LeadComment>('lead_comments');
+  const { add: addLog } = useCollection<ActivityLog>('activity_logs');
+  const { data: comments } = useCollectionQuery<LeadComment>(
+    'lead_comments',
+    (comment) => (lead ? comment.leadId === lead.id : false),
   );
-  const { data: logs } = useFirestoreQuery<ActivityLog>('activity_logs',
-    lead ? [['leadId', '==', lead.id]] : []
+  const { data: logs } = useCollectionQuery<ActivityLog>(
+    'activity_logs',
+    (log) => (lead ? log.leadId === lead.id : false),
   );
 
   const handleStatusChange = async (newStatus: string) => {
@@ -59,72 +59,82 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
     if (!files || !lead) return;
 
     setUploading(true);
-    
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const storageRef = ref(storage, `leads/${lead.id}/${file.name}`);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        return url;
+
+    const readFile = (file: File) =>
+      new Promise<LeadFile>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result !== 'string') {
+            reject(new Error('Unsupported file format'));
+            return;
+          }
+          resolve({
+            id: `file_${crypto.randomUUID()}`,
+            name: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            dataUrl: reader.result,
+            uploadedAt: new Date(),
+          });
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
       });
 
-      const urls = await Promise.all(uploadPromises);
-      const updatedFiles = [...lead.files, ...urls];
-      
-      onSave({ files: updatedFiles });
-      
-      // Log file upload
+    try {
+      const uploadedFiles = await Promise.all(Array.from(files).map(readFile));
+      const updatedFiles = [...lead.files, ...uploadedFiles];
+
+      await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
+
       await addLog({
         leadId: lead.id,
-        action: `${files.length} file(s) uploaded`,
+        action: `${uploadedFiles.length} file(s) uploaded`,
         performedBy: userData?.email || 'Unknown',
         timestamp: new Date(),
       });
-      
+
       toast({
-        title: "Success",
-        description: `${files.length} file(s) uploaded successfully`,
+        title: 'Success',
+        description: `${uploadedFiles.length} file(s) uploaded successfully`,
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to upload files",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to upload files',
+        variant: 'destructive',
       });
     } finally {
       setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleDeleteFile = async (fileUrl: string, fileName: string) => {
+  const handleDeleteFile = async (file: LeadFile) => {
     if (!lead) return;
-    
+
     try {
-      // Delete from storage
-      const fileRef = ref(storage, fileUrl);
-      await deleteObject(fileRef);
-      
-      // Update lead files
-      const updatedFiles = lead.files.filter(url => url !== fileUrl);
-      onSave({ files: updatedFiles });
-      
-      // Log file deletion
+      const updatedFiles = lead.files.filter((existingFile) => existingFile.id !== file.id);
+      await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
+
       await addLog({
         leadId: lead.id,
-        action: `File deleted: "${fileName}"`,
+        action: `File deleted: "${file.name}"`,
         performedBy: userData?.email || 'Unknown',
         timestamp: new Date(),
       });
-      
+
       toast({
-        title: "Success",
-        description: "File deleted successfully",
+        title: 'Success',
+        description: 'File deleted successfully',
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to delete file",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to delete file',
+        variant: 'destructive',
       });
     }
   };
@@ -154,25 +164,46 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!lead) return;
-    
-    onSave({
-      status,
-      updatedBy: userData?.email || 'Unknown',
-    });
-    
-    onClose();
+
+    try {
+      await onSave({
+        status,
+        updatedBy: userData?.email || 'Unknown',
+        updatedAt: new Date(),
+      });
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update lead',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const getFileNameFromUrl = (url: string) => {
-    try {
-      const urlObj = new URL(url);
-      const path = urlObj.pathname;
-      return path.split('/').pop()?.split('?')[0] || 'file';
-    } catch {
-      return 'file';
+  const handleDownloadFile = (file: LeadFile) => {
+    if (typeof window === 'undefined') {
+      return;
     }
+
+    const link = document.createElement('a');
+    link.href = file.dataUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatFileSize = (size: number) => {
+    if (size >= 1024 * 1024) {
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    if (size >= 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+    return `${size} B`;
   };
 
   if (!lead) return null;
@@ -233,35 +264,42 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
             {/* Existing Files */}
             {lead.files.length > 0 && (
               <div className="mt-4 space-y-2">
-                {lead.files.map((fileUrl, index) => {
-                  const fileName = getFileNameFromUrl(fileUrl);
-                  return (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-red-500" />
-                        <span className="text-sm font-medium">{fileName}</span>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => window.open(fileUrl, '_blank')}
-                          className="text-slate-400 hover:text-primary p-1"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteFile(fileUrl, fileName)}
-                          className="text-slate-400 hover:text-red-500 p-1"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                {lead.files.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-red-500" />
+                      <div>
+                        <span className="block text-sm font-medium text-slate-900">{file.name}</span>
+                        <span className="block text-xs text-slate-500">
+                          {formatFileSize(file.size)} ·
+                          {' '}
+                          {formatDateTime(file.uploadedAt, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadFile(file)}
+                        className="text-slate-400 hover:text-primary p-1"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteFile(file)}
+                        className="text-slate-400 hover:text-red-500 p-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

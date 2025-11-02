@@ -3,14 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
 import { User } from '@/types';
-import { useFirestore, useFirestoreQuery } from '@/hooks/useFirestore';
-import { where } from 'firebase/firestore';
+import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
 
 export const UserApprovalPanel: React.FC = () => {
-  const { data: pendingUsers, loading } = useFirestoreQuery<User>('users', [
-    where('approved', '==', false)
-  ]);
-  const { update } = useFirestore<User>('users');
+  const { data: pendingUsers, loading } = useCollectionQuery<User>('users', (user) => !user.approved);
+  const { update } = useCollection<User>('users');
 
   const handleApproval = async (userId: string, approved: boolean) => {
     try {
