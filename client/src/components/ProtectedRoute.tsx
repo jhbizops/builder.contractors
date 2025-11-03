@@ -61,6 +61,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <p className="mt-4 text-sm text-slate-600">
               Your account is pending admin approval. Please wait for confirmation.
             </p>
+            <div className="mt-6 text-center">
+              <a 
+                href="/logout" 
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Sign out and try a different account
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
