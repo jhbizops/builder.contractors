@@ -5,7 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AuthContext } from '@/contexts/AuthContext';
 import type { User } from '@/types';
 
-type AuthContextValue = React.ContextType<typeof AuthContext>;
+type AuthContextValue = NonNullable<React.ContextType<typeof AuthContext>>;
 
 const baseUser: User = {
   id: 'user-1',
@@ -24,10 +24,16 @@ const baseContext: AuthContextValue = {
   logout: async () => {},
 };
 
-function renderWithAuth(value: Partial<AuthContextValue>) {
+function renderWithAuth(value: Partial<AuthContextValue> = {}) {
   const contextValue: AuthContextValue = {
     ...baseContext,
     ...value,
+    currentUser: value.currentUser ?? baseContext.currentUser ?? null,
+    userData: value.userData ?? baseContext.userData ?? null,
+    loading: value.loading ?? baseContext.loading ?? false,
+    login: value.login ?? baseContext.login,
+    register: value.register ?? baseContext.register,
+    logout: value.logout ?? baseContext.logout,
   };
 
   return render(
