@@ -1,31 +1,14 @@
-import { User } from '@/types';
-import { isLocalAuthAvailable } from './localAuth';
+import { generateSalt, hashPassword } from './authCrypto';
+import {
+  getStoredLocalUsers,
+  isLocalAuthAvailable,
+  persistStoredLocalUsers,
+  type StoredLocalUser,
+} from './localAuth';
 
-interface StoredLocalUser {
-  id: string;
-  email: string;
-  role: User['role'];
-  approved: boolean;
-  createdAt: string;
-  passwordHash: string;
-  passwordSalt: string;
-}
-
-const USERS_KEY = 'bc_local_auth_users_v1';
-
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + salt);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function generateSalt(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
+const ADMIN_EMAIL = 'admin@builder.contractors';
+const ADMIN_EMAIL_NORMALISED = ADMIN_EMAIL.toLowerCase();
+const ADMIN_PASSWORD = 'BuilderAdmin2025!';
 
 export async function seedAdminAccount() {
   if (!isLocalAuthAvailable) {
@@ -33,45 +16,42 @@ export async function seedAdminAccount() {
     return null;
   }
 
-  // Admin credentials for testing
-  const adminEmail = 'admin@builder.contractors';
-  const adminPassword = 'BuilderAdmin2025!';
-  
-  // Read existing users
-  const raw = localStorage.getItem(USERS_KEY);
-  const users: StoredLocalUser[] = raw ? JSON.parse(raw) : [];
-  
-  // Check if admin already exists
-  const existingAdmin = users.find(u => u.email === adminEmail);
+  const users = getStoredLocalUsers();
+  const existingAdmin = users.find(
+    (user) => user.email.toLowerCase() === ADMIN_EMAIL_NORMALISED,
+  );
+
   if (existingAdmin) {
     console.log('Admin account already exists');
-    return { email: adminEmail, password: adminPassword };
+    return { email: ADMIN_EMAIL, password: ADMIN_PASSWORD };
   }
-  
-  // Create admin user
+
   const passwordSalt = generateSalt();
-  const passwordHash = await hashPassword(adminPassword, passwordSalt);
+  const passwordHash = await hashPassword(ADMIN_PASSWORD, passwordSalt);
   const adminUser: StoredLocalUser = {
-    id: `local_admin_${crypto.randomUUID()}`,
-    email: adminEmail,
+    id: `local_admin_${globalThis.crypto.randomUUID()}`,
+    email: ADMIN_EMAIL,
     role: 'admin',
-    approved: true, // Admins are auto-approved
+    approved: true,
     createdAt: new Date().toISOString(),
     passwordHash,
     passwordSalt,
   };
-  
-  // Add to users and save
-  users.push(adminUser);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  
+
+  const nextUsers: StoredLocalUser[] = [...users, adminUser];
+  persistStoredLocalUsers(nextUsers);
+
   console.log('Admin account created successfully');
-  return { email: adminEmail, password: adminPassword };
+  return { email: ADMIN_EMAIL, password: ADMIN_PASSWORD };
 }
 
 // Auto-seed admin in development
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  seedAdminAccount().then(creds => {
+if (
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'localhost' &&
+  import.meta.env.DEV
+) {
+  seedAdminAccount().then((creds) => {
     if (creds) {
       console.log('%c🔐 Admin Account Created', 'color: #22c55e; font-weight: bold;');
       console.log('%cEmail: ' + creds.email, 'color: #3b82f6;');
