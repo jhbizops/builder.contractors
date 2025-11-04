@@ -15,6 +15,7 @@ import {
   loginLocalUser,
   logoutLocalUser,
   registerLocalUser,
+  type RegisterLocalUserOptions,
 } from '@/lib/localAuth';
 
 type AuthenticatedUser = Pick<User, 'id' | 'email'>;
@@ -24,7 +25,12 @@ interface AuthContextType {
   userData: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, role: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    role: string,
+    options?: RegisterLocalUserOptions,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -75,7 +81,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string, role: string) => {
+  const register = useCallback(async (
+    email: string,
+    password: string,
+    role: string,
+    options?: RegisterLocalUserOptions,
+  ) => {
     if (!isLocalAuthEnabled) {
       toast({
         title: 'Authentication unavailable',
@@ -86,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const user = await registerLocalUser(email, password, role as User['role']);
+      const user = await registerLocalUser(email, password, role as User['role'], options);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
       toast({

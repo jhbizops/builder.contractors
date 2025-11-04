@@ -15,6 +15,9 @@ const storedLocalUserSchema = z.object({
   role: z.enum(['sales', 'builder', 'admin', 'dual']),
   country: z.string().optional(),
   region: z.string().optional(),
+  locale: z.string().optional(),
+  currency: z.string().optional(),
+  languages: z.array(z.string()).optional(),
   approved: z.boolean(),
   createdAt: z.string(),
   passwordHash: z.string(),
@@ -150,15 +153,26 @@ function sanitiseUser(user: StoredLocalUser): User {
     role: user.role,
     country: user.country,
     region: user.region,
+    locale: user.locale,
+    currency: user.currency,
+    languages: user.languages ?? [],
     approved: user.approved,
     createdAt: new Date(user.createdAt),
   };
+}
+
+export interface RegisterLocalUserOptions {
+  country?: string;
+  locale?: string;
+  currency?: string;
+  languages?: string[];
 }
 
 export async function registerLocalUser(
   email: string,
   password: string,
   role: User['role'],
+  options: RegisterLocalUserOptions = {},
 ): Promise<User> {
   const users = readUsers();
   const trimmedEmail = email.trim();
@@ -176,6 +190,10 @@ export async function registerLocalUser(
     id,
     email: trimmedEmail,
     role,
+    country: options.country,
+    locale: options.locale,
+    currency: options.currency,
+    languages: options.languages ?? [],
     approved: false,
     createdAt: new Date().toISOString(),
     passwordHash,
