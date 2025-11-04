@@ -23,6 +23,7 @@ export const supportedLocales = [
   'en-NZ',
   'es-ES',
   'es-MX',
+  'es-PA',
   'fr-FR',
   'fr-CA',
   'de-DE',
@@ -33,8 +34,12 @@ export const supportedLocales = [
   'zh-CN',
   'zh-HK',
   'zh-TW',
+  'ar-EG',
+  'ar-KW',
+  'ar-OM',
   'ar-AE',
   'ar-SA',
+  'ar-QA',
   'it-IT',
   'nl-NL',
   'pl-PL',
@@ -42,6 +47,8 @@ export const supportedLocales = [
   'ko-KR',
   'th-TH',
   'id-ID',
+  'sl-SI',
+  'tr-TR',
 ];
 
 const countryCurrencyMap: Record<string, string> = {
@@ -143,6 +150,49 @@ export const resolveMeasurementForLocale = (locale: string): MeasurementSystem =
     return region === 'US' ? 'us' : 'imperial';
   }
   return 'metric';
+};
+
+const fallbackTimeZone = 'UTC';
+
+export const createLocaleFromCountry = (
+  countryCode: string,
+  languages: readonly string[],
+): string => {
+  if (languages.length === 0) {
+    return `en-${countryCode}`;
+  }
+
+  const primary = languages[0]!;
+  if (primary.includes('-')) {
+    return primary;
+  }
+
+  return `${primary}-${countryCode}`;
+};
+
+export interface GeoSettingsInput {
+  readonly code: string;
+  readonly languages: readonly string[];
+  readonly currency: string;
+}
+
+export const deriveSettingsFromGeo = (
+  geo: GeoSettingsInput,
+  fallback: GlobalizationSettings = deriveDefaultSettings(),
+): GlobalizationSettings => {
+  const locale = createLocaleFromCountry(geo.code, geo.languages);
+  const normalizedLocale = supportedLocales.includes(locale)
+    ? locale
+    : fallback.locale;
+
+  const currency = geo.currency || resolveCurrencyForLocale(normalizedLocale);
+
+  return globalizationSettingsSchema.parse({
+    locale: normalizedLocale,
+    currency,
+    timeZone: fallback.timeZone ?? fallbackTimeZone,
+    measurementSystem: resolveMeasurementForLocale(normalizedLocale),
+  });
 };
 
 export const deriveDefaultSettings = (): GlobalizationSettings => {

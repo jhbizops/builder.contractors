@@ -3,10 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Building2, Hammer, Share2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { CountrySelector } from '@/components/CountrySelector';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { getTranslationsForLocale } from '@/lib/translations';
 
 export default function Home() {
+  const { settings } = useGlobalization();
+  const localized = getTranslationsForLocale(settings.locale);
+  const isRtl = settings.locale.startsWith('ar');
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,6 +26,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
+              <CountrySelector className="w-48" />
               <Button variant="ghost" asChild data-testid="button-login">
                 <Link href="/login">Sign In</Link>
               </Button>
@@ -33,23 +41,31 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
-          <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6">
-              <Globe className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
-            </div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight" data-testid="text-hero-title">
-              Exchange Leads.<br />
-              <span className="text-primary">Grow Together.</span>
-            </h1>
-            <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto" data-testid="text-hero-subtitle">
-              Join the global network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="text-lg px-8 py-6" asChild data-testid="button-hero-signup">
-                <Link href="/register">
-                  Start Exchanging Projects
-                  <ArrowRight className="ml-2 h-5 w-5" />
+            <div className="text-center">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6">
+                <Globe className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
+              </div>
+              <h1
+                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight"
+                data-testid="text-hero-title"
+              >
+                {localized.welcome}
+              </h1>
+              <p
+                className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto"
+                data-testid="text-hero-subtitle"
+              >
+                {localized.shareAdvice}
+              </p>
+              <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
+                {localized.connectContractors}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" className="text-lg px-8 py-6" asChild data-testid="button-hero-signup">
+                  <Link href="/register">
+                    Start Exchanging Projects
+                    <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild data-testid="button-hero-login">

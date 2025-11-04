@@ -13,6 +13,15 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const countries = pgTable("countries", {
+  code: text("code").primaryKey(),
+  name: text("name").notNull(),
+  langs: jsonb("langs").$type<string[]>().notNull(),
+  currency: text("currency").notNull(),
+  localize: boolean("localize").default(false).notNull(),
+  proficiency: text("proficiency").notNull(),
+});
+
 // Leads table
 export const leads = pgTable("leads", {
   id: text("id").primaryKey(),
@@ -74,6 +83,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+export const insertCountrySchema = createInsertSchema(countries);
+
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
@@ -111,3 +122,5 @@ export type CustomPricing = typeof customPricing.$inferSelect;
 export type InsertCustomPricing = z.infer<typeof insertCustomPricingSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type Country = typeof countries.$inferSelect;
+export type InsertCountry = z.infer<typeof insertCountrySchema>;

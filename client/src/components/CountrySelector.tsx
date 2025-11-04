@@ -1,57 +1,62 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { countriesByRegion, getRegionForCountry, type Country, type Region } from "@shared/countries";
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
+import type { GeoCountry } from '@/types/geo';
+import { codeToFlagEmoji, fetchCountries } from '@/lib/countries';
 
-interface CountrySelectorProps {
-  value?: string;
-  onValueChange: (value: string, region: string) => void;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-  required?: boolean;
+const queryKey = ['/api/countries'] as const;
+
+export interface CountrySelectorProps {
+  readonly className?: string;
 }
 
-export function CountrySelector({
-  value,
-  onValueChange,
-  placeholder = "Select a country",
-  className,
-  disabled,
-  required,
-}: CountrySelectorProps) {
-  const handleValueChange = (country: string) => {
-    const region = getRegionForCountry(country as Country) || "";
-    onValueChange(country, region);
-  };
+export const CountrySelector: React.FC<CountrySelectorProps> = ({ className }) => {
+  const { geo, setGeoCountry } = useGlobalization();
+  const { data, isPending } = useQuery<GeoCountry[]>({
+    queryKey,
+    queryFn: fetchCountries,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const options = useMemo(() => data ?? [], [data]);
+  const selected = geo.country?.code ?? '';
 
   return (
-    <Select value={value} onValueChange={handleValueChange} disabled={disabled} required={required}>
-      <SelectTrigger className={className} data-testid="select-country">
-        <SelectValue placeholder={placeholder} />
+    <Select
+      value={selected}
+      onValueChange={(value) => {
+        const match = options.find((option) => option.code === value);
+        if (match) {
+          setGeoCountry(match);
+        }
+      }}
+      disabled={isPending || options.length === 0}
+      aria-label="Select your country"
+    >
+      <SelectTrigger className={className ?? 'w-[240px]'} aria-label="Select your country">
+        <SelectValue placeholder={isPending ? 'Loading…' : 'Country'} />
       </SelectTrigger>
-      <SelectContent className="max-h-[300px]">
-        {Object.entries(countriesByRegion).map(([region, countries]) => (
-          <SelectGroup key={region}>
-            <SelectLabel>{region}</SelectLabel>
-            {countries.map((country) => (
-              <SelectItem 
-                key={country} 
-                value={country}
-                data-testid={`option-country-${country.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                {country}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+      <SelectContent className="max-h-72">
+        {options.map((country) => (
+          <SelectItem key={country.code} value={country.code} className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="text-lg">
+                {codeToFlagEmoji(country.code)}
+              </span>
+              <span className="truncate">{country.name}</span>
+              {country.localize ? (
+                <Badge variant="secondary" className="ml-2">
+                  Localized
+                </Badge>
+              ) : null}
+            </div>
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>
   );
-}
+};
+
+export default CountrySelector;

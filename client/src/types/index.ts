@@ -4,6 +4,9 @@ export interface User {
   role: 'sales' | 'builder' | 'admin' | 'dual';
   country?: string;
   region?: string;
+  locale?: string;
+  currency?: string;
+  languages?: string[];
   approved: boolean;
   createdAt: Date;
 }
