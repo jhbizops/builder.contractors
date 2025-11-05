@@ -17,6 +17,7 @@ import {
   registerLocalUser,
   type RegisterLocalUserOptions,
 } from '@/lib/localAuth';
+import { syncAllUsersToCollection, syncUserToCollection } from '@/lib/userCollectionSync';
 
 type AuthenticatedUser = Pick<User, 'id' | 'email'>;
 
@@ -65,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const user = await loginLocalUser(email, password);
+      await syncUserToCollection(user);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
       toast({
@@ -98,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const user = await registerLocalUser(email, password, role as User['role'], options);
+      await syncUserToCollection(user);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
       toast({
@@ -134,20 +137,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (isLocalAuthEnabled) {
-      const sessionUser = loadLocalSession();
-      if (sessionUser) {
-        setCurrentUser({ id: sessionUser.id, email: sessionUser.email });
-        setUserData(sessionUser);
-      } else {
-        clearLocalAuthStore();
-      }
+    if (!isLocalAuthEnabled) {
       setLoading(false);
       return () => undefined;
     }
 
-    setLoading(false);
-    return () => undefined;
+    let active = true;
+
+    (async () => {
+      try {
+        await syncAllUsersToCollection();
+      } catch (error) {
+        console.error('Failed to synchronise users collection', error);
+      }
+
+      if (!active) {
+        return;
+      }
+
+      const sessionUser = loadLocalSession();
+      if (sessionUser) {
+        setCurrentUser({ id: sessionUser.id, email: sessionUser.email });
+        setUserData(sessionUser);
+        try {
+          await syncUserToCollection(sessionUser);
+        } catch (error) {
+          console.error('Failed to sync session user to collection', error);
+        }
+      } else {
+        clearLocalAuthStore();
+      }
+
+      if (active) {
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const value = useMemo<AuthContextType>(

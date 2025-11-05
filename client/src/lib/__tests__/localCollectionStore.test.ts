@@ -105,4 +105,19 @@ describe('CollectionStore', () => {
     expect(items).toHaveLength(1);
     expect(items[0].id).toBe('external');
   });
+
+  it('supports silent mutations without triggering toast notifications', async () => {
+    const store = getCollectionStore<TestItem>('test-items');
+
+    const created = await store.add(
+      { name: 'Silent add', createdAt: new Date('2024-07-07T00:00:00Z') },
+      { silent: true },
+    );
+
+    await store.update(created.id, { name: 'Still silent' }, { silent: true });
+    await store.remove(created.id, { silent: true });
+
+    const toastModule = await import('@/hooks/use-toast');
+    expect(vi.mocked(toastModule.toast)).not.toHaveBeenCalled();
+  });
 });

@@ -146,7 +146,7 @@ function writeSession(session: StoredSession | null) {
   localStorage.removeItem(SESSION_CORRUPT_KEY);
 }
 
-function sanitiseUser(user: StoredLocalUser): User {
+export function sanitiseStoredLocalUser(user: StoredLocalUser): User {
   return {
     id: user.id,
     email: user.email,
@@ -204,7 +204,7 @@ export async function registerLocalUser(
   writeUsers(nextUsers);
   writeSession({ userId: storedUser.id });
 
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export async function loginLocalUser(
@@ -228,7 +228,7 @@ export async function loginLocalUser(
   }
 
   writeSession({ userId: storedUser.id });
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export function logoutLocalUser() {
@@ -249,7 +249,7 @@ export function loadLocalSession(): User | null {
     return null;
   }
 
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export function clearLocalAuthStore() {
@@ -270,4 +270,24 @@ export function getStoredLocalUsers(): StoredLocalUser[] {
 
 export function persistStoredLocalUsers(users: StoredLocalUser[]) {
   writeUsers(users);
+}
+
+export function getAllLocalUsers(): User[] {
+  return readUsers().map((user) => sanitiseStoredLocalUser(user));
+}
+
+export function updateLocalUserApproval(userId: string, approved: boolean): User | null {
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === userId);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedUser: StoredLocalUser = { ...users[index], approved };
+  const nextUsers = [...users];
+  nextUsers[index] = updatedUser;
+  writeUsers(nextUsers);
+
+  return sanitiseStoredLocalUser(updatedUser);
 }

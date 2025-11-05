@@ -4,6 +4,10 @@ type Listener = () => void;
 
 type CollectionItem = { id: string };
 
+export interface CollectionMutationOptions {
+  silent?: boolean;
+}
+
 const STORAGE_PREFIX = 'bc_collection';
 const STORAGE_VERSION = 'v1';
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
@@ -156,15 +160,24 @@ export class CollectionStore<T extends CollectionItem> {
     }
   }
 
-  async add(item: Omit<T, 'id'> & Partial<Pick<T, 'id'>>): Promise<T> {
+  async add(
+    item: Omit<T, 'id'> & Partial<Pick<T, 'id'>>,
+    options: CollectionMutationOptions = {},
+  ): Promise<T> {
     const id = item.id ?? `local_${crypto.randomUUID()}`;
     const newItem = { ...item, id } as T;
     this.setData([...this.data, newItem]);
-    toast({ title: 'Success', description: 'Item added successfully' });
+    if (!options.silent) {
+      toast({ title: 'Success', description: 'Item added successfully' });
+    }
     return newItem;
   }
 
-  async update(id: string, updates: Partial<T>): Promise<T> {
+  async update(
+    id: string,
+    updates: Partial<T>,
+    options: CollectionMutationOptions = {},
+  ): Promise<T> {
     const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) {
       throw new Error(`Item with id ${id} not found in ${this.collection}`);
@@ -174,18 +187,22 @@ export class CollectionStore<T extends CollectionItem> {
     const newData = [...this.data];
     newData[index] = updatedItem;
     this.setData(newData);
-    toast({ title: 'Success', description: 'Item updated successfully' });
+    if (!options.silent) {
+      toast({ title: 'Success', description: 'Item updated successfully' });
+    }
     return updatedItem;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, options: CollectionMutationOptions = {}): Promise<void> {
     const exists = this.data.some((item) => item.id === id);
     if (!exists) {
       throw new Error(`Item with id ${id} not found in ${this.collection}`);
     }
 
     this.setData(this.data.filter((item) => item.id !== id));
-    toast({ title: 'Success', description: 'Item deleted successfully' });
+    if (!options.silent) {
+      toast({ title: 'Success', description: 'Item deleted successfully' });
+    }
   }
 
   async clear(): Promise<void> {
