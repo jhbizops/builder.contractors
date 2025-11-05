@@ -3,17 +3,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
 import { User } from '@/types';
-import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
+import { useCollectionQuery } from '@/hooks/useCollection';
+import { toast } from '@/hooks/use-toast';
+import { updateUserApprovalAndSync } from '@/lib/userCollectionSync';
 
 export const UserApprovalPanel: React.FC = () => {
   const { data: pendingUsers, loading } = useCollectionQuery<User>('users', (user) => !user.approved);
-  const { update } = useCollection<User>('users');
 
   const handleApproval = async (userId: string, approved: boolean) => {
     try {
-      await update(userId, { approved });
+      await updateUserApprovalAndSync(userId, approved);
+      toast({
+        title: 'User updated',
+        description: approved
+          ? 'The user has been approved successfully.'
+          : 'The user has been marked as pending approval.',
+      });
     } catch (error) {
       console.error('Error updating user approval:', error);
+      const description =
+        error instanceof Error ? error.message : 'Failed to update user approval status.';
+      toast({
+        title: 'Error',
+        description,
+        variant: 'destructive',
+      });
     }
   };
 
