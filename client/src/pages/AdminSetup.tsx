@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLogo } from '@/components/BrandLogo';
 import { seedAdminAccount } from '@/lib/seedAdmin';
-import { loginLocalUser, readUsers, isLocalAuthAvailable } from '@/lib/localAuth';
+import { loginLocalUser, getStoredLocalUsers, isLocalAuthAvailable } from '@/lib/localAuth';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
@@ -30,8 +30,8 @@ export default function AdminSetup() {
       return;
     }
     
-    const users = readUsers();
-    const hasAdmin = users.some(u => u.email.toLowerCase() === 'admin@builder.contractors');
+    const users = getStoredLocalUsers();
+    const hasAdmin = users.some((u: any) => u.email.toLowerCase() === 'admin@builder.contractors');
     setAdminExists(hasAdmin);
     
     if (hasAdmin) {
