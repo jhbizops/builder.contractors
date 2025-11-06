@@ -103,18 +103,26 @@ export async function seedAdminAccount() {
   return { email: ADMIN_EMAIL, password: ADMIN_PASSWORD };
 }
 
-// Auto-seed admin in development
-if (
-  typeof window !== 'undefined' &&
-  window.location.hostname === 'localhost' &&
-  import.meta.env.DEV
-) {
-  seedAdminAccount().then((creds) => {
-    if (creds) {
-      console.log('%c🔐 Admin Account Ready', 'color: #22c55e; font-weight: bold;');
-      console.log('%cEmail: ' + creds.email, 'color: #3b82f6;');
-      console.log('%cPassword: ' + creds.password, 'color: #3b82f6;');
-      console.log('%c⚠️ Change this password in production!', 'color: #f59e0b; font-weight: bold;');
-    }
-  });
+// Auto-seed admin account on first load
+if (typeof window !== 'undefined') {
+  // Check if we should seed (no users exist or no admin exists)
+  const shouldSeedAdmin = () => {
+    const users = readUsers();
+    const adminExists = users.some(
+      user => user.email.toLowerCase() === ADMIN_EMAIL_NORMALISED && user.role === 'admin'
+    );
+    return users.length === 0 || !adminExists;
+  };
+  
+  // Seed admin if needed
+  if (shouldSeedAdmin()) {
+    seedAdminAccount().then((creds) => {
+      if (creds) {
+        console.log('%c🔐 Admin Account Ready', 'color: #22c55e; font-weight: bold;');
+        console.log('%cEmail: ' + creds.email, 'color: #3b82f6;');
+        console.log('%cPassword: ' + creds.password, 'color: #3b82f6;');
+        console.log('%c⚠️ Change this password in production!', 'color: #f59e0b; font-weight: bold;');
+      }
+    });
+  }
 }

@@ -55,7 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const login = useCallback(async (email: string, password: string) => {
+    console.log('AuthContext login called for:', email);
     if (!isLocalAuthEnabled) {
+      console.error('Local auth not enabled');
       toast({
         title: 'Authentication unavailable',
         description: 'Authentication services are not configured.',
@@ -65,7 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('Attempting loginLocalUser...');
       const user = await loginLocalUser(email, password);
+      console.log('Login successful, user:', user);
       await syncUserToCollection(user);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
@@ -74,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: 'Successfully signed in',
       });
     } catch (error: any) {
+      console.error('Login error:', error.message);
       toast({
         title: 'Error',
         description: error.message,
