@@ -15,10 +15,10 @@ export default function AdminSetup() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  // If already logged in as admin, redirect to admin dashboard
-  if (currentUser?.email === 'admin@builder.contractors') {
-    return <Redirect to="/dashboard/admin" />;
-  }
+  // Comment out auto-redirect to allow manual control
+  // if (currentUser?.email === 'admin@builder.contractors') {
+  //   return <Redirect to="/dashboard/admin" />;
+  // }
 
   const checkAdminExists = () => {
     if (!isLocalAuthAvailable) {
@@ -99,6 +99,16 @@ export default function AdminSetup() {
     }
   };
 
+  const handleClearSession = () => {
+    localStorage.removeItem('bc_local_auth_session_v1');
+    localStorage.removeItem('bc_local_auth_current_user');
+    toast({
+      title: 'Session Cleared',
+      description: 'You have been logged out.',
+    });
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md">
@@ -143,6 +153,28 @@ export default function AdminSetup() {
             >
               {isLoggingIn ? 'Logging in...' : 'Quick Login as Admin'}
             </Button>
+
+            <div className="pt-2 border-t">
+              <Button 
+                onClick={handleClearSession}
+                className="w-full"
+                variant="destructive"
+              >
+                Clear Session (Logout)
+              </Button>
+            </div>
+
+            {currentUser && (
+              <div className="pt-2">
+                <Button 
+                  onClick={() => window.location.href = '/dashboard/admin'}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  Go to Admin Dashboard
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="text-center text-sm text-slate-600">
