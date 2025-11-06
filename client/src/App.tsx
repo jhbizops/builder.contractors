@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import SalesDashboard from "@/pages/SalesDashboard";
 import BuilderDashboard from "@/pages/BuilderDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminSetup from "@/pages/AdminSetup";
 import ClearSession from "@/pages/ClearSession";
 import NotFound from "@/pages/not-found";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/logout" component={ClearSession} />
+      <Route path="/admin-setup" component={AdminSetup} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/sales" component={SalesDashboard} />
       <Route path="/dashboard/builder" component={BuilderDashboard} />
