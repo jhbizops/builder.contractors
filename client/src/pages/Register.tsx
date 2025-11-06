@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Redirect, Link } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,19 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { codeToFlagEmoji, fetchCountries } from '@/lib/countries';
+import type { GeoCountry } from '@/types/geo';
+import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { createLocaleFromCountry } from '@/lib/globalization';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -19,6 +32,7 @@ const registerSchema = z.object({
   role: z.enum(['sales', 'builder', 'dual'], {
     required_error: 'Please select a role',
   }),
+  country: z.string().length(2, 'Please select your country'),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: 'You must agree to the Terms of Service and Privacy Policy',
   }),
@@ -31,6 +45,12 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const { currentUser, register: registerUser } = useAuth();
+  const { geo, setGeoCountry } = useGlobalization();
+  const { data: countriesData, isPending: loadingCountries } = useQuery<GeoCountry[]>({
+    queryKey: ['/api/countries'],
+    queryFn: fetchCountries,
+    staleTime: 1000 * 60 * 60,
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -43,11 +63,21 @@ export default function Register() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      country: '',
       agreeToTerms: false,
     },
   });
 
   const watchedRole = watch('role');
+  const watchedCountry = watch('country');
+
+  const countries = useMemo(() => countriesData ?? [], [countriesData]);
+
+  useEffect(() => {
+    if (geo.country && !watchedCountry) {
+      setValue('country', geo.country.code);
+    }
+  }, [geo.country, setValue, watchedCountry]);
 
   if (currentUser) {
     return <Redirect to="/dashboard" />;
@@ -56,7 +86,21 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
-      await registerUser(data.email, data.password, data.role);
+      const matchedCountry =
+        countries.find((country) => country.code === data.country) ?? geo.country ?? null;
+
+      if (matchedCountry) {
+        setGeoCountry(matchedCountry);
+      }
+
+      await registerUser(data.email, data.password, data.role, matchedCountry
+        ? {
+            country: matchedCountry.code,
+            locale: createLocaleFromCountry(matchedCountry.code, matchedCountry.languages),
+            currency: matchedCountry.currency,
+            languages: [...matchedCountry.languages],
+          }
+        : undefined);
     } catch (error) {
       // Error is handled in the context
     } finally {
@@ -140,6 +184,49 @@ export default function Register() {
                 <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>
               )}
             </div>
+
+            <Controller
+              control={control}
+              name="country"
+              render={({ field }) => (
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      const match = countries.find((country) => country.code === value);
+                      if (match) {
+                        setGeoCountry(match);
+                      }
+                    }}
+                    disabled={loadingCountries}
+                  >
+                    <SelectTrigger id="country" className="mt-1">
+                      <SelectValue
+                        placeholder={loadingCountries ? 'Loading countries…' : 'Select your country'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {countries.map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          <div className="flex items-center gap-2">
+                            <span aria-hidden="true">{codeToFlagEmoji(country.code)}</span>
+                            <span className="truncate">{country.name}</span>
+                            {country.localize ? (
+                              <Badge variant="secondary" className="ml-2">Localized</Badge>
+                            ) : null}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.country && (
+                    <p className="text-sm text-red-500 mt-1">{errors.country.message}</p>
+                  )}
+                </div>
+              )}
+            />
 
             <Controller
               control={control}

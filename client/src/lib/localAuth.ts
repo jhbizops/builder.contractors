@@ -1,104 +1,184 @@
+import { z } from 'zod';
 import { User } from '@/types';
+import { generateSalt, hashPassword } from './authCrypto';
 
-const USERS_KEY = 'bc_local_auth_users_v1';
+export const USERS_KEY = 'bc_local_auth_users_v1';
+export const USERS_BACKUP_KEY = `${USERS_KEY}__backup`;
+const USERS_CORRUPT_KEY = `${USERS_KEY}__corrupted`;
 const SESSION_KEY = 'bc_local_auth_session_v1';
+const SESSION_BACKUP_KEY = `${SESSION_KEY}__backup`;
+const SESSION_CORRUPT_KEY = `${SESSION_KEY}__corrupted`;
 
-type StoredLocalUser = Omit<User, 'createdAt'> & {
-  createdAt: string;
-  passwordHash: string;
-  passwordSalt: string;
-};
+const storedLocalUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  role: z.enum(['sales', 'builder', 'admin', 'dual']),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  locale: z.string().optional(),
+  currency: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+  approved: z.boolean(),
+  createdAt: z.string(),
+  passwordHash: z.string(),
+  passwordSalt: z.string(),
+});
 
-type StoredSession = {
-  userId: string;
-};
+const storedLocalUsersSchema = z.array(storedLocalUserSchema);
 
-const encoder = new TextEncoder();
+const storedSessionSchema = z.object({
+  userId: z.string(),
+});
 
-function bufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
+export type StoredLocalUser = z.infer<typeof storedLocalUserSchema>;
 
-function generateSalt(length = 16): string {
-  const array = new Uint8Array(length);
-  globalThis.crypto.getRandomValues(array);
-  return bufferToBase64(array.buffer);
-}
+type StoredSession = z.infer<typeof storedSessionSchema>;
 
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const data = encoder.encode(`${salt}:${password}`);
-  const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
-  return bufferToBase64(hashBuffer);
-}
-
-function readUsers(): StoredLocalUser[] {
-  const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) {
-    return [];
+function parseValue<T>(raw: string | null, schema: z.ZodType<T>): T | null {
+  if (raw === null) {
+    return null;
   }
 
   try {
-    return JSON.parse(raw) as StoredLocalUser[];
+    const candidate = JSON.parse(raw);
+    const result = schema.safeParse(candidate);
+    return result.success ? result.data : null;
   } catch (error) {
-    console.warn('Failed to parse stored users; resetting store', error);
-    localStorage.removeItem(USERS_KEY);
-    return [];
+    console.warn('Failed to parse persisted local auth value', error);
+    return null;
   }
 }
 
+function cloneUsers(users: StoredLocalUser[]): StoredLocalUser[] {
+  return users.map((user) => ({ ...user }));
+}
+
+function readUsers(): StoredLocalUser[] {
+  const primaryRaw = localStorage.getItem(USERS_KEY);
+  const primaryParsed = parseValue(primaryRaw, storedLocalUsersSchema);
+
+  if (primaryParsed) {
+    return cloneUsers(primaryParsed);
+  }
+
+  if (primaryRaw !== null) {
+    localStorage.setItem(USERS_CORRUPT_KEY, primaryRaw);
+    console.warn(
+      'Primary local auth store is corrupt; attempting to restore from backup.',
+    );
+  }
+
+  const backupRaw = localStorage.getItem(USERS_BACKUP_KEY);
+  const backupParsed = parseValue(backupRaw, storedLocalUsersSchema);
+
+  if (backupParsed) {
+    if (backupRaw !== null) {
+      localStorage.setItem(USERS_KEY, backupRaw);
+      localStorage.setItem(USERS_BACKUP_KEY, backupRaw);
+    }
+
+    return cloneUsers(backupParsed);
+  }
+
+  if (backupRaw !== null) {
+    localStorage.setItem(USERS_CORRUPT_KEY, backupRaw);
+    console.error(
+      'Failed to restore local auth users from backup; starting with an empty set.',
+    );
+  }
+
+  return [];
+}
+
 function writeUsers(users: StoredLocalUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  const payload = JSON.stringify(cloneUsers(users));
+  localStorage.setItem(USERS_KEY, payload);
+  localStorage.setItem(USERS_BACKUP_KEY, payload);
+  localStorage.removeItem(USERS_CORRUPT_KEY);
+}
+
+function readSession(): StoredSession | null {
+  const primaryRaw = localStorage.getItem(SESSION_KEY);
+  const primaryParsed = parseValue(primaryRaw, storedSessionSchema);
+
+  if (primaryParsed) {
+    return { ...primaryParsed };
+  }
+
+  if (primaryRaw !== null) {
+    localStorage.setItem(SESSION_CORRUPT_KEY, primaryRaw);
+    console.warn(
+      'Primary local auth session is corrupt; attempting to restore from backup.',
+    );
+  }
+
+  const backupRaw = localStorage.getItem(SESSION_BACKUP_KEY);
+  const backupParsed = parseValue(backupRaw, storedSessionSchema);
+
+  if (backupParsed) {
+    if (backupRaw !== null) {
+      localStorage.setItem(SESSION_KEY, backupRaw);
+      localStorage.setItem(SESSION_BACKUP_KEY, backupRaw);
+    }
+
+    return { ...backupParsed };
+  }
+
+  if (backupRaw !== null) {
+    localStorage.setItem(SESSION_CORRUPT_KEY, backupRaw);
+    console.error('Failed to restore local auth session from backup; clearing.');
+  }
+
+  return null;
 }
 
 function writeSession(session: StoredSession | null) {
   if (!session) {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_BACKUP_KEY);
+    localStorage.removeItem(SESSION_CORRUPT_KEY);
     return;
   }
 
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  const payload = JSON.stringify({ ...session });
+  localStorage.setItem(SESSION_KEY, payload);
+  localStorage.setItem(SESSION_BACKUP_KEY, payload);
+  localStorage.removeItem(SESSION_CORRUPT_KEY);
 }
 
-function readSession(): StoredSession | null {
-  const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as StoredSession;
-  } catch (error) {
-    console.warn('Failed to parse stored session; clearing session', error);
-    localStorage.removeItem(SESSION_KEY);
-    return null;
-  }
-}
-
-function sanitiseUser(user: StoredLocalUser): User {
+export function sanitiseStoredLocalUser(user: StoredLocalUser): User {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     country: user.country,
     region: user.region,
+    locale: user.locale,
+    currency: user.currency,
+    languages: user.languages ?? [],
     approved: user.approved,
     createdAt: new Date(user.createdAt),
   };
+}
+
+export interface RegisterLocalUserOptions {
+  country?: string;
+  locale?: string;
+  currency?: string;
+  languages?: string[];
 }
 
 export async function registerLocalUser(
   email: string,
   password: string,
   role: User['role'],
+  options: RegisterLocalUserOptions = {},
 ): Promise<User> {
   const users = readUsers();
+  const trimmedEmail = email.trim();
+  const normalizedEmail = trimmedEmail.toLowerCase();
 
-  if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
+  if (users.some((user) => user.email.toLowerCase() === normalizedEmail)) {
     throw new Error('An account with this email already exists.');
   }
 
@@ -108,19 +188,23 @@ export async function registerLocalUser(
 
   const storedUser: StoredLocalUser = {
     id,
-    email,
+    email: trimmedEmail,
     role,
+    country: options.country,
+    locale: options.locale,
+    currency: options.currency,
+    languages: options.languages ?? [],
     approved: false,
     createdAt: new Date().toISOString(),
     passwordHash,
     passwordSalt,
   };
 
-  users.push(storedUser);
-  writeUsers(users);
+  const nextUsers = [...users, storedUser];
+  writeUsers(nextUsers);
   writeSession({ userId: storedUser.id });
 
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export async function loginLocalUser(
@@ -128,8 +212,9 @@ export async function loginLocalUser(
   password: string,
 ): Promise<User> {
   const users = readUsers();
+  const normalizedEmail = email.trim().toLowerCase();
   const storedUser = users.find(
-    (user) => user.email.toLowerCase() === email.toLowerCase(),
+    (user) => user.email.toLowerCase() === normalizedEmail,
   );
 
   if (!storedUser) {
@@ -143,7 +228,7 @@ export async function loginLocalUser(
   }
 
   writeSession({ userId: storedUser.id });
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export function logoutLocalUser() {
@@ -164,13 +249,45 @@ export function loadLocalSession(): User | null {
     return null;
   }
 
-  return sanitiseUser(storedUser);
+  return sanitiseStoredLocalUser(storedUser);
 }
 
 export function clearLocalAuthStore() {
   localStorage.removeItem(USERS_KEY);
+  localStorage.removeItem(USERS_BACKUP_KEY);
+  localStorage.removeItem(USERS_CORRUPT_KEY);
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_BACKUP_KEY);
+  localStorage.removeItem(SESSION_CORRUPT_KEY);
 }
 
 export const isLocalAuthAvailable =
   typeof window !== 'undefined' && Boolean(globalThis.crypto?.subtle);
+
+export function getStoredLocalUsers(): StoredLocalUser[] {
+  return readUsers();
+}
+
+export function persistStoredLocalUsers(users: StoredLocalUser[]) {
+  writeUsers(users);
+}
+
+export function getAllLocalUsers(): User[] {
+  return readUsers().map((user) => sanitiseStoredLocalUser(user));
+}
+
+export function updateLocalUserApproval(userId: string, approved: boolean): User | null {
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === userId);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedUser: StoredLocalUser = { ...users[index], approved };
+  const nextUsers = [...users];
+  nextUsers[index] = updatedUser;
+  writeUsers(nextUsers);
+
+  return sanitiseStoredLocalUser(updatedUser);
+}

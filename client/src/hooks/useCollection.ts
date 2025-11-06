@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { CollectionStore, getCollectionStore } from '@/lib/localCollectionStore';
+import {
+  CollectionMutationOptions,
+  CollectionStore,
+  getCollectionStore,
+} from '@/lib/localCollectionStore';
 
 type CollectionItem = { id: string };
 
@@ -24,9 +28,12 @@ export function useCollection<T extends CollectionItem>(collection: string) {
   }, [store]);
 
   const add = useCallback(
-    async (item: Omit<T, 'id'> & Partial<Pick<T, 'id'>>) => {
+    async (
+      item: Omit<T, 'id'> & Partial<Pick<T, 'id'>>,
+      options?: CollectionMutationOptions,
+    ) => {
       try {
-        const result = await store.add(item);
+        const result = await store.add(item, options);
         setError(null);
         return result.id;
       } catch (err) {
@@ -39,9 +46,9 @@ export function useCollection<T extends CollectionItem>(collection: string) {
   );
 
   const update = useCallback(
-    async (id: string, updates: Partial<T>) => {
+    async (id: string, updates: Partial<T>, options?: CollectionMutationOptions) => {
       try {
-        await store.update(id, updates);
+        await store.update(id, updates, options);
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update item';
@@ -53,9 +60,9 @@ export function useCollection<T extends CollectionItem>(collection: string) {
   );
 
   const remove = useCallback(
-    async (id: string) => {
+    async (id: string, options?: CollectionMutationOptions) => {
       try {
-        await store.remove(id);
+        await store.remove(id, options);
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete item';

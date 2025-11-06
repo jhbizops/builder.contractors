@@ -6,6 +6,7 @@ import {
   createDateTimeFormatter,
   createNumberFormatter,
   deriveDefaultSettings,
+  deriveSettingsFromGeo,
   measurementSystems,
   normalizeSettings,
   priorityTimeZones,
@@ -13,6 +14,13 @@ import {
   supportedLocales,
   type DateLike,
 } from '@/lib/globalization';
+import type { GeoCountry, GeoSession } from '@/types/geo';
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
 
 interface GlobalizationContextValue {
   settings: GlobalizationSettings;
@@ -25,6 +33,8 @@ interface GlobalizationContextValue {
   formatCurrency: (value: number, options?: Intl.NumberFormatOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
   formatDateTime: (value: DateLike, options?: Intl.DateTimeFormatOptions) => string;
+  geo: GeoSession;
+  setGeoCountry: (country: GeoCountry | null) => void;
 }
 
 const GlobalizationContext = createContext<GlobalizationContextValue | undefined>(undefined);
@@ -44,6 +54,7 @@ const parseStoredSettings = (value: string | null) => {
 export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<GlobalizationSettings>(() => deriveDefaultSettings());
   const [hydrated, setHydrated] = useState(false);
+  const [geoSession, setGeoSession] = useState<GeoSession>({ country: null, localize: false });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -73,6 +84,66 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
     setSettings(deriveDefaultSettings());
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGeoSession = async () => {
+      try {
+        const response = await fetch('/api/session/geo', { credentials: 'include' });
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as GeoSession;
+        if (cancelled) {
+          return;
+        }
+
+        setGeoSession(data);
+
+        if (data.country) {
+          const geoInput: GeoCountry = data.country;
+          setSettings((previous) => deriveSettingsFromGeo({
+            code: geoInput.code,
+            languages: geoInput.languages,
+            currency: geoInput.currency,
+          }, previous));
+        }
+      } catch (error) {
+        // Swallow errors silently to avoid blocking rendering; geo is optional
+      }
+    };
+
+    void loadGeoSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!geoSession.country) {
+      return;
+    }
+
+    const storageKey = `bc_geo_dimension_${geoSession.country.code}`;
+    if (!window.sessionStorage.getItem(storageKey)) {
+      window.sessionStorage.setItem(storageKey, '1');
+      if (typeof window.gtag === 'function') {
+        window.gtag('set', {
+          country_dimension: geoSession.country.code,
+        });
+        window.gtag('event', 'country_launch', {
+          country: geoSession.country.code,
+        });
+      }
+    }
+  }, [geoSession.country]);
+
   const formatCurrency = useMemo(() => createCurrencyFormatter(settings), [settings]);
   const formatNumber = useMemo(() => createNumberFormatter(settings), [settings]);
   const formatDateTime = useMemo(() => createDateTimeFormatter(settings), [settings]);
@@ -89,14 +160,33 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
       formatCurrency,
       formatNumber,
       formatDateTime,
+      geo: geoSession,
+      setGeoCountry: (country: GeoCountry | null) => {
+        setGeoSession({ country, localize: country?.localize ?? false });
+        if (country) {
+          setSettings((previous) =>
+            deriveSettingsFromGeo(
+              {
+                code: country.code,
+                languages: country.languages,
+                currency: country.currency,
+              },
+              previous,
+            ),
+          );
+        }
+      },
     }),
     [
       formatCurrency,
       formatDateTime,
       formatNumber,
+      geoSession,
       resetSettings,
       settings,
       updateSettings,
+      setGeoSession,
+      setSettings,
     ],
   );
 

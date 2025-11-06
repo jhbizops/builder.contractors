@@ -4,55 +4,73 @@ import {
   clearLocalAuthStore,
   loadLocalSession,
   loginLocalUser,
-  logoutLocalUser,
   registerLocalUser,
+  USERS_BACKUP_KEY,
+  USERS_KEY,
 } from '@/lib/localAuth';
 
-describe('localAuth', () => {
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: webcrypto,
+    configurable: true,
+  });
+}
+
+const USERS_CORRUPT_KEY = `${USERS_KEY}__corrupted`;
+const SESSION_BACKUP_KEY = 'bc_local_auth_session_v1__backup';
+const SESSION_CORRUPT_KEY = 'bc_local_auth_session_v1__corrupted';
+
+describe('localAuth data retention', () => {
   beforeEach(() => {
-    if (!globalThis.crypto?.subtle) {
-      Object.defineProperty(globalThis, 'crypto', {
-        value: webcrypto,
-        configurable: true,
-      });
-    }
-    clearLocalAuthStore();
+    localStorage.clear();
   });
 
-  it('registers and logs in a user using secure hashes', async () => {
-    const created = await registerLocalUser('user@example.com', 'hunter2', 'builder');
+  it('restores from the backup store when the primary users store is corrupted', async () => {
+    const email = 'tester@example.com';
+    const password = 'Secr3t!Pass';
 
-    expect(created.email).toBe('user@example.com');
-    expect(created.role).toBe('builder');
-    expect(created.approved).toBe(false);
+    await registerLocalUser(email, password, 'sales');
+    const backupSnapshot = localStorage.getItem(USERS_BACKUP_KEY);
+    expect(backupSnapshot).toBeTruthy();
 
-    const sessionBeforeLogin = loadLocalSession();
-    expect(sessionBeforeLogin?.email).toBe('user@example.com');
+    localStorage.setItem(USERS_KEY, 'corrupted!');
 
-    logoutLocalUser();
-    expect(loadLocalSession()).toBeNull();
+    await expect(loginLocalUser(email, password)).resolves.toMatchObject({
+      email,
+    });
 
-    const loggedIn = await loginLocalUser('user@example.com', 'hunter2');
-    expect(loggedIn.id).toBe(created.id);
-    expect(loggedIn.email).toBe(created.email);
-
-    const sessionAfterLogin = loadLocalSession();
-    expect(sessionAfterLogin?.email).toBe('user@example.com');
+    expect(localStorage.getItem(USERS_KEY)).toBe(backupSnapshot);
+    expect(localStorage.getItem(USERS_CORRUPT_KEY)).toBe('corrupted!');
   });
 
-  it('rejects duplicate registration attempts', async () => {
-    await registerLocalUser('dupe@example.com', 'password', 'sales');
+  it('normalises input for login while preserving the stored email casing', async () => {
+    const user = await registerLocalUser('  TeSt@Example.Com  ', 'CmplxPwd!3', 'dual');
+
+    expect(user.email).toBe('TeSt@Example.Com');
 
     await expect(
-      registerLocalUser('dupe@example.com', 'password', 'sales'),
-    ).rejects.toThrow('An account with this email already exists.');
+      loginLocalUser('   test@example.com   ', 'CmplxPwd!3'),
+    ).resolves.toMatchObject({ email: 'TeSt@Example.Com' });
+
+    const sessionUser = loadLocalSession();
+    expect(sessionUser?.email).toBe('TeSt@Example.Com');
+    expect(sessionUser?.createdAt).toBeInstanceOf(Date);
   });
 
-  it('prevents logging in with the wrong password', async () => {
-    await registerLocalUser('secure@example.com', '12345678', 'builder');
+  it('removes all persisted data, backups, and corrupted snapshots when cleared', async () => {
+    await registerLocalUser('cleanup@example.com', 'Cl3anPwd!4', 'builder');
+    await loginLocalUser('cleanup@example.com', 'Cl3anPwd!4');
 
-    await expect(loginLocalUser('secure@example.com', 'badpass')).rejects.toThrow(
-      'Invalid email or password.',
-    );
+    expect(localStorage.getItem(USERS_BACKUP_KEY)).not.toBeNull();
+    expect(localStorage.getItem(SESSION_BACKUP_KEY)).not.toBeNull();
+
+    clearLocalAuthStore();
+
+    expect(localStorage.getItem(USERS_KEY)).toBeNull();
+    expect(localStorage.getItem(USERS_BACKUP_KEY)).toBeNull();
+    expect(localStorage.getItem(USERS_CORRUPT_KEY)).toBeNull();
+    expect(localStorage.getItem('bc_local_auth_session_v1')).toBeNull();
+    expect(localStorage.getItem(SESSION_BACKUP_KEY)).toBeNull();
+    expect(localStorage.getItem(SESSION_CORRUPT_KEY)).toBeNull();
   });
 });

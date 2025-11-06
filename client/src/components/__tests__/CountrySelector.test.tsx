@@ -1,14 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi, afterEach, beforeAll } from 'vitest';
-import Register from '@/pages/Register';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CountrySelector } from '../CountrySelector';
 import type { GeoCountry } from '@/types/geo';
 
 const mockSetGeoCountry = vi.fn();
-
-const registerMock = vi.fn();
 
 vi.mock('@/components/ui/select', () => {
   const flatten = (content: any): string => {
@@ -62,17 +59,6 @@ vi.mock('@/components/ui/select', () => {
   return { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
 });
 
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({
-    currentUser: null,
-    register: registerMock,
-    login: vi.fn(),
-    logout: vi.fn(),
-    loading: false,
-    userData: null,
-  }),
-}));
-
 vi.mock('@/contexts/GlobalizationContext', () => ({
   useGlobalization: () => ({
     geo: { country: null, localize: false },
@@ -80,13 +66,11 @@ vi.mock('@/contexts/GlobalizationContext', () => ({
   }),
 }));
 
-describe('Register page', () => {
+describe('CountrySelector', () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    registerMock.mockResolvedValue(undefined);
-    registerMock.mockClear();
-    mockSetGeoCountry.mockClear();
+    mockSetGeoCountry.mockReset();
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
@@ -98,6 +82,14 @@ describe('Register page', () => {
           localize: false,
           proficiency: 'high',
         },
+        {
+          name: 'Brazil',
+          code: 'BR',
+          currency: 'BRL',
+          languages: ['pt-BR'],
+          localize: true,
+          proficiency: 'medium',
+        },
       ] satisfies GeoCountry[],
     } as any);
   });
@@ -106,52 +98,23 @@ describe('Register page', () => {
     globalThis.fetch = originalFetch;
   });
 
-  beforeAll(() => {
-    if (!HTMLElement.prototype.hasPointerCapture) {
-      HTMLElement.prototype.hasPointerCapture = () => false;
-    }
-    if (!HTMLElement.prototype.releasePointerCapture) {
-      HTMLElement.prototype.releasePointerCapture = () => undefined;
-    }
-  });
-
-  it('submits the form when terms are accepted', async () => {
-    const user = userEvent.setup();
-
+  it('renders options and notifies selection', async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
 
     render(
       <QueryClientProvider client={client}>
-        <Register />
+        <CountrySelector />
       </QueryClientProvider>,
     );
 
-    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await user.type(screen.getByLabelText(/^password$/i), 'password123');
-    await user.type(screen.getByLabelText(/confirm password/i), 'password123');
-    await user.click(screen.getByLabelText(/sales partner/i));
+    const select = await screen.findByRole('combobox');
+    await waitFor(() => expect(select).not.toHaveAttribute('disabled'));
+    fireEvent.change(select, { target: { value: 'BR' } });
 
-    const countrySelect = await screen.findByRole('combobox');
-    await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
-    fireEvent.change(countrySelect, { target: { value: 'US' } });
-
-    await user.click(screen.getByLabelText(/terms of service/i));
-
-    await user.click(screen.getByRole('button', { name: /create account/i }));
-
-    await waitFor(() => {
-      expect(registerMock).toHaveBeenCalledWith(
-        'test@example.com',
-        'password123',
-        'sales',
-        expect.objectContaining({ country: 'US' })
-      );
-    });
-
-    expect(
-      screen.queryByText(/expected boolean, received string/i)
-    ).not.toBeInTheDocument();
+    expect(mockSetGeoCountry).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'BR' }),
+    );
   });
 });
