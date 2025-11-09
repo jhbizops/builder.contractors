@@ -1,16 +1,10 @@
-import { User } from '@/types';
-import { isLocalAuthAvailable } from './localAuth';
-
-const USERS_KEY = 'bc_local_auth_users_v1';
+import { USERS_KEY, USERS_BACKUP_KEY, isLocalAuthAvailable } from './localAuth';
+import type { StoredLocalUser } from './localAuth';
 const ADMIN_EMAIL = 'admin@builder.contractors';
 const ADMIN_EMAIL_NORMALISED = ADMIN_EMAIL.toLowerCase();
 const ADMIN_PASSWORD = 'BuilderAdmin2025!';
 
-type StoredLocalUser = Omit<User, 'createdAt'> & {
-  createdAt: string;
-  passwordHash: string;
-  passwordSalt: string;
-};
+const USERS_CORRUPT_KEY = `${USERS_KEY}__corrupted`;
 
 const encoder = new TextEncoder();
 
@@ -35,23 +29,64 @@ async function hashPassword(password: string, salt: string): Promise<string> {
   return bufferToBase64(hashBuffer);
 }
 
-function readUsers(): StoredLocalUser[] {
-  const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) {
-    return [];
+function cloneUsers(users: StoredLocalUser[]): StoredLocalUser[] {
+  return users.map((user) => ({ ...user }));
+}
+
+function parseUsers(raw: string | null): StoredLocalUser[] | null {
+  if (raw === null) {
+    return null;
   }
 
   try {
-    return JSON.parse(raw) as StoredLocalUser[];
+    const parsed = JSON.parse(raw) as StoredLocalUser[];
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
   } catch (error) {
-    console.warn('Failed to parse stored users; resetting store', error);
-    localStorage.removeItem(USERS_KEY);
-    return [];
+    console.warn('Failed to parse stored users snapshot', error);
   }
+
+  return null;
+}
+
+function readUsers(): StoredLocalUser[] {
+  const primaryRaw = localStorage.getItem(USERS_KEY);
+  const primaryParsed = parseUsers(primaryRaw);
+
+  if (primaryParsed) {
+    return cloneUsers(primaryParsed);
+  }
+
+  if (primaryRaw !== null) {
+    localStorage.setItem(USERS_CORRUPT_KEY, primaryRaw);
+    console.warn('Primary local auth store is corrupt; attempting to restore from backup.');
+  }
+
+  const backupRaw = localStorage.getItem(USERS_BACKUP_KEY);
+  const backupParsed = parseUsers(backupRaw);
+
+  if (backupParsed) {
+    const payload = JSON.stringify(backupParsed);
+    localStorage.setItem(USERS_KEY, payload);
+    localStorage.setItem(USERS_BACKUP_KEY, payload);
+    localStorage.removeItem(USERS_CORRUPT_KEY);
+    return cloneUsers(backupParsed);
+  }
+
+  if (backupRaw !== null) {
+    localStorage.setItem(USERS_CORRUPT_KEY, backupRaw);
+    console.error('Failed to restore local auth users from backup; starting with an empty set.');
+  }
+
+  return [];
 }
 
 function writeUsers(users: StoredLocalUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  const payload = JSON.stringify(cloneUsers(users));
+  localStorage.setItem(USERS_KEY, payload);
+  localStorage.setItem(USERS_BACKUP_KEY, payload);
+  localStorage.removeItem(USERS_CORRUPT_KEY);
 }
 
 export async function seedAdminAccount() {
@@ -66,20 +101,31 @@ export async function seedAdminAccount() {
   );
 
   if (existingAdminIndex >= 0) {
-    // Update existing admin to ensure it's approved and has correct password
-    const passwordSalt = generateSalt();
-    const passwordHash = await hashPassword(ADMIN_PASSWORD, passwordSalt);
-    
-    users[existingAdminIndex] = {
-      ...users[existingAdminIndex],
-      approved: true,
-      role: 'admin',
-      passwordSalt,
-      passwordHash,
-    };
-    
-    writeUsers(users);
-    console.log('Admin account updated with corrected password hash');
+    const adminUser = users[existingAdminIndex];
+    const needsUpdate =
+      adminUser.role !== 'admin' ||
+      adminUser.approved !== true ||
+      !adminUser.passwordSalt ||
+      !adminUser.passwordHash;
+
+    if (needsUpdate) {
+      const passwordSalt = generateSalt();
+      const passwordHash = await hashPassword(ADMIN_PASSWORD, passwordSalt);
+
+      users[existingAdminIndex] = {
+        ...adminUser,
+        approved: true,
+        role: 'admin',
+        passwordSalt,
+        passwordHash,
+      };
+
+      writeUsers(users);
+      console.log('Admin account updated with corrected password hash');
+    } else {
+      console.log('Admin account already configured; reusing existing credentials');
+    }
+
     return { email: ADMIN_EMAIL, password: ADMIN_PASSWORD };
   }
 
