@@ -1,63 +1,12 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CountrySelector } from '../CountrySelector';
 import type { GeoCountry } from '@/types/geo';
 
 const mockSetGeoCountry = vi.fn();
-
-vi.mock('@/components/ui/select', () => {
-  const flatten = (content: any): string => {
-    if (typeof content === 'string') {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      return content.map(flatten).join(' ');
-    }
-    if (React.isValidElement(content) && content.props?.children) {
-      return flatten(content.props.children);
-    }
-    return '';
-  };
-
-  const SelectItem = ({ value, children }: any) => (
-    <option value={value}>{flatten(children)}</option>
-  );
-
-  const Select = ({ value, onValueChange, disabled, children, ...props }: any) => (
-    <select
-      value={value}
-      onChange={(event) => onValueChange(event.target.value)}
-      disabled={disabled}
-      {...props}
-    >
-      {React.Children.toArray(children).flatMap((child) => {
-        if (!React.isValidElement(child)) {
-          return [];
-        }
-
-        if (child.type === SelectItem) {
-          return child;
-        }
-
-        if (child.props?.children) {
-          return React.Children.toArray(child.props.children).filter(
-            (grandChild) => React.isValidElement(grandChild) && grandChild.type === SelectItem,
-          );
-        }
-
-        return [];
-      })}
-    </select>
-  );
-
-  const SelectTrigger = ({ children }: any) => <>{children}</>;
-  const SelectValue = ({ placeholder }: any) => <option value="">{placeholder}</option>;
-  const SelectContent = ({ children }: any) => <>{children}</>;
-
-  return { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
-});
 
 vi.mock('@/contexts/GlobalizationContext', () => ({
   useGlobalization: () => ({
@@ -68,6 +17,8 @@ vi.mock('@/contexts/GlobalizationContext', () => ({
 
 describe('CountrySelector', () => {
   const originalFetch = globalThis.fetch;
+  const originalScrollIntoView =
+    HTMLElement.prototype.scrollIntoView ?? undefined;
 
   beforeEach(() => {
     mockSetGeoCountry.mockReset();
@@ -92,13 +43,29 @@ describe('CountrySelector', () => {
         },
       ] satisfies GeoCountry[],
     } as any);
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(),
+    });
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    if (originalScrollIntoView) {
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        writable: true,
+        value: originalScrollIntoView,
+      });
+    } else {
+      delete (HTMLElement.prototype as { scrollIntoView?: typeof Element.prototype.scrollIntoView }).scrollIntoView;
+    }
   });
 
   it('renders options and notifies selection', async () => {
+    const user = userEvent.setup();
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
@@ -109,9 +76,13 @@ describe('CountrySelector', () => {
       </QueryClientProvider>,
     );
 
-    const select = await screen.findByRole('combobox');
-    await waitFor(() => expect(select).not.toHaveAttribute('disabled'));
-    fireEvent.change(select, { target: { value: 'BR' } });
+    const trigger = await screen.findByTestId('button-country-selector');
+    await waitFor(() => expect(trigger).not.toBeDisabled());
+
+    await user.click(trigger);
+
+    const option = await screen.findByTestId('item-country-BR');
+    await user.click(option);
 
     expect(mockSetGeoCountry).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'BR' }),
