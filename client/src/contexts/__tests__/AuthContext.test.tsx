@@ -1,52 +1,113 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import React from 'react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { resetCollections } from '@/lib/localCollectionStore';
-import { webcrypto } from 'node:crypto';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import type { User } from "@/types";
 
-vi.mock('@/hooks/use-toast', () => ({
-  toast: vi.fn(),
+const mockToast = vi.fn();
+const mockRegister = vi.fn();
+const mockLogin = vi.fn();
+const mockLogout = vi.fn();
+const mockFetchCurrentUser = vi.fn();
+
+vi.mock("@/hooks/use-toast", () => ({
+  toast: (...args: unknown[]) => mockToast(...args),
 }));
 
-if (!globalThis.crypto?.subtle) {
-  Object.defineProperty(globalThis, 'crypto', {
-    value: webcrypto,
-    configurable: true,
-  });
-}
+vi.mock("@/api/auth", () => ({
+  registerUser: (...args: unknown[]) => mockRegister(...args),
+  loginUser: (...args: unknown[]) => mockLogin(...args),
+  logoutUser: (...args: unknown[]) => mockLogout(...args),
+  fetchCurrentUser: () => mockFetchCurrentUser(),
+}));
 
-describe('AuthContext', () => {
+const createUser = (overrides: Partial<User> = {}): User => ({
+  id: "user_1",
+  email: "tester@example.com",
+  role: "sales",
+  approved: false,
+  country: undefined,
+  region: undefined,
+  locale: undefined,
+  currency: undefined,
+  languages: [],
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  ...overrides,
+});
+
+describe("AuthContext", () => {
   beforeEach(() => {
-    localStorage.clear();
-    resetCollections();
-    vi.clearAllMocks();
+    mockToast.mockReset();
+    mockRegister.mockReset();
+    mockLogin.mockReset();
+    mockLogout.mockReset();
+    mockFetchCurrentUser.mockReset();
+    mockFetchCurrentUser.mockResolvedValue(null);
   });
 
-  const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <AuthProvider>{children}</AuthProvider>
-  );
+  const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
 
-  it('registers, logs out, and logs in users via local auth', async () => {
+    const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    );
+
+    return { wrapper, queryClient };
+  };
+
+  it("registers, logs out, and logs in users via API", async () => {
+    const user = createUser();
+    mockRegister.mockResolvedValue(user);
+    mockLogin.mockResolvedValue(user);
+    mockLogout.mockResolvedValue(undefined);
+
+    const { wrapper } = createWrapper();
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await act(async () => {
-      await result.current.register('tester@example.com', 'password123', 'sales');
+      await result.current.register("tester@example.com", "password123", "sales");
     });
 
-    expect(result.current.currentUser?.email).toBe('tester@example.com');
-    expect(result.current.userData?.approved).toBe(false);
+    const registerArgs = mockRegister.mock.calls[0]?.[0];
+    expect(registerArgs).toEqual({
+      email: "tester@example.com",
+      password: "password123",
+      role: "sales",
+      country: undefined,
+      region: undefined,
+      locale: undefined,
+      currency: undefined,
+      languages: undefined,
+    });
+    await waitFor(() => {
+      expect(result.current.currentUser?.email).toBe("tester@example.com");
+    });
 
     await act(async () => {
       await result.current.logout();
     });
 
-    expect(result.current.currentUser).toBeNull();
-
-    await act(async () => {
-      await result.current.login('tester@example.com', 'password123');
+    expect(mockLogout).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(result.current.currentUser).toBeNull();
     });
 
-    expect(result.current.currentUser?.email).toBe('tester@example.com');
+    await act(async () => {
+      await result.current.login("tester@example.com", "password123");
+    });
+
+    const loginArgs = mockLogin.mock.calls[0]?.[0];
+    expect(loginArgs).toEqual({
+      email: "tester@example.com",
+      password: "password123",
+    });
+    await waitFor(() => {
+      expect(result.current.currentUser?.email).toBe("tester@example.com");
+    });
   });
 });

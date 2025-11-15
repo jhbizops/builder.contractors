@@ -17,8 +17,6 @@ import ClearSession from "@/pages/ClearSession";
 import NotFound from "@/pages/not-found";
 
 // Auto-seed admin account in development
-import "@/lib/seedAdmin";
-
 function Router() {
   return (
     <Switch>

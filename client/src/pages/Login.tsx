@@ -37,12 +37,9 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    console.log('Login attempt:', data.email);
     try {
       await login(data.email, data.password);
-      console.log('Login successful');
     } catch (error) {
-      console.error('Login failed:', error);
       // Error is handled in the context
     } finally {
       setIsLoading(false);

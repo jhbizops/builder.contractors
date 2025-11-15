@@ -1,11 +1,13 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import session from "express-session";
-import MemorystoreFactory from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { geoDetectionMiddleware } from "./middleware/geoDetection";
+import { pool } from "./db";
+import { SESSION_COOKIE_NAME } from "./session";
 
-const MemoryStore = MemorystoreFactory(session);
+const PgStore = connectPgSimple(session);
 
 const app = express();
 app.set("trust proxy", 1);
@@ -20,13 +22,19 @@ app.use(
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({ checkPeriod: 1000 * 60 * 60 }),
+    store: new PgStore({
+      pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+    }),
+    name: SESSION_COOKIE_NAME,
     cookie: {
       secure: app.get("env") === "production",
       httpOnly: true,
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24,
     },
+    unset: "destroy",
   }),
 );
 
@@ -72,8 +80,8 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    log(`error ${status}: ${message}`);
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {

@@ -1,3 +1,5 @@
+import type { User } from "@shared/schema";
+
 declare module "express-session" {
   interface SessionData {
     countryCode?: string;
@@ -7,5 +9,15 @@ declare module "express-session" {
     localize?: boolean;
     geoCheckedAt?: number;
     analyticsTagged?: boolean;
+    userId?: string;
+    userRole?: string;
+  }
+}
+
+declare global {
+  namespace Express {
+    interface Locals {
+      authenticatedUser?: User;
+    }
   }
 }

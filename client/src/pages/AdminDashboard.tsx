@@ -1,31 +1,37 @@
-import React from 'react';
-import { Navigation } from '@/components/Navigation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { UserApprovalPanel } from '@/components/UserApprovalPanel';
-import { ServiceManagement } from '@/components/ServiceManagement';
-import { LeadCard } from '@/components/LeadCard';
-import { LeadModal } from '@/components/modals/LeadModal';
-import { Plus, Download, Users, Handshake, Clock, TrendingUp } from 'lucide-react';
-import { Lead, User, Service } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
-import { useState } from 'react';
-import { useGlobalization } from '@/contexts/GlobalizationContext';
+import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Navigation } from "@/components/Navigation";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { UserApprovalPanel } from "@/components/UserApprovalPanel";
+import { ServiceManagement } from "@/components/ServiceManagement";
+import { LeadCard } from "@/components/LeadCard";
+import { LeadModal } from "@/components/modals/LeadModal";
+import { Plus, Download, Users, Handshake, Clock, TrendingUp } from "lucide-react";
+import { Lead } from "@/types";
+import { useCollection } from "@/hooks/useCollection";
+import { useGlobalization } from "@/contexts/GlobalizationContext";
+import { USERS_QUERY_KEY, fetchUsers } from "@/api/users";
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, update } = useCollection<Lead>('leads');
-  const { data: users } = useCollection<User>('users');
-  const { data: services } = useCollection<Service>('services');
+  const { data: leads, update } = useCollection<Lead>("leads");
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: USERS_QUERY_KEY,
+    queryFn: fetchUsers,
+  });
   const { formatCurrency, formatNumber } = useGlobalization();
 
-  const stats = {
-    totalUsers: users.length,
-    activeLeads: leads.filter(l => l.status === 'in_progress').length,
-    pendingApprovals: users.filter(u => !u.approved).length,
-    monthlyRevenue: 24800, // This would come from actual calculations
-  };
+  const stats = useMemo(
+    () => ({
+      totalUsers: users.length,
+      activeLeads: leads.filter((lead) => lead.status === "in_progress").length,
+      pendingApprovals: users.filter((user) => !user.approved).length,
+      monthlyRevenue: 24800,
+    }),
+    [leads, users],
+  );
 
   const handleViewLead = (lead: Lead) => {
     setSelectedLead(lead);
@@ -36,31 +42,30 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteLead = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this lead?')) {
+    if (window.confirm("Are you sure you want to delete this lead?")) {
       // Would implement delete functionality
     }
   };
 
   const handleSaveLead = async (leadData: Partial<Lead>) => {
     if (!selectedLead) return;
-    
+
     try {
       await update(selectedLead.id, leadData);
       setSelectedLead(null);
     } catch (error) {
-      console.error('Error updating lead:', error);
+      console.error("Error updating lead:", error);
     }
   };
 
-  const recentLeads = leads.slice(0, 5); // Show only 5 most recent
+  const recentLeads = leads.slice(0, 5);
 
   return (
-    <ProtectedRoute requiredRole={['admin']}>
+    <ProtectedRoute requiredRole={["admin"]}>
       <div className="min-h-screen bg-slate-50">
         <Navigation />
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Dashboard Header */}
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <div>
@@ -80,7 +85,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Dashboard Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
@@ -97,7 +101,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -113,7 +117,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -129,7 +133,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -140,18 +144,14 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Monthly Revenue</p>
-                    <p className="text-2xl font-bold text-slate-900">
-                      {formatCurrency(stats.monthlyRevenue)}
-                    </p>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.monthlyRevenue)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Lead Management */}
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="pt-4 border-t border-slate-200 mt-6">
                     <button className="text-primary text-sm font-medium hover:text-blue-700">
                       View all leads →
@@ -182,16 +182,25 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </div>
-            
-            {/* Right Column: User Management & Quick Actions */}
+
             <div className="space-y-6">
-              <UserApprovalPanel />
+              {usersLoading ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pending User Approvals</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-500 text-center py-4">Loading users…</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <UserApprovalPanel />
+              )}
               <ServiceManagement />
             </div>
           </div>
         </div>
 
-        {/* Lead Detail Modal */}
         <LeadModal
           lead={selectedLead}
           isOpen={!!selectedLead}

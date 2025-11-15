@@ -29,10 +29,15 @@ Preferred communication style: Simple, everyday language.
 - **File Structure**: Monorepo with shared schemas between client and server
 
 ### Authentication & Authorization
-- **Current Implementation**: Firebase Authentication with Firestore
-- **Planned Migration**: The codebase shows preparation for moving to a custom auth system
+- **Current Implementation**: Cookie-based Express sessions backed by PostgreSQL
+- **Credentials**: Passwords are salted & hashed with scrypt before persisting in the `users` table
 - **User Roles**: Four distinct roles (sales, builder, admin, dual) with different access levels
-- **Approval System**: Admin-controlled user approval workflow
+- **Approval System**: Admin-controlled user approval workflow managed through `/api/users/:id/approval`
+- **Primary Endpoints**:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
 
 ## Key Components
 
@@ -52,7 +57,7 @@ Preferred communication style: Simple, everyday language.
 - **Protected Routes**: Role-based route protection with approval checks
 
 ### Backend Services
-- **Storage Interface**: Abstracted storage layer (currently in-memory, prepared for database)
+- **Storage Interface**: Drizzle ORM storage layer targeting PostgreSQL with first-class `DatabaseStorage`
 - **Route Registration**: Modular route handling system
 - **Development Server**: Vite integration for HMR in development
 
