@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import type { Request, Response } from 'express';
-import { geoDetectionMiddleware } from '../geoDetection';
+import { clearGeoCache, geoDetectionMiddleware } from '../geoDetection';
 import { formatCountryPayload } from '../../countries/service';
 import { countryMetadataByCode } from '@shared/countryMetadata';
 
@@ -30,6 +30,7 @@ describe('geoDetectionMiddleware', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    clearGeoCache();
   });
 
   afterEach(() => {

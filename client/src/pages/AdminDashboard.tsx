@@ -1,31 +1,85 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { UserApprovalPanel } from '@/components/UserApprovalPanel';
 import { ServiceManagement } from '@/components/ServiceManagement';
 import { LeadCard } from '@/components/LeadCard';
 import { LeadModal } from '@/components/modals/LeadModal';
-import { Plus, Download, Users, Handshake, Clock, TrendingUp } from 'lucide-react';
-import { Lead, User, Service } from '@/types';
+import { Plus, Download, Users, Handshake, Clock, TrendingUp, FileSpreadsheet } from 'lucide-react';
+import { Lead, User, Service, AdminMetrics } from '@/types';
 import { useCollection } from '@/hooks/useCollection';
-import { useState } from 'react';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { apiRequest } from '@/lib/queryClient';
+import { toast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, update } = useCollection<Lead>('leads');
+  const { data: leads, update, remove } = useCollection<Lead>('leads');
   const { data: users } = useCollection<User>('users');
   const { data: services } = useCollection<Service>('services');
   const { formatCurrency, formatNumber } = useGlobalization();
+  const {
+    data: metrics,
+    error: metricsError,
+  } = useQuery<AdminMetrics>({
+    queryKey: ['/api/admin/metrics'],
+    retry: false,
+  });
 
-  const stats = {
-    totalUsers: users.length,
-    activeLeads: leads.filter(l => l.status === 'in_progress').length,
-    pendingApprovals: users.filter(u => !u.approved).length,
-    monthlyRevenue: 24800, // This would come from actual calculations
-  };
+  useEffect(() => {
+    if (metricsError && metricsError instanceof Error) {
+      toast({
+        title: 'Unable to load metrics',
+        description: metricsError.message,
+        variant: 'destructive',
+      });
+    }
+  }, [metricsError]);
+
+  const isSameMonth = (value: Date, reference: Date) =>
+    value.getFullYear() === reference.getFullYear() &&
+    value.getMonth() === reference.getMonth();
+
+  const fallbackStats = useMemo<AdminMetrics>(() => {
+    const now = new Date();
+    const leadsByStatus: Record<Lead['status'], number> = {
+      new: 0,
+      in_progress: 0,
+      completed: 0,
+      on_hold: 0,
+    };
+
+    leads.forEach((lead) => {
+      leadsByStatus[lead.status] = (leadsByStatus[lead.status] ?? 0) + 1;
+    });
+
+    const approvedUsers = users.filter((user) => user.approved).length;
+    const monthlyLeadVolume = leads.filter((lead) => isSameMonth(lead.createdAt, now)).length;
+
+    return {
+      totalUsers: users.length,
+      approvedUsers,
+      pendingApprovals: Math.max(users.length - approvedUsers, 0),
+      totalLeads: leads.length,
+      leadsByStatus,
+      monthlyLeadVolume,
+      monthlyRevenue: 0,
+      averageDealSize: 0,
+      serviceCount: services.length,
+      activeServiceCount: services.filter((service) => service.active).length,
+    };
+  }, [leads, services, users]);
+
+  const stats = metrics ?? fallbackStats;
 
   const handleViewLead = (lead: Lead) => {
     setSelectedLead(lead);
@@ -36,8 +90,17 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteLead = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this lead?')) {
-      // Would implement delete functionality
+    if (!window.confirm('Are you sure you want to delete this lead?')) {
+      return;
+    }
+
+    try {
+      await apiRequest('DELETE', `/api/leads/${encodeURIComponent(id)}`);
+      await remove(id, { silent: true });
+      toast({ title: 'Lead deleted', description: 'The lead has been removed.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete lead';
+      toast({ title: 'Deletion failed', description: message, variant: 'destructive' });
     }
   };
 
@@ -72,10 +135,56 @@ export default function AdminDashboard() {
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Lead
                 </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Data
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Data
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="/api/admin/export/leads.csv"
+                        download
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Leads (CSV)
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="/api/admin/export/leads.xlsx"
+                        download
+                        className="flex items-center gap-2"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Leads (Excel)
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="/api/admin/export/services.csv"
+                        download
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Services (CSV)
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="/api/admin/export/services.xlsx"
+                        download
+                        className="flex items-center gap-2"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Services (Excel)
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -97,7 +206,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -108,12 +217,12 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Active Leads</p>
-                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.activeLeads)}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.leadsByStatus.in_progress)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -129,7 +238,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
@@ -156,6 +265,9 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Leads</CardTitle>
+                  <CardDescription>
+                    Monthly lead volume: {formatNumber(stats.monthlyLeadVolume)}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {recentLeads.length === 0 ? (

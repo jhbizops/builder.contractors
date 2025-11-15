@@ -37,6 +37,10 @@ export default defineConfig(() => {
     test: {
       environment: 'jsdom',
       setupFiles: './client/src/test/setup.ts',
+      include: ['src/**/*.{test,spec}.{ts,tsx}', '../server/**/*.{test,spec}.ts'],
+      environmentMatchGlobs: [
+        ['../server/**', 'node'],
+      ],
       coverage: {
         provider: 'v8' as const,
         reporter: ['text', 'lcov'],

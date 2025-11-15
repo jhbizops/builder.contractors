@@ -26,6 +26,10 @@ const CACHE_TTL = 1000 * 60 * 15; // 15 minutes
 
 const US_FALLBACK = findCountryByCode("US").country ?? supportedCountries[0]!;
 
+export function clearGeoCache(): void {
+  cache.clear();
+}
+
 function extractIp(request: Request): string {
   const forwarded = request.headers["x-forwarded-for"];
   if (typeof forwarded === "string" && forwarded.length > 0) {

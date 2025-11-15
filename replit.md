@@ -56,6 +56,12 @@ Preferred communication style: Simple, everyday language.
 - **Route Registration**: Modular route handling system
 - **Development Server**: Vite integration for HMR in development
 
+### Admin APIs
+- `GET /api/admin/metrics`: Aggregated dashboard metrics (user approvals, lead pipeline, revenue estimate, service counts)
+- `GET /api/admin/export/leads.csv` / `.xlsx`: Download the lead ledger as CSV or Excel SpreadsheetML
+- `GET /api/admin/export/services.csv` / `.xlsx`: Export the service catalogue in CSV or Excel formats
+- `DELETE /api/leads/:id`: Remove a persisted lead record; returns `204 No Content` on success
+
 ## Data Flow
 
 1. **Authentication Flow**: Firebase Auth → User profile lookup → Role-based routing

@@ -25,6 +25,8 @@ export interface Lead {
   updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  estimatedValue?: number;
+  serviceId?: string;
 }
 
 export interface LeadFile {
@@ -68,4 +70,17 @@ export interface CustomPricing {
   serviceId: string;
   price: number;
   notes?: string;
+}
+
+export interface AdminMetrics {
+  totalUsers: number;
+  approvedUsers: number;
+  pendingApprovals: number;
+  totalLeads: number;
+  leadsByStatus: Record<Lead['status'], number>;
+  monthlyLeadVolume: number;
+  monthlyRevenue: number;
+  averageDealSize: number;
+  serviceCount: number;
+  activeServiceCount: number;
 }
