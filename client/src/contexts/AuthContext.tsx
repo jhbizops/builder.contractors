@@ -17,7 +17,6 @@ import {
   registerLocalUser,
   type RegisterLocalUserOptions,
 } from '@/lib/localAuth';
-import { syncAllUsersToCollection, syncUserToCollection } from '@/lib/userCollectionSync';
 
 type AuthenticatedUser = Pick<User, 'id' | 'email'>;
 
@@ -70,7 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Attempting loginLocalUser...');
       const user = await loginLocalUser(email, password);
       console.log('Login successful, user:', user);
-      await syncUserToCollection(user);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
       toast({
@@ -105,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const user = await registerLocalUser(email, password, role as User['role'], options);
-      await syncUserToCollection(user);
       setCurrentUser({ id: user.id, email: user.email });
       setUserData(user);
       toast({
@@ -150,12 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let active = true;
 
     (async () => {
-      try {
-        await syncAllUsersToCollection();
-      } catch (error) {
-        console.error('Failed to synchronise users collection', error);
-      }
-
       if (!active) {
         return;
       }
@@ -164,11 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (sessionUser) {
         setCurrentUser({ id: sessionUser.id, email: sessionUser.email });
         setUserData(sessionUser);
-        try {
-          await syncUserToCollection(sessionUser);
-        } catch (error) {
-          console.error('Failed to sync session user to collection', error);
-        }
       } else {
         clearLocalAuthStore();
       }

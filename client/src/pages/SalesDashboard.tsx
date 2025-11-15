@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LeadCard } from '@/components/LeadCard';
 import { LeadModal } from '@/components/modals/LeadModal';
-import { CountrySelector } from '@/components/CountrySelector';
+import { SearchableCountrySelector } from '@/components/SearchableCountrySelector';
 import { RegionFilter } from '@/components/RegionFilter';
 import { Plus, Download, Filter, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
 import { Lead } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
+import { useLeads } from '@/hooks/api/useLeads';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,7 @@ export default function SalesDashboard() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const { userData } = useAuth();
-  const { data: leads, loading, add, update, remove } = useCollection<Lead>('leads');
+  const { data: leads, loading, createLead, updateLead, deleteLead } = useLeads();
   const { formatNumber } = useGlobalization();
 
   const {
@@ -71,7 +71,7 @@ export default function SalesDashboard() {
     if (!userData) return;
     
     try {
-      await add({
+      await createLead({
         ...data,
         country: selectedCountry || undefined,
         region: selectedRegion || undefined,
@@ -103,7 +103,7 @@ export default function SalesDashboard() {
   const handleDeleteLead = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this lead?')) {
       try {
-        await remove(id);
+      await deleteLead(id);
       } catch (error) {
         console.error('Error deleting lead:', error);
       }
@@ -114,7 +114,7 @@ export default function SalesDashboard() {
     if (!selectedLead) return;
     
     try {
-      await update(selectedLead.id, leadData);
+      await updateLead({ id: selectedLead.id, updates: leadData });
       setSelectedLead(null);
     } catch (error) {
       console.error('Error updating lead:', error);
@@ -170,11 +170,12 @@ export default function SalesDashboard() {
 
                       <div>
                         <Label htmlFor="country">Country</Label>
-                        <CountrySelector
+                        <SearchableCountrySelector
+                          className="w-full"
                           value={selectedCountry}
-                          onValueChange={(country, region) => {
-                            setSelectedCountry(country);
-                            setSelectedRegion(region);
+                          onValueChange={(countryCode) => {
+                            setSelectedCountry(countryCode);
+                            setSelectedRegion('');
                           }}
                           placeholder="Select a country"
                         />

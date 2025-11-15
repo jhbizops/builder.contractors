@@ -3,16 +3,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
 import { User } from '@/types';
-import { useCollectionQuery } from '@/hooks/useCollection';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { updateUserApprovalAndSync } from '@/lib/userCollectionSync';
+import { getAllLocalUsers, updateLocalUserApproval } from '@/lib/localAuth';
+
+const queryKey = ['local-users'];
 
 export const UserApprovalPanel: React.FC = () => {
-  const { data: pendingUsers, loading } = useCollectionQuery<User>('users', (user) => !user.approved);
+  const queryClient = useQueryClient();
+  const { data: pendingUsers = [], isLoading: loading } = useQuery<User[]>({
+    queryKey,
+    queryFn: async () => getAllLocalUsers().filter((user) => !user.approved),
+  });
+
+  const mutation = useMutation({
+    mutationFn: async ({ userId, approved }: { userId: string; approved: boolean }) => {
+      const updated = updateLocalUserApproval(userId, approved);
+      if (!updated) {
+        throw new Error('User not found');
+      }
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   const handleApproval = async (userId: string, approved: boolean) => {
     try {
-      await updateUserApprovalAndSync(userId, approved);
+      await mutation.mutateAsync({ userId, approved });
       toast({
         title: 'User updated',
         description: approved

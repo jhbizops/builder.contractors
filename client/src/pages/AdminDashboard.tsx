@@ -9,15 +9,16 @@ import { LeadCard } from '@/components/LeadCard';
 import { LeadModal } from '@/components/modals/LeadModal';
 import { Plus, Download, Users, Handshake, Clock, TrendingUp } from 'lucide-react';
 import { Lead, User, Service } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
+import { useLeads } from '@/hooks/api/useLeads';
+import { useServices } from '@/hooks/api/useServices';
 import { useState } from 'react';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, update } = useCollection<Lead>('leads');
-  const { data: users } = useCollection<User>('users');
-  const { data: services } = useCollection<Service>('services');
+  const { data: leads, updateLead } = useLeads();
+  const { data: services } = useServices();
+  const users: User[] = [];
   const { formatCurrency, formatNumber } = useGlobalization();
 
   const stats = {
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
     if (!selectedLead) return;
     
     try {
-      await update(selectedLead.id, leadData);
+      await updateLead({ id: selectedLead.id, updates: leadData });
       setSelectedLead(null);
     } catch (error) {
       console.error('Error updating lead:', error);

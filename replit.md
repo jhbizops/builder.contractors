@@ -27,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **Session Management**: connect-pg-simple for PostgreSQL-backed sessions
 - **File Structure**: Monorepo with shared schemas between client and server
+- **REST Endpoints**: `/api/leads`, `/api/lead-comments`, `/api/services`, and `/api/activity-logs` (full CRUD powered by Drizzle)
 
 ### Authentication & Authorization
 - **Current Implementation**: Firebase Authentication with Firestore

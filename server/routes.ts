@@ -1,11 +1,18 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { Router } from "express";
 import { findCountryByCode, formatCountryPayload, supportedCountries } from "./countries/service";
+import { createApiRouter } from "./routes/api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.get("/api/countries", (_req, res) => {
+  const apiRouter = Router();
+  apiRouter.get("/countries", (_req, res) => {
     res.json(supportedCountries.map(formatCountryPayload));
   });
+
+  apiRouter.use(createApiRouter());
+
+  app.use("/api", apiRouter);
 
   app.get("/api/session/geo", (req, res) => {
     if (!req.session.countryCode) {

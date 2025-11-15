@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit } from 'lucide-react';
 import { Service } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
+import { useServices } from '@/hooks/api/useServices';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +29,7 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 export const ServiceManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const { data: services, loading, add, update } = useCollection<Service>('services');
+  const { data: services, loading, createService, updateService } = useServices();
   const { formatCurrency, settings } = useGlobalization();
   const measurementLabel = useMemo(() => {
     switch (settings.measurementSystem) {
@@ -61,9 +61,9 @@ export const ServiceManagement: React.FC = () => {
   const onSubmit = async (data: ServiceFormData) => {
     try {
       if (editingService) {
-        await update(editingService.id, data);
+        await updateService({ id: editingService.id, updates: data });
       } else {
-        await add(data);
+        await createService(data);
       }
       handleCloseDialog();
     } catch (error) {

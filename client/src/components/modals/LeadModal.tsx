@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CloudUpload, Download, Trash2, FileText, User, Circle } from 'lucide-react';
 import { Lead, LeadComment, ActivityLog, LeadFile } from '@/types';
-import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
+import { useLeadComments } from '@/hooks/api/useLeadComments';
+import { useActivityLogs } from '@/hooks/api/useActivityLogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
@@ -29,16 +30,8 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
   const { userData } = useAuth();
   const { formatDateTime } = useGlobalization();
   
-  const { add: addComment } = useCollection<LeadComment>('lead_comments');
-  const { add: addLog } = useCollection<ActivityLog>('activity_logs');
-  const { data: comments } = useCollectionQuery<LeadComment>(
-    'lead_comments',
-    (comment) => (lead ? comment.leadId === lead.id : false),
-  );
-  const { data: logs } = useCollectionQuery<ActivityLog>(
-    'activity_logs',
-    (log) => (lead ? log.leadId === lead.id : false),
-  );
+  const { data: comments, addComment } = useLeadComments(lead?.id ?? null);
+  const { data: logs, addLog } = useActivityLogs(lead?.id ?? null);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!lead || !userData) return;
@@ -46,12 +39,12 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
     setStatus(newStatus as 'new' | 'in_progress' | 'completed' | 'on_hold');
     
     // Log the status change
-    await addLog({
-      leadId: lead.id,
-      action: `Status changed from "${lead.status}" to "${newStatus}"`,
-      performedBy: userData.email,
-      timestamp: new Date(),
-    });
+      await addLog({
+        leadId: lead.id,
+        action: `Status changed from "${lead.status}" to "${newStatus}"`,
+        performedBy: userData.email,
+        timestamp: new Date(),
+      });
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -18,8 +18,11 @@ vi.mock('@/components/ui/select', () => {
     if (Array.isArray(content)) {
       return content.map(flatten).join(' ');
     }
-    if (React.isValidElement(content) && content.props?.children) {
-      return flatten(content.props.children);
+    if (React.isValidElement(content)) {
+      const element = content as React.ReactElement<{ children?: React.ReactNode }>;
+      if (element.props?.children) {
+        return flatten(element.props.children);
+      }
     }
     return '';
   };

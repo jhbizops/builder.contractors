@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { resetCollections } from '@/lib/localCollectionStore';
 import { webcrypto } from 'node:crypto';
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -19,7 +18,6 @@ if (!globalThis.crypto?.subtle) {
 describe('AuthContext', () => {
   beforeEach(() => {
     localStorage.clear();
-    resetCollections();
     vi.clearAllMocks();
   });
 
