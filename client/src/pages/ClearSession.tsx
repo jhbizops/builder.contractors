@@ -1,15 +1,30 @@
-import { useEffect } from 'react';
-import { Redirect } from 'wouter';
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ClearSession() {
+  const { logout } = useAuth();
+
   useEffect(() => {
-    // Clear all authentication related items from localStorage
-    localStorage.removeItem('bc_local_auth_session_v1');
-    localStorage.removeItem('bc_local_auth_current_user');
-    
-    // Force reload to clear any cached data
-    window.location.href = '/login';
-  }, []);
+    let active = true;
+
+    (async () => {
+      try {
+        await logout();
+      } catch (error) {
+        if (active) {
+          console.error("Failed to clear session", error);
+        }
+      } finally {
+        if (active) {
+          window.location.href = "/login";
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [logout]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

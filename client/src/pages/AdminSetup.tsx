@@ -1,69 +1,33 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrandLogo } from '@/components/BrandLogo';
-import { seedAdminAccount } from '@/lib/seedAdmin';
-import { loginLocalUser, getStoredLocalUsers, isLocalAuthAvailable } from '@/lib/localAuth';
-import { useAuth } from '@/contexts/AuthContext';
-import { Redirect } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandLogo } from "@/components/BrandLogo";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
+const ADMIN_EMAIL = "admin@builder.contractors";
+const ADMIN_PASSWORD = "BuilderAdmin2025!";
 
 export default function AdminSetup() {
+  const { currentUser, register, login, logout } = useAuth();
+  const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [adminExists, setAdminExists] = useState(false);
-  const { currentUser } = useAuth();
-  const { toast } = useToast();
-
-  // Comment out auto-redirect to allow manual control
-  // if (currentUser?.email === 'admin@builder.contractors') {
-  //   return <Redirect to="/dashboard/admin" />;
-  // }
-
-  const checkAdminExists = () => {
-    if (!isLocalAuthAvailable) {
-      toast({
-        title: 'Error',
-        description: 'Local authentication is not available',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const users = getStoredLocalUsers();
-    const hasAdmin = users.some((u: any) => u.email.toLowerCase() === 'admin@builder.contractors');
-    setAdminExists(hasAdmin);
-    
-    if (hasAdmin) {
-      toast({
-        title: 'Admin Found',
-        description: 'Admin account exists. You can login with the credentials.',
-      });
-    } else {
-      toast({
-        title: 'No Admin',
-        description: 'Admin account does not exist. Click "Create Admin" to set it up.',
-        variant: 'destructive',
-      });
-    }
-  };
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleCreateAdmin = async () => {
     setIsCreating(true);
     try {
-      const result = await seedAdminAccount();
-      if (result) {
-        toast({
-          title: 'Success',
-          description: `Admin created! Email: ${result.email} Password: ${result.password}`,
-        });
-        setAdminExists(true);
-      }
-    } catch (error: any) {
+      await register(ADMIN_EMAIL, ADMIN_PASSWORD, "admin");
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Admin ready",
+        description: "Admin account created and signed in.",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to create admin",
+        description: error instanceof Error ? error.message : "Registration failed.",
+        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
@@ -73,40 +37,40 @@ export default function AdminSetup() {
   const handleQuickLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const user = await loginLocalUser('admin@builder.contractors', 'BuilderAdmin2025!');
-      
-      // Store in localStorage
-      localStorage.setItem('bc_local_auth_session_v1', JSON.stringify({
-        userId: user.id,
-        timestamp: Date.now()
-      }));
-      
+      await login(ADMIN_EMAIL, ADMIN_PASSWORD);
       toast({
-        title: 'Success',
-        description: 'Logged in as admin! Redirecting...',
+        title: "Signed in as admin",
+        description: "Redirecting to the admin dashboard…",
       });
-      
-      // Force reload to trigger auth context
-      window.location.href = '/dashboard/admin';
-    } catch (error: any) {
+      window.location.href = "/dashboard/admin";
+    } catch (error) {
       toast({
-        title: 'Login Failed',
-        description: error.message,
-        variant: 'destructive',
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Authentication failed.",
+        variant: "destructive",
       });
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  const handleClearSession = () => {
-    localStorage.removeItem('bc_local_auth_session_v1');
-    localStorage.removeItem('bc_local_auth_current_user');
-    toast({
-      title: 'Session Cleared',
-      description: 'You have been logged out.',
-    });
-    window.location.reload();
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      toast({
+        title: "Session cleared",
+        description: "You have been signed out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to sign out",
+        description: error instanceof Error ? error.message : "Logout failed.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -115,59 +79,54 @@ export default function AdminSetup() {
         <CardHeader className="text-center">
           <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Admin Setup</CardTitle>
-          <p className="text-slate-600 mt-2">Quick Admin Account Management</p>
+          <p className="text-slate-600 mt-2">Bootstrap or access the administrative account</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">Admin Credentials</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">Default credentials</h3>
             <p className="text-sm text-blue-800">
-              Email: <code className="bg-white px-1 rounded">admin@builder.contractors</code>
+              Email: <code className="bg-white px-1 rounded">{ADMIN_EMAIL}</code>
             </p>
             <p className="text-sm text-blue-800">
-              Password: <code className="bg-white px-1 rounded">BuilderAdmin2025!</code>
+              Password: <code className="bg-white px-1 rounded">{ADMIN_PASSWORD}</code>
             </p>
           </div>
 
           <div className="space-y-2">
-            <Button 
-              onClick={checkAdminExists}
-              className="w-full"
-              variant="outline"
-            >
-              Check Admin Status
-            </Button>
-
-            <Button 
+            <Button
               onClick={handleCreateAdmin}
               className="w-full"
-              disabled={isCreating || adminExists}
+              disabled={isCreating}
             >
-              {isCreating ? 'Creating...' : 'Create Admin Account'}
+              {isCreating ? "Creating…" : "Create Admin Account"}
             </Button>
 
-            <Button 
+            <Button
               onClick={handleQuickLogin}
               className="w-full"
               variant="default"
-              disabled={isLoggingIn || !adminExists}
+              disabled={isLoggingIn}
             >
-              {isLoggingIn ? 'Logging in...' : 'Quick Login as Admin'}
+              {isLoggingIn ? "Signing in…" : "Quick Login as Admin"}
             </Button>
 
             <div className="pt-2 border-t">
-              <Button 
-                onClick={handleClearSession}
+              <Button
+                onClick={handleLogout}
                 className="w-full"
-                variant="destructive"
+                variant="outline"
+                disabled={isLoggingOut}
               >
-                Clear Session (Logout)
+                {isLoggingOut ? "Signing out…" : "Sign Out"}
               </Button>
             </div>
 
             {currentUser && (
               <div className="pt-2">
-                <Button 
-                  onClick={() => window.location.href = '/dashboard/admin'}
+                <Button
+                  onClick={() => {
+                    window.location.href = "/dashboard/admin";
+                  }}
                   className="w-full"
                   variant="secondary"
                 >
@@ -178,12 +137,8 @@ export default function AdminSetup() {
           </div>
 
           <div className="text-center text-sm text-slate-600">
-            <p>Use this page to:</p>
-            <ul className="text-left mt-2 space-y-1">
-              <li>• Check if admin account exists</li>
-              <li>• Create admin account if missing</li>
-              <li>• Quick login as admin</li>
-            </ul>
+            <p>Use this page to seed or access the administrator account quickly.</p>
+            <p className="mt-2">Once signed in, visit the Admin Dashboard to manage approvals.</p>
           </div>
         </CardContent>
       </Card>

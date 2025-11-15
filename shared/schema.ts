@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,7 +9,12 @@ export const users = pgTable("users", {
   role: text("role").notNull(), // 'sales', 'builder', 'admin', 'dual'
   country: text("country"), // User's country for regional filtering
   region: text("region"), // Auto-populated based on country
+  locale: text("locale"),
+  currency: text("currency"),
+  languages: jsonb("languages").$type<string[]>().default([]).notNull(),
   approved: boolean("approved").default(false),
+  passwordHash: text("password_hash").notNull(),
+  passwordSalt: text("password_salt").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
