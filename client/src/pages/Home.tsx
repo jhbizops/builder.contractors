@@ -47,10 +47,10 @@ export default function Home() {
                 <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
               </div>
               <h1
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight"
+                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight whitespace-pre-line"
                 data-testid="text-hero-title"
               >
-                {localized.welcome}
+                {localized.welcome.split('. ').join('.\n')}
               </h1>
               <p
                 className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto"
