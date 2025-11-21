@@ -23,10 +23,21 @@ interface GeoCacheEntry {
 
 const cache = new Map<string, GeoCacheEntry>();
 const CACHE_TTL = 1000 * 60 * 15; // 15 minutes
+export const GEO_LOOKUP_TIMEOUT_MS = 2500;
+
+const PRIVATE_IP_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2[0-9]|3[01])\./,
+  /^::1$/,
+  /^fc00:/i,
+  /^fd00:/i,
+];
 
 const US_FALLBACK = findCountryByCode("US").country ?? supportedCountries[0]!;
 
-function extractIp(request: Request): string {
+export function extractIp(request: Request): string {
   const forwarded = request.headers["x-forwarded-for"];
   if (typeof forwarded === "string" && forwarded.length > 0) {
     return forwarded.split(",")[0]!.trim();
@@ -39,26 +50,68 @@ function extractIp(request: Request): string {
   return request.ip;
 }
 
-async function lookupCountry(ip: string): Promise<SupportedCountry> {
-  const cached = cache.get(ip);
+export function isPrivateIp(ip: string | null | undefined): boolean {
+  if (!ip) {
+    return true;
+  }
+
+  const normalized = ip.trim();
+  if (!normalized) {
+    return true;
+  }
+
+  return PRIVATE_IP_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+async function fetchGeoResponse(ip: string): Promise<IpApiResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GEO_LOOKUP_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`ipapi failure: ${response.status}`);
+    }
+
+    const data = (await response.json()) as IpApiResponse;
+    if (data.error) {
+      throw new Error(`ipapi error: ${data.reason ?? "unknown"}`);
+    }
+
+    return data;
+  } catch (error) {
+    const isAbortError =
+      error instanceof DOMException
+        ? error.name === "AbortError"
+        : error instanceof Error && error.name === "AbortError";
+    if (isAbortError) {
+      throw new Error("ipapi-timeout");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function lookupCountry(ip: string): Promise<SupportedCountry> {
   const now = Date.now();
+  if (isPrivateIp(ip)) {
+    cache.set(ip, { country: US_FALLBACK, expiresAt: now + CACHE_TTL });
+    return US_FALLBACK;
+  }
+
+  const cached = cache.get(ip);
   if (cached && cached.expiresAt > now) {
     return cached.country;
   }
 
-  const response = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`ipapi failure: ${response.status}`);
-  }
-
-  const data = (await response.json()) as IpApiResponse;
-  if (data.error) {
-    throw new Error(`ipapi error: ${data.reason ?? "unknown"}`);
-  }
+  const data = await fetchGeoResponse(ip);
 
   const code = data.country_code ?? data.country;
   const { country } = findCountryByCode(code);
@@ -69,6 +122,10 @@ async function lookupCountry(ip: string): Promise<SupportedCountry> {
 
   cache.set(ip, { country, expiresAt: now + CACHE_TTL });
   return country;
+}
+
+export function clearGeoCache() {
+  cache.clear();
 }
 
 type AugmentedSession = Session & SessionData;
