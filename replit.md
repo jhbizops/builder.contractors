@@ -27,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **Session Management**: connect-pg-simple for PostgreSQL-backed sessions
 - **File Structure**: Monorepo with shared schemas between client and server
+- **Geo detection**: ipapi.co with connection timeout (2.5s) and private-network fallback to US metadata to keep requests responsive in dev/test environments
 
 ### Authentication & Authorization
 - **Current Implementation**: Cookie-based Express sessions backed by PostgreSQL
