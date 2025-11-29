@@ -93,6 +93,11 @@ async function fetchGeoResponse(ip: string): Promise<IpApiResponse> {
       throw new Error("ipapi-timeout");
     }
 
+    // Silently fall back on any network error (DNS, connection refused, etc)
+    if (error instanceof Error && error.message.includes("getaddrinfo")) {
+      throw new Error("ipapi-network-error");
+    }
+
     throw error;
   } finally {
     clearTimeout(timeoutId);
@@ -168,7 +173,14 @@ export async function geoDetectionMiddleware(
         return;
       }
 
-      country = US_FALLBACK;
+      // Silently fall back on any error (network, timeout, etc)
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg && (errorMsg.includes("ipapi") || errorMsg.includes("getaddrinfo"))) {
+        // Network-level errors are expected in some environments, silently use fallback
+        country = US_FALLBACK;
+      } else {
+        country = US_FALLBACK;
+      }
     }
 
     applySession(request.session as AugmentedSession, country);
