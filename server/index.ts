@@ -43,6 +43,14 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(geoDetectionMiddleware);
 
+// Cache static assets for 1 year in production
+app.use((req, res, next) => {
+  if (req.path.startsWith('/assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

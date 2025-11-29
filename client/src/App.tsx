@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -8,29 +9,38 @@ import { GlobalizationProvider } from "@/contexts/GlobalizationContext";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import Dashboard from "@/pages/Dashboard";
-import SalesDashboard from "@/pages/SalesDashboard";
-import BuilderDashboard from "@/pages/BuilderDashboard";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminSetup from "@/pages/AdminSetup";
-import ClearSession from "@/pages/ClearSession";
 import NotFound from "@/pages/not-found";
+
+// Lazy load dashboard pages to improve initial load time
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const SalesDashboard = lazy(() => import("@/pages/SalesDashboard"));
+const BuilderDashboard = lazy(() => import("@/pages/BuilderDashboard"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const AdminSetup = lazy(() => import("@/pages/AdminSetup"));
+const ClearSession = lazy(() => import("@/pages/ClearSession"));
+
+// Loading placeholder
+function LoadingFallback() {
+  return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+}
 
 // Auto-seed admin account in development
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/logout" component={ClearSession} />
-      <Route path="/admin-setup" component={AdminSetup} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/dashboard/sales" component={SalesDashboard} />
-      <Route path="/dashboard/builder" component={BuilderDashboard} />
-      <Route path="/dashboard/admin" component={AdminDashboard} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<LoadingFallback />}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/logout" component={ClearSession} />
+        <Route path="/admin-setup" component={AdminSetup} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard/sales" component={SalesDashboard} />
+        <Route path="/dashboard/builder" component={BuilderDashboard} />
+        <Route path="/dashboard/admin" component={AdminDashboard} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
