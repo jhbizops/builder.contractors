@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { EntitlementGate } from '@/components/EntitlementGate';
 
 const leadSchema = z.object({
   clientName: z.string().min(1, 'Client name is required'),
@@ -40,6 +41,7 @@ export default function SalesDashboard() {
   const { userData } = useAuth();
   const { data: leads, loading, add, update, remove } = useCollection<Lead>('leads');
   const { formatNumber } = useGlobalization();
+  const canExport = userData?.entitlements.includes('reports.export');
 
   const {
     register,
@@ -194,13 +196,29 @@ export default function SalesDashboard() {
                   </DialogContent>
                 </Dialog>
                 
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Data
-                </Button>
+                {canExport ? (
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Data
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled className="opacity-70">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Data (Upgrade)
+                  </Button>
+                )}
               </div>
             </div>
           </div>
+
+          {!canExport && (
+            <div className="mb-6">
+              <EntitlementGate
+                entitlement="reports.export"
+                fallbackText="Lead exports and data sync require a paid plan."
+              />
+            </div>
+          )}
 
           {/* Dashboard Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

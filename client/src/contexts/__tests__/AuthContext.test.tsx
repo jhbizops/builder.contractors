@@ -33,6 +33,21 @@ const createUser = (overrides: Partial<User> = {}): User => ({
   currency: undefined,
   languages: [],
   createdAt: new Date("2024-01-01T00:00:00Z"),
+  plan: {
+    id: "free",
+    name: "Free",
+    description: "",
+    interval: "month",
+    priceCents: 0,
+    currency: "usd",
+    entitlements: ["dashboard.basic"],
+    quotas: { leads: 10, seats: 1 },
+    isDefault: true,
+    providerPriceId: null,
+  },
+  subscription: null,
+  entitlements: ["dashboard.basic"],
+  quotas: { leads: 10, seats: 1 },
   ...overrides,
 });
 

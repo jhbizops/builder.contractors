@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { storage } from "../storage";
+import { storage } from "../storageInstance";
 
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {

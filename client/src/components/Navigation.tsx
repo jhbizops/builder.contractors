@@ -23,15 +23,18 @@ export const Navigation: React.FC = () => {
   };
 
   const getNavItems = () => {
-    const items = [
+    const items: { path: string; label: string; roles: string[]; entitlement?: string }[] = [
       { path: '/dashboard', label: 'Dashboard', roles: ['sales', 'builder', 'admin', 'dual'] },
       { path: '/dashboard/sales', label: 'Leads', roles: ['sales', 'dual', 'admin'] },
       { path: '/dashboard/builder', label: 'Services', roles: ['builder', 'dual', 'admin'] },
       { path: '/dashboard/admin', label: 'Admin', roles: ['admin'] },
+      { path: '/dashboard/reports', label: 'Reports', roles: ['sales', 'builder', 'dual', 'admin'], entitlement: 'reports.export' },
+      { path: '/dashboard/billing', label: 'Billing', roles: ['sales', 'builder', 'dual', 'admin'] },
     ];
 
-    return items.filter(item => 
-      item.roles.includes(userData?.role || '') || userData?.role === 'admin'
+    return items.filter(item =>
+      (item.roles.includes(userData?.role || '') || userData?.role === 'admin')
+      && (!item.entitlement || userData?.entitlements.includes(item.entitlement))
     );
   };
 
