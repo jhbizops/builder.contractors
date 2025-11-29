@@ -4,10 +4,20 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-const databaseUrl = process.env.DATABASE_URL;
+let databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error("DATABASE_URL must be defined");
+}
+
+// Convert direct Neon connection to pooler connection for better reliability
+// This fixes DNS resolution issues in production deployments
+if (databaseUrl.includes('.neon.tech') && !databaseUrl.includes('-pooler')) {
+  databaseUrl = databaseUrl.replace(
+    /(@ep-[^.]+)(\.)/,
+    '$1-pooler$2'
+  );
+  console.log('Using Neon pooler connection for improved reliability');
 }
 
 const pool = new Pool({
