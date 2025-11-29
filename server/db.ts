@@ -10,7 +10,16 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL must be defined");
 }
 
-const pool = new Pool({ connectionString: databaseUrl });
+const pool = new Pool({
+  connectionString: databaseUrl,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10,
+});
+
+pool.on("error", (err) => {
+  console.error("Unexpected database pool error:", err.message);
+});
 
 const db = drizzle(pool, { schema });
 
