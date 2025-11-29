@@ -113,7 +113,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">Exchange Work</h3>
                 <p className="text-slate-600">
-                  Find contractors in different locations who can handle overflow work or specialized projects you can't service.
+                  Find contractors in different locations who can handle overflow work or specialised projects you can't service.
                 </p>
               </CardContent>
             </Card>
