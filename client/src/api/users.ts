@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { User } from "@/types";
+import type { BillingPlan, Subscription, User } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 
 export const USERS_QUERY_KEY = ["/api/users"] as const;
@@ -25,6 +25,44 @@ export const publicUserSchema = z.object({
   languages: z.array(z.string()).default([]),
   approved: z.boolean(),
   createdAt: dateSchema,
+  plan: z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullish(),
+    interval: z.string(),
+    priceCents: z.number(),
+    currency: z.string(),
+    entitlements: z.array(z.string()),
+    quotas: z.object({
+      leads: z.number(),
+      seats: z.number(),
+      storageGb: z.number().optional(),
+      workspaces: z.number().optional(),
+    }),
+    isDefault: z.boolean(),
+    providerPriceId: z.string().nullable(),
+  }),
+  subscription: z
+    .object({
+      id: z.string(),
+      userId: z.string(),
+      planId: z.string(),
+      status: z.string(),
+      currentPeriodEnd: dateSchema.nullable(),
+      cancelAtPeriodEnd: z.boolean(),
+      provider: z.string(),
+      providerCustomerId: z.string().nullable(),
+      providerSubscriptionId: z.string().nullable(),
+      metadata: z.record(z.string(), z.string()),
+    })
+    .nullable(),
+  entitlements: z.array(z.string()),
+  quotas: z.object({
+    leads: z.number(),
+    seats: z.number(),
+    storageGb: z.number().optional(),
+    workspaces: z.number().optional(),
+  }),
 });
 
 export type PublicUser = z.infer<typeof publicUserSchema>;
@@ -49,6 +87,23 @@ export function mapUser(user: PublicUser): User {
     languages: user.languages ?? [],
     approved: user.approved,
     createdAt: user.createdAt,
+    plan: mapPlan(user.plan),
+    subscription: user.subscription ? mapSubscription(user.subscription) : null,
+    entitlements: user.entitlements,
+    quotas: user.quotas,
+  };
+}
+
+function mapPlan(plan: PublicUser["plan"]): BillingPlan {
+  return {
+    ...plan,
+    description: plan.description ?? undefined,
+  };
+}
+
+function mapSubscription(subscription: NonNullable<PublicUser["subscription"]>): Subscription {
+  return {
+    ...subscription,
   };
 }
 

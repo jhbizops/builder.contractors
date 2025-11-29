@@ -8,12 +8,14 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: string[];
   requireApproval?: boolean;
+  requiredEntitlement?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole = [], 
-  requireApproval = true 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole = [],
+  requireApproval = true,
+  requiredEntitlement,
 }) => {
   const { currentUser, userData, loading } = useAuth();
 
@@ -48,6 +50,32 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   const isAdmin = userData.role === 'admin';
+
+  if (requiredEntitlement && !userData.entitlements.includes(requiredEntitlement)) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="flex mb-4 gap-2">
+              <AlertCircle className="h-8 w-8 text-blue-500" />
+              <h1 className="text-2xl font-bold text-slate-900">Upgrade required</h1>
+            </div>
+            <p className="mt-4 text-sm text-slate-600">
+              This area needs a premium entitlement. Visit billing to upgrade your plan.
+            </p>
+            <div className="mt-6 text-center">
+              <a
+                href="/dashboard/billing"
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Go to Billing
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (requireApproval && !isAdmin && !userData.approved) {
     return (

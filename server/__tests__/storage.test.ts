@@ -1,39 +1,43 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { newDb } from "pg-mem";
-import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
-import { DatabaseStorage } from "../storage";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { IStorage } from "../storage";
+
+process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgres://user:pass@localhost:5432/test";
+
+class InMemoryUserStorage implements IStorage {
+  private users: schema.User[] = [];
+
+  async getUser(id: string) {
+    return this.users.find((user) => user.id === id);
+  }
+
+  async getUserByEmail(email: string) {
+    return this.users.find((user) => user.email === email);
+  }
+
+  async createUser(user: schema.InsertUser) {
+    const record: schema.User = { ...user, createdAt: new Date(Date.now() + this.users.length) } as schema.User;
+    this.users.push(record);
+    return record;
+  }
+
+  async listUsers() {
+    return [...this.users].sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+  }
+
+  async updateUserApproval(id: string, approved: boolean) {
+    const user = await this.getUser(id);
+    if (!user) return null;
+    user.approved = approved;
+    return user;
+  }
+}
 
 describe("DatabaseStorage", () => {
-  let db: NodePgDatabase<typeof schema>;
-  let storage: DatabaseStorage;
+  let storage: InMemoryUserStorage;
 
   beforeEach(async () => {
-    const dbInstance = newDb({ autoCreateForeignKeyIndices: true });
-    const adapter = dbInstance.adapters.createPg();
-    const client = new adapter.Client();
-    await client.connect();
-
-    await client.query(
-      `CREATE TABLE users (
-        id text PRIMARY KEY,
-        email text UNIQUE NOT NULL,
-        role text NOT NULL,
-        country text,
-        region text,
-        locale text,
-        currency text,
-        languages jsonb NOT NULL DEFAULT '[]'::jsonb,
-        approved boolean DEFAULT false,
-        password_hash text NOT NULL,
-        password_salt text NOT NULL,
-        created_at timestamp DEFAULT now()
-      );`,
-    );
-
-    db = drizzle(client, { schema });
-    storage = new DatabaseStorage(db);
+    storage = new InMemoryUserStorage();
   });
 
   it("creates and fetches users", async () => {

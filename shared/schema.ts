@@ -18,6 +18,48 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+const planQuotaSchema = z.object({
+  seats: z.number().int().nonnegative(),
+  leads: z.number().int().nonnegative(),
+  storageGb: z.number().int().nonnegative().optional(),
+  workspaces: z.number().int().nonnegative().optional(),
+});
+
+export type PlanQuota = z.infer<typeof planQuotaSchema>;
+
+export const billingPlans = pgTable("billing_plans", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  interval: text("interval").notNull().default("month"),
+  priceCents: integer("price_cents").notNull(),
+  currency: text("currency").notNull().default("usd"),
+  entitlements: jsonb("entitlements").$type<string[]>().default([]).notNull(),
+  quotas: jsonb("quotas").$type<PlanQuota>().notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  providerPriceId: text("provider_price_id"),
+});
+
+export const subscriptions = pgTable("subscriptions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  planId: text("plan_id").notNull(),
+  status: text("status").notNull().default("active"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  provider: text("provider").notNull().default("stripe"),
+  providerCustomerId: text("provider_customer_id"),
+  providerSubscriptionId: text("provider_subscription_id"),
+  metadata: jsonb("metadata").$type<Record<string, string>>().default({}),
+});
+
+export const userEntitlements = pgTable("user_entitlements", {
+  userId: text("user_id").primaryKey(),
+  features: jsonb("features").$type<string[]>().notNull().default([]),
+  quotas: jsonb("quotas").$type<PlanQuota>().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const countries = pgTable("countries", {
   code: text("code").primaryKey(),
   name: text("name").notNull(),
@@ -114,6 +156,10 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
   timestamp: true,
 });
 
+export const insertBillingPlanSchema = createInsertSchema(billingPlans);
+export const insertSubscriptionSchema = createInsertSchema(subscriptions);
+export const insertUserEntitlementSchema = createInsertSchema(userEntitlements);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -129,3 +175,9 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type Country = typeof countries.$inferSelect;
 export type InsertCountry = z.infer<typeof insertCountrySchema>;
+export type BillingPlan = typeof billingPlans.$inferSelect;
+export type InsertBillingPlan = z.infer<typeof insertBillingPlanSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type UserEntitlement = typeof userEntitlements.$inferSelect;
+export type InsertUserEntitlement = z.infer<typeof insertUserEntitlementSchema>;

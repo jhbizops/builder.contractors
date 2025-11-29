@@ -1,7 +1,17 @@
 import '@testing-library/jest-dom/vitest';
 
-// Mock localStorage for tests that rely on it
-const storage: Record<string, string> = {};
+if (typeof window === 'undefined') {
+  class NoopResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // @ts-expect-error set for node environment tests
+  global.ResizeObserver = NoopResizeObserver;
+} else {
+  // Mock localStorage for tests that rely on it
+  const storage: Record<string, string> = {};
 
 Object.defineProperty(window, 'localStorage', {
   value: {
@@ -33,3 +43,4 @@ class ResizeObserver {
 }
 
 global.ResizeObserver = ResizeObserver;
+}

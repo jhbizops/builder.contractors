@@ -1,12 +1,13 @@
 import type { Request } from "express";
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
+import { storage } from "../storageInstance";
 import { generateSalt, hashPassword, verifyPassword } from "./authCrypto";
 import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
 import { SESSION_COOKIE_NAME } from "../session";
 import { toPublicUser } from "../users/serializers";
+import { billingService } from "../billing/instance";
 
 const authRouter = Router();
 
@@ -82,7 +83,14 @@ const registerHandler: RequestHandler = async (req, res, next) => {
     req.session.userRole = user.role;
     await saveSession(req);
 
-    res.status(201).json({ user: toPublicUser(user) });
+    const profile = await billingService.getUserBilling(user.id);
+
+    if (!profile) {
+      res.status(500).json({ message: "Unable to build user profile" });
+      return;
+    }
+
+    res.status(201).json({ user: toPublicUser(profile) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -114,7 +122,14 @@ const loginHandler: RequestHandler = async (req, res, next) => {
     req.session.userRole = user.role;
     await saveSession(req);
 
-    res.json({ user: toPublicUser(user) });
+    const profile = await billingService.getUserBilling(user.id);
+
+    if (!profile) {
+      res.status(500).json({ message: "Unable to build user profile" });
+      return;
+    }
+
+    res.json({ user: toPublicUser(profile) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -131,14 +146,14 @@ const meHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const user = await storage.getUser(req.session.userId);
+    const profile = await billingService.getUserBilling(req.session.userId);
 
-    if (!user) {
+    if (!profile) {
       res.status(401).json({ message: "Unauthenticated" });
       return;
     }
 
-    res.json({ user: toPublicUser(user) });
+    res.json({ user: toPublicUser(profile) });
   } catch (error) {
     next(error);
   }

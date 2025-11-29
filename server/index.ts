@@ -38,8 +38,24 @@ app.use(
   }),
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+const jsonParser = express.json();
+const urlEncodedParser = express.urlencoded({ extended: false });
+
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/billing/webhook") {
+    next();
+    return;
+  }
+  jsonParser(req, res, next);
+});
+
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/billing/webhook") {
+    next();
+    return;
+  }
+  urlEncodedParser(req, res, next);
+});
 
 app.use(geoDetectionMiddleware);
 

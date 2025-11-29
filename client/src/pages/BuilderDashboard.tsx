@@ -7,10 +7,15 @@ import { Settings, DollarSign, FileText, Wrench } from 'lucide-react';
 import { useCollection } from '@/hooks/useCollection';
 import { Service } from '@/types';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { EntitlementGate } from '@/components/EntitlementGate';
 
 export default function BuilderDashboard() {
   const { data: services } = useCollection<Service>('services');
   const { formatCurrency, formatNumber, settings } = useGlobalization();
+  const { userData } = useAuth();
+  const hasAutomation = userData?.entitlements.includes('billing.paid');
+  const canExport = userData?.entitlements.includes('reports.export');
 
   const stats = {
     totalServices: services.length,
@@ -118,29 +123,64 @@ export default function BuilderDashboard() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <h4 className="font-medium text-slate-900">Download Price List</h4>
-                    <p className="text-sm text-slate-600 mb-2">Export current pricing for clients</p>
-                    <button className="text-primary text-sm font-medium hover:text-blue-700">
-                      Download PDF
-                    </button>
-                  </div>
-                  
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <h4 className="font-medium text-slate-900">Booking Form</h4>
-                    <p className="text-sm text-slate-600 mb-2">Generate booking link for clients</p>
-                    <button className="text-primary text-sm font-medium hover:text-blue-700">
-                      Create Link
-                    </button>
-                  </div>
-                  
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <h4 className="font-medium text-slate-900">Custom Pricing</h4>
-                    <p className="text-sm text-slate-600 mb-2">Set special rates for specific clients</p>
-                    <button className="text-primary text-sm font-medium hover:text-blue-700">
-                      Manage Pricing
-                    </button>
-                  </div>
+                  <EntitlementGate
+                    entitlement="billing.paid"
+                    fallbackText="Bookings and automation are available on Pro plans."
+                  >
+                    <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                      <h4 className="font-medium text-slate-900">Booking Form</h4>
+                      <p className="text-sm text-slate-600 mb-2">Generate booking links with reminders.</p>
+                      <button className="text-primary text-sm font-medium hover:text-blue-700">
+                        Create Link
+                      </button>
+                    </div>
+                  </EntitlementGate>
+
+                  {canExport ? (
+                    <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                      <h4 className="font-medium text-slate-900">Download Price List</h4>
+                      <p className="text-sm text-slate-600 mb-2">Export current pricing for clients</p>
+                      <button className="text-primary text-sm font-medium hover:text-blue-700">
+                        Download PDF
+                      </button>
+                    </div>
+                  ) : (
+                    <EntitlementGate
+                      entitlement="reports.export"
+                      fallbackText="Exports unlock with Pro or Enterprise."
+                    >
+                      <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                        <h4 className="font-medium text-slate-900">Download Price List</h4>
+                        <p className="text-sm text-slate-600 mb-2">Export current pricing for clients</p>
+                        <button className="text-primary text-sm font-medium hover:text-blue-700">
+                          Download PDF
+                        </button>
+                      </div>
+                    </EntitlementGate>
+                  )}
+
+                  {hasAutomation ? (
+                    <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                      <h4 className="font-medium text-slate-900">Custom Pricing</h4>
+                      <p className="text-sm text-slate-600 mb-2">Set special rates for specific clients</p>
+                      <button className="text-primary text-sm font-medium hover:text-blue-700">
+                        Manage Pricing
+                      </button>
+                    </div>
+                  ) : (
+                    <EntitlementGate
+                      entitlement="billing.paid"
+                      fallbackText="Client-specific pricing is part of Pro."
+                    >
+                      <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+                        <h4 className="font-medium text-slate-900">Custom Pricing</h4>
+                        <p className="text-sm text-slate-600 mb-2">Set special rates for specific clients</p>
+                        <button className="text-primary text-sm font-medium hover:text-blue-700">
+                          Manage Pricing
+                        </button>
+                      </div>
+                    </EntitlementGate>
+                  )}
                 </CardContent>
               </Card>
             </div>
