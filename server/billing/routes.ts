@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import { z } from "zod";
-import { billingService } from "./instance";
+import { getBillingService } from "./instance";
 import { requireAuth } from "../middleware/auth";
 
 const billingRouter = Router();
@@ -10,6 +10,7 @@ const webhookMiddleware = express.raw({ type: "application/json" });
 
 billingRouter.get("/plans", async (_req, res, next) => {
   try {
+    const billingService = getBillingService();
     const plans = await billingService.listPlans();
     res.json({ plans });
   } catch (error) {
@@ -25,6 +26,7 @@ billingRouter.get("/subscription", requireAuth, async (_req, res, next) => {
       return;
     }
 
+    const billingService = getBillingService();
     const billing = await billingService.getUserBilling(user.id);
 
     if (!billing) {
@@ -51,6 +53,7 @@ billingRouter.post("/checkout", requireAuth, async (req, res, next) => {
       return;
     }
 
+    const billingService = getBillingService();
     const session = await billingService.createCheckoutSession(user.id, req.body);
     res.json(session);
   } catch (error) {
@@ -67,6 +70,7 @@ billingRouter.post("/cancel", requireAuth, async (req, res, next) => {
       return;
     }
 
+    const billingService = getBillingService();
     const subscription = await billingService.cancelSubscription(user.id);
     res.json({ subscription });
   } catch (error) {
@@ -77,6 +81,7 @@ billingRouter.post("/cancel", requireAuth, async (req, res, next) => {
 billingRouter.post("/webhook", webhookMiddleware, async (req, res) => {
   try {
     const signature = req.header("stripe-signature");
+    const billingService = getBillingService();
     await billingService.handleWebhook(req.body as Buffer, signature ?? undefined);
     res.status(200).json({ received: true });
   } catch (error) {

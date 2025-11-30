@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "../middleware/auth";
 import { storage } from "../storageInstance";
 import { toPublicUser } from "./serializers";
-import { billingService } from "../billing/instance";
+import { getBillingService } from "../billing/instance";
 
 const usersRouter = Router();
 
@@ -11,6 +11,7 @@ usersRouter.use(requireAdmin);
 
 usersRouter.get("/", async (_req, res, next) => {
   try {
+    const billingService = getBillingService();
     const users = await storage.listUsers();
     const profiles = await Promise.all(
       users.map((user) => billingService.getUserBilling(user.id)),
@@ -36,6 +37,7 @@ usersRouter.patch("/:id/approval", async (req, res, next) => {
       return;
     }
 
+    const billingService = getBillingService();
     const profile = await billingService.getUserBilling(updated.id);
 
     if (!profile) {

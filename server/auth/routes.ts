@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
 import { SESSION_COOKIE_NAME } from "../session";
 import { toPublicUser } from "../users/serializers";
-import { billingService } from "../billing/instance";
+import { getBillingService } from "../billing/instance";
 
 const authRouter = Router();
 
@@ -83,6 +83,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
     req.session.userRole = user.role;
     await saveSession(req);
 
+    const billingService = getBillingService();
     const profile = await billingService.getUserBilling(user.id);
 
     if (!profile) {
@@ -122,6 +123,7 @@ const loginHandler: RequestHandler = async (req, res, next) => {
     req.session.userRole = user.role;
     await saveSession(req);
 
+    const billingService = getBillingService();
     const profile = await billingService.getUserBilling(user.id);
 
     if (!profile) {
@@ -146,6 +148,7 @@ const meHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    const billingService = getBillingService();
     const profile = await billingService.getUserBilling(req.session.userId);
 
     if (!profile) {
