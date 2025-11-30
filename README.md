@@ -7,6 +7,7 @@ Internal dashboards for Builder.Contractors covering sales, builder, admin, and 
 - Run dev server: `pnpm dev`
 - Run tests: `pnpm test`
 - Type/lint: `pnpm typecheck && pnpm lint`
+- First bootstraps the database schema on server start if tables are missing.
 
 ## Environment variables
 Copy `.env.example` to `.env` and set:
