@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'node:url';
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 import { cartographer } from '@replit/vite-plugin-cartographer';
+import type { VitestEnvironment } from 'vitest';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -38,9 +39,11 @@ export default defineConfig(() => {
       environment: 'jsdom',
       setupFiles: './client/src/test/setup.ts',
       include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)', '../server/__tests__/**/*.{test,spec}.ts'],
-      environmentMatchGlobs: [
-        ['../server/**', 'node'],
-      ],
+      environmentMatchGlobs: (
+        [
+          ['../server/**', 'node'],
+        ] satisfies [string, VitestEnvironment][]
+      ),
       coverage: {
         provider: 'v8' as const,
         reporter: ['text', 'lcov'],

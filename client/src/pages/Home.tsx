@@ -52,15 +52,15 @@ export default function Home() {
               >
                 {localized.welcome.split('. ').join('.\n')}
               </h1>
-              <p
-                className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto"
-                data-testid="text-hero-subtitle"
-              >
-                {localized.shareAdvice}
-              </p>
-              <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
-                {localized.connectContractors}
-              </p>
+                <p
+                  className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto"
+                  data-testid="text-hero-subtitle"
+                >
+                  {localized['share-advice']}
+                </p>
+                <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
+                  {localized['connect-contractors']}
+                </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="text-lg px-8 py-6" asChild data-testid="button-hero-signup">
                   <Link href="/register">

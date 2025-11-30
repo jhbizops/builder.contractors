@@ -162,7 +162,7 @@ export const insertUserEntitlementSchema = createInsertSchema(userEntitlements);
 
 // Types
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = typeof users.$inferInsert;
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type LeadComment = typeof leadComments.$inferSelect;

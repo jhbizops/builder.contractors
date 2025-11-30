@@ -20,6 +20,11 @@ billingRouter.get("/plans", async (_req, res, next) => {
 billingRouter.get("/subscription", requireAuth, async (_req, res, next) => {
   try {
     const user = res.locals.authenticatedUser;
+    if (!user) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
     const billing = await billingService.getUserBilling(user.id);
 
     if (!billing) {
@@ -40,7 +45,13 @@ billingRouter.get("/subscription", requireAuth, async (_req, res, next) => {
 
 billingRouter.post("/checkout", requireAuth, async (req, res, next) => {
   try {
-    const session = await billingService.createCheckoutSession(res.locals.authenticatedUser.id, req.body);
+    const user = res.locals.authenticatedUser;
+    if (!user) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    const session = await billingService.createCheckoutSession(user.id, req.body);
     res.json(session);
   } catch (error) {
     next(error);
@@ -50,7 +61,13 @@ billingRouter.post("/checkout", requireAuth, async (req, res, next) => {
 billingRouter.post("/cancel", requireAuth, async (req, res, next) => {
   try {
     cancelSchema.parse(req.body ?? {});
-    const subscription = await billingService.cancelSubscription(res.locals.authenticatedUser.id);
+    const user = res.locals.authenticatedUser;
+    if (!user) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    const subscription = await billingService.cancelSubscription(user.id);
     res.json({ subscription });
   } catch (error) {
     next(error);

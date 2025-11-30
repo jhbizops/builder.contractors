@@ -1,8 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { Pool } from "pg";
 import * as schema from "@shared/schema";
-
-const { Pool } = pg;
 
 let databaseUrl = process.env.DATABASE_URL;
 
@@ -27,7 +25,7 @@ const pool = new Pool({
   max: 10,
 });
 
-pool.on("error", (err) => {
+pool.on("error", (err: Error) => {
   console.error("Unexpected database pool error:", err.message);
 });
 

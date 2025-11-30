@@ -9,7 +9,7 @@ export interface CountryMetadata {
   readonly localize: boolean;
 }
 
-const lowEnglishCountries = new Set<
+type LowEnglishCountry =
   | "Brazil"
   | "China"
   | "Egypt"
@@ -23,8 +23,9 @@ const lowEnglishCountries = new Set<
   | "Slovenia"
   | "Thailand"
   | "Turkey"
-  | "United Arab Emirates"
->([
+  | "United Arab Emirates";
+
+const lowEnglishCountries = new Set<LowEnglishCountry>([
   "Brazil",
   "China",
   "Egypt",
@@ -175,7 +176,11 @@ export const localizeCountryCodes = countryEntries
   .map((country) => country.code);
 
 export const lowEnglishCountriesByName = new Set(
-  countryEntries.filter((country) => lowEnglishCountries.has(country.name)).map((country) => country.name),
+  countryEntries
+    .filter((country): country is CountryMetadata & { name: LowEnglishCountry } =>
+      lowEnglishCountries.has(country.name as LowEnglishCountry)
+    )
+    .map((country) => country.name),
 );
 
 export default countryMetadata;

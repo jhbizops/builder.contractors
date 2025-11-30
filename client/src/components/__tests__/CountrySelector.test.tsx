@@ -88,4 +88,36 @@ describe('CountrySelector', () => {
       expect.objectContaining({ code: 'BR' }),
     );
   });
+
+  it('supports controlled value and custom placeholder', async () => {
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+
+    const handleChange = vi.fn();
+
+    render(
+      <QueryClientProvider client={client}>
+        <CountrySelector
+          value="US"
+          onValueChange={handleChange}
+          placeholder="Pick a country"
+          disabled
+        />
+      </QueryClientProvider>,
+    );
+
+    const triggers = await screen.findAllByTestId('button-country-selector');
+    const trigger = triggers.find((element) => element.hasAttribute('disabled'));
+    expect(trigger).toBeDefined();
+    await screen.findByText('United States');
+
+    if (!trigger) {
+      throw new Error('Expected to find disabled trigger');
+    }
+
+    await user.click(trigger);
+    expect(handleChange).not.toHaveBeenCalled();
+  });
 });
