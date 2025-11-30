@@ -11,15 +11,17 @@ const mockSetGeoCountry = vi.fn();
 const registerMock = vi.fn();
 
 vi.mock('@/components/ui/select', () => {
-  const flatten = (content: any): string => {
+  const flatten = (content: unknown): string => {
     if (typeof content === 'string') {
       return content;
     }
     if (Array.isArray(content)) {
       return content.map(flatten).join(' ');
     }
-    if (React.isValidElement(content) && content.props?.children) {
-      return flatten(content.props.children);
+    if (React.isValidElement(content)) {
+      const element = content as React.ReactElement<{ children?: React.ReactNode }>;
+      const childContent = element.props.children as unknown;
+      return childContent ? flatten(childContent) : '';
     }
     return '';
   };

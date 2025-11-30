@@ -7,31 +7,30 @@ if (typeof window === 'undefined') {
     disconnect() {}
   }
 
-  // @ts-expect-error set for node environment tests
-  global.ResizeObserver = NoopResizeObserver;
+  globalThis.ResizeObserver = NoopResizeObserver as unknown as typeof ResizeObserver;
 } else {
   // Mock localStorage for tests that rely on it
   const storage: Record<string, string> = {};
 
-Object.defineProperty(window, 'localStorage', {
-  value: {
-    getItem: (key: string) => storage[key] ?? null,
-    setItem: (key: string, value: string) => {
-      storage[key] = value;
+  Object.defineProperty(window, 'localStorage', {
+    value: {
+      getItem: (key: string) => storage[key] ?? null,
+      setItem: (key: string, value: string) => {
+        storage[key] = value;
+      },
+      removeItem: (key: string) => {
+        delete storage[key];
+      },
+      clear: () => {
+        Object.keys(storage).forEach((key) => delete storage[key]);
+      },
     },
-    removeItem: (key: string) => {
-      delete storage[key];
-    },
-    clear: () => {
-      Object.keys(storage).forEach((key) => delete storage[key]);
-    },
-  },
-});
+  });
 
-class ResizeObserver {
-  observe() {
-    // no-op for jsdom
-  }
+  class ResizeObserver {
+    observe() {
+      // no-op for jsdom
+    }
 
   unobserve() {
     // no-op for jsdom
@@ -40,7 +39,7 @@ class ResizeObserver {
   disconnect() {
     // no-op for jsdom
   }
-}
+  }
 
-global.ResizeObserver = ResizeObserver;
+  globalThis.ResizeObserver = ResizeObserver as unknown as typeof ResizeObserver;
 }

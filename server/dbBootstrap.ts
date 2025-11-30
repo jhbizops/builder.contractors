@@ -1,4 +1,3 @@
-import type { Pool } from "pg";
 import { log } from "./vite";
 
 interface PoolLike {
@@ -113,7 +112,7 @@ async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> 
   return Boolean(result.rows[0]?.oid);
 }
 
-export async function ensureDatabase(pool: Pool | PoolLike): Promise<void> {
+export async function ensureDatabase(pool: PoolLike): Promise<void> {
   try {
     const hasUsersTable = await tableExists(pool, "users");
 

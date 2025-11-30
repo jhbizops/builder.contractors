@@ -47,7 +47,7 @@ export function extractIp(request: Request): string {
     return forwarded[0]!.split(",")[0]!.trim();
   }
 
-  return request.ip;
+  return request.ip ?? "";
 }
 
 export function isPrivateIp(ip: string | null | undefined): boolean {

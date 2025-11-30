@@ -174,9 +174,9 @@ export default function SalesDashboard() {
                         <Label htmlFor="country">Country</Label>
                         <CountrySelector
                           value={selectedCountry}
-                          onValueChange={(country, region) => {
+                          onValueChange={(country) => {
                             setSelectedCountry(country);
-                            setSelectedRegion(region);
+                            setSelectedRegion('');
                           }}
                           placeholder="Select a country"
                         />
@@ -216,7 +216,9 @@ export default function SalesDashboard() {
               <EntitlementGate
                 entitlement="reports.export"
                 fallbackText="Lead exports and data sync require a paid plan."
-              />
+              >
+                {null}
+              </EntitlementGate>
             </div>
           )}
 
