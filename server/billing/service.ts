@@ -11,7 +11,7 @@ const checkoutSchema = z.object({
   cancelUrl: z.string().url(),
 });
 
-export interface BillingContext extends UserProfile {}
+export type BillingContext = UserProfile;
 
 export class BillingService {
   constructor(

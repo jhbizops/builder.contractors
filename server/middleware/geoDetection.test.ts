@@ -60,8 +60,10 @@ describe("geoDetection helpers", () => {
   it("times out slow geo providers", async () => {
     vi.useFakeTimers();
 
-    vi.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+    vi.spyOn(global, "fetch").mockImplementation((...args: Parameters<typeof fetch>) => {
+      const [, init] = args;
       const signal = init?.signal;
+
       return new Promise((_, reject) => {
         signal?.addEventListener("abort", () => {
           reject(new DOMException("Aborted", "AbortError"));
