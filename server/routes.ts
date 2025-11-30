@@ -5,8 +5,11 @@ import { authRouter } from "./auth/routes";
 import { usersRouter } from "./users/routes";
 import { billingRouter } from "./billing/routes";
 import { billingService } from "./billing/instance";
+import { ensureDatabase } from "./dbBootstrap";
+import { pool } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  await ensureDatabase(pool);
   await billingService.ensurePlans();
 
   app.get("/api/countries", (_req, res) => {
