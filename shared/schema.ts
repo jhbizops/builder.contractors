@@ -6,7 +6,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
-  role: text("role").notNull(), // 'sales', 'builder', 'admin', 'dual'
+  role: text("role").notNull(), // 'sales', 'builder', 'admin', 'super_admin', 'dual'
   country: text("country"), // User's country for regional filtering
   region: text("region"), // Auto-populated based on country
   locale: text("locale"),
