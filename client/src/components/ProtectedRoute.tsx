@@ -49,7 +49,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  const isAdmin = userData.role === 'admin';
+  const isAdmin = userData.role === 'admin' || userData.role === 'super_admin';
 
   if (requiredEntitlement && !userData.entitlements.includes(requiredEntitlement)) {
     return (
@@ -103,7 +103,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (requiredRole.length > 0 && !requiredRole.includes(userData.role) && userData.role !== 'dual' && userData.role !== 'admin') {
+  if (requiredRole.length > 0 && !requiredRole.includes(userData.role) && userData.role !== 'dual' && !isAdmin) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
         <Card className="w-full max-w-md mx-4">

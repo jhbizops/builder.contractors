@@ -24,16 +24,17 @@ export const Navigation: React.FC = () => {
 
   const getNavItems = () => {
     const items: { path: string; label: string; roles: string[]; entitlement?: string }[] = [
-      { path: '/dashboard', label: 'Dashboard', roles: ['sales', 'builder', 'admin', 'dual'] },
-      { path: '/dashboard/sales', label: 'Leads', roles: ['sales', 'dual', 'admin'] },
-      { path: '/dashboard/builder', label: 'Services', roles: ['builder', 'dual', 'admin'] },
-      { path: '/dashboard/admin', label: 'Admin', roles: ['admin'] },
-      { path: '/dashboard/reports', label: 'Reports', roles: ['sales', 'builder', 'dual', 'admin'], entitlement: 'reports.export' },
-      { path: '/dashboard/billing', label: 'Billing', roles: ['sales', 'builder', 'dual', 'admin'] },
+      { path: '/dashboard', label: 'Dashboard', roles: ['sales', 'builder', 'admin', 'super_admin', 'dual'] },
+      { path: '/dashboard/sales', label: 'Leads', roles: ['sales', 'dual', 'admin', 'super_admin'] },
+      { path: '/dashboard/builder', label: 'Services', roles: ['builder', 'dual', 'admin', 'super_admin'] },
+      { path: '/dashboard/admin', label: 'Admin', roles: ['admin', 'super_admin'] },
+      { path: '/dashboard/reports', label: 'Reports', roles: ['sales', 'builder', 'dual', 'admin', 'super_admin'], entitlement: 'reports.export' },
+      { path: '/dashboard/billing', label: 'Billing', roles: ['sales', 'builder', 'dual', 'admin', 'super_admin'] },
     ];
 
+    const isAdmin = userData?.role === 'admin' || userData?.role === 'super_admin';
     return items.filter(item =>
-      (item.roles.includes(userData?.role || '') || userData?.role === 'admin')
+      (item.roles.includes(userData?.role || '') || isAdmin)
       && (!item.entitlement || userData?.entitlements.includes(item.entitlement))
     );
   };
@@ -45,7 +46,7 @@ export const Navigation: React.FC = () => {
         { value: 'builder', label: 'Builder View' },
       ];
     }
-    if (userData?.role === 'admin') {
+    if (userData?.role === 'admin' || userData?.role === 'super_admin') {
       return [
         { value: 'admin', label: 'Admin View' },
         { value: 'sales', label: 'Sales View' },

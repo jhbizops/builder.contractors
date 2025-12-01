@@ -33,7 +33,7 @@ export const requireAdmin: RequestHandler = async (req, res, next) => {
 
     const user = res.locals.authenticatedUser;
 
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" && user?.role !== "super_admin") {
       res.status(403).json({ message: "Forbidden" });
       return;
     }
