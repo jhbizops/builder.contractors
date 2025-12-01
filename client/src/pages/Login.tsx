@@ -1,46 +1,54 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Redirect, Link } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { BrandLogo } from '@/components/BrandLogo';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  rememberMe: z.boolean().optional(),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { currentUser, login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   if (currentUser) {
     return <Redirect to="/dashboard" />;
   }
 
-  const onSubmit = async (data: LoginFormData) => {
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Invalid email address';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(email, password);
     } catch (error) {
-      // Error is handled in the context
     } finally {
       setIsLoading(false);
     }
@@ -55,19 +63,20 @@ export default function Login() {
           <p className="text-slate-600 mt-2">Sign in to Builder.Contractors</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your@email.com"
-                {...register('email')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
                 data-testid="input-email"
               />
               {errors.email && (
-                <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
               )}
             </div>
 
@@ -77,26 +86,39 @@ export default function Login() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                {...register('password')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className={errors.password ? 'border-red-500' : ''}
                 data-testid="input-password"
               />
               {errors.password && (
-                <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.password}</p>
               )}
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Checkbox id="rememberMe" {...register('rememberMe')} />
-                <Label htmlFor="rememberMe" className="text-sm">Remember me</Label>
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  data-testid="checkbox-remember"
+                />
+                <Label htmlFor="rememberMe" className="text-sm cursor-pointer">Remember me</Label>
               </div>
               <Link href="#" className="text-sm text-primary hover:text-blue-700">
                 Forgot password?
               </Link>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signin">
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading} 
+              data-testid="button-signin"
+            >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>

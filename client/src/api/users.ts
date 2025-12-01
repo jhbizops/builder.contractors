@@ -17,7 +17,7 @@ const dateSchema = z
 export const publicUserSchema = z.object({
   id: z.string(),
   email: z.string().email(),
-  role: z.enum(["sales", "builder", "admin", "dual"]),
+  role: z.enum(["sales", "builder", "admin", "super_admin", "dual"]),
   country: z.string().nullable().optional(),
   region: z.string().nullable().optional(),
   locale: z.string().nullable().optional(),

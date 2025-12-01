@@ -34,7 +34,7 @@ export interface Subscription {
 export interface User {
   id: string;
   email: string;
-  role: 'sales' | 'builder' | 'admin' | 'dual';
+  role: 'sales' | 'builder' | 'admin' | 'super_admin' | 'dual';
   country?: string;
   region?: string;
   locale?: string;
