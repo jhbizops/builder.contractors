@@ -24,10 +24,13 @@ export const GlobalizationSettingsDialog: React.FC = () => {
     timeZones,
     updateSettings,
     resetSettings,
+    isAdmin,
+    canEditCurrencySettings,
   } = useGlobalization();
   const [open, setOpen] = useState(false);
   
   const isLocalCurrencyAUD = settings.currency === platformCurrency;
+  const showCurrencyOptions = !isLocalCurrencyAUD && canEditCurrencySettings;
 
   const localeOptions = useMemo(() => locales.map((locale) => ({ value: locale, label: locale })), [locales]);
   const currencyOptions = useMemo(
@@ -103,7 +106,15 @@ export const GlobalizationSettingsDialog: React.FC = () => {
             </Select>
           </div>
 
-          {!isLocalCurrencyAUD && (
+          {isAdmin && !isLocalCurrencyAUD && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                As an administrator, you see all prices in AUD with local currency equivalents where available.
+              </p>
+            </div>
+          )}
+
+          {showCurrencyOptions && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="currencyDisplayMode">Currency display</Label>

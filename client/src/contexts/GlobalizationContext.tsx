@@ -27,8 +27,13 @@ declare global {
   }
 }
 
+type UserRole = 'sales' | 'builder' | 'admin' | 'super_admin' | 'dual' | null;
+
+const isAdminRole = (role: UserRole): boolean => role === 'admin' || role === 'super_admin';
+
 interface GlobalizationContextValue {
   settings: GlobalizationSettings;
+  effectiveSettings: GlobalizationSettings;
   locales: readonly string[];
   currencies: readonly string[];
   currencyDisplayModes: typeof currencyDisplayModes;
@@ -43,6 +48,10 @@ interface GlobalizationContextValue {
   formatDateTime: (value: DateLike, options?: Intl.DateTimeFormatOptions) => string;
   geo: GeoSession;
   setGeoCountry: (country: GeoCountry | null) => void;
+  userRole: UserRole;
+  setUserRole: (role: UserRole) => void;
+  isAdmin: boolean;
+  canEditCurrencySettings: boolean;
 }
 
 const GlobalizationContext = createContext<GlobalizationContextValue | undefined>(undefined);
@@ -63,6 +72,25 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [settings, setSettings] = useState<GlobalizationSettings>(() => deriveDefaultSettings());
   const [hydrated, setHydrated] = useState(false);
   const [geoSession, setGeoSession] = useState<GeoSession>({ country: null, localize: false });
+  const [userRole, setUserRole] = useState<UserRole>(null);
+
+  const isAdmin = useMemo(() => isAdminRole(userRole), [userRole]);
+  const canEditCurrencySettings = false;
+
+  const effectiveSettings = useMemo<GlobalizationSettings>(() => {
+    if (isAdminRole(userRole)) {
+      return {
+        ...settings,
+        currencyDisplayMode: 'both',
+        operateInLocalCurrency: false,
+      };
+    }
+    return {
+      ...settings,
+      currencyDisplayMode: 'local',
+      operateInLocalCurrency: true,
+    };
+  }, [settings, userRole]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -152,14 +180,15 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [geoSession.country]);
 
-  const formatCurrency = useMemo(() => createCurrencyFormatter(settings), [settings]);
-  const formatDualCurrency = useMemo(() => createDualCurrencyFormatter(settings), [settings]);
-  const formatNumber = useMemo(() => createNumberFormatter(settings), [settings]);
-  const formatDateTime = useMemo(() => createDateTimeFormatter(settings), [settings]);
+  const formatCurrency = useMemo(() => createCurrencyFormatter(effectiveSettings), [effectiveSettings]);
+  const formatDualCurrency = useMemo(() => createDualCurrencyFormatter(effectiveSettings), [effectiveSettings]);
+  const formatNumber = useMemo(() => createNumberFormatter(effectiveSettings), [effectiveSettings]);
+  const formatDateTime = useMemo(() => createDateTimeFormatter(effectiveSettings), [effectiveSettings]);
 
   const value = useMemo<GlobalizationContextValue>(
     () => ({
       settings,
+      effectiveSettings,
       locales: supportedLocales,
       currencies: supportedCurrencies,
       currencyDisplayModes,
@@ -188,16 +217,24 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
           );
         }
       },
+      userRole,
+      setUserRole,
+      isAdmin,
+      canEditCurrencySettings,
     }),
     [
+      effectiveSettings,
       formatCurrency,
       formatDateTime,
       formatDualCurrency,
       formatNumber,
       geoSession,
+      isAdmin,
+      canEditCurrencySettings,
       resetSettings,
       settings,
       updateSettings,
+      userRole,
       setGeoSession,
       setSettings,
     ],

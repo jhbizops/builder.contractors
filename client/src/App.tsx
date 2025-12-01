@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GlobalizationProvider } from "@/contexts/GlobalizationContext";
+import { GlobalizationRoleSync } from "@/components/GlobalizationRoleSync";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -54,8 +55,10 @@ function App() {
       <TooltipProvider>
         <GlobalizationProvider>
           <AuthProvider>
-            <Toaster />
-            <Router />
+            <GlobalizationRoleSync>
+              <Toaster />
+              <Router />
+            </GlobalizationRoleSync>
           </AuthProvider>
         </GlobalizationProvider>
       </TooltipProvider>
