@@ -133,7 +133,6 @@ describe('Register page', () => {
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.type(screen.getByLabelText(/confirm password/i), 'password123');
-    await user.click(screen.getByLabelText(/sales partner/i));
 
     const countrySelect = await screen.findByRole('combobox');
     await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
@@ -147,7 +146,7 @@ describe('Register page', () => {
       expect(registerMock).toHaveBeenCalledWith(
         'test@example.com',
         'password123',
-        'sales',
+        'dual',
         expect.objectContaining({ country: 'US' })
       );
     });

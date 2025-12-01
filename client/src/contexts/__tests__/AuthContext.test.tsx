@@ -25,7 +25,7 @@ vi.mock("@/api/auth", () => ({
 const createUser = (overrides: Partial<User> = {}): User => ({
   id: "user_1",
   email: "tester@example.com",
-  role: "sales",
+  role: "dual",
   approved: false,
   country: undefined,
   region: undefined,
@@ -85,14 +85,14 @@ describe("AuthContext", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await act(async () => {
-      await result.current.register("tester@example.com", "password123", "sales");
+      await result.current.register("tester@example.com", "password123");
     });
 
     const registerArgs = mockRegister.mock.calls[0]?.[0];
     expect(registerArgs).toEqual({
       email: "tester@example.com",
       password: "password123",
-      role: "sales",
+      role: "dual",
       country: undefined,
       region: undefined,
       locale: undefined,

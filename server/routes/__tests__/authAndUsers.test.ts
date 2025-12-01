@@ -91,7 +91,7 @@ describe("auth and users routes", () => {
 
     const registerRes = await agent
       .post("/api/auth/register")
-      .send({ email: "tester@example.com", password: "Password123!", role: "sales" })
+      .send({ email: "tester@example.com", password: "Password123!" })
       .expect(201);
 
     expect(registerRes.body.user.email).toBe("tester@example.com");
@@ -122,7 +122,7 @@ describe("auth and users routes", () => {
     const userAgent = request.agent(app);
     const userRes = await userAgent
       .post("/api/auth/register")
-      .send({ email: "user@example.com", password: "UserPass123!", role: "sales" })
+      .send({ email: "user@example.com", password: "UserPass123!" })
       .expect(201);
 
     const userId = userRes.body.user.id as string;

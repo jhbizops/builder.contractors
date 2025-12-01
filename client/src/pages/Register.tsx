@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BrandLogo } from '@/components/BrandLogo';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,9 +28,6 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  role: z.enum(['sales', 'builder', 'dual'], {
-    required_error: 'Please select a role',
-  }),
   country: z.string().length(2, 'Please select your country'),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: 'You must agree to the Terms of Service and Privacy Policy',
@@ -68,7 +64,6 @@ export default function Register() {
     },
   });
 
-  const watchedRole = watch('role');
   const watchedCountry = watch('country');
 
   const countries = useMemo(() => countriesData ?? [], [countriesData]);
@@ -93,7 +88,7 @@ export default function Register() {
         setGeoCountry(matchedCountry);
       }
 
-      await registerUser(data.email, data.password, data.role, matchedCountry
+      await registerUser(data.email, data.password, 'dual', matchedCountry
         ? {
             country: matchedCountry.code,
             locale: createLocaleFromCountry(matchedCountry.code, matchedCountry.languages),
@@ -114,7 +109,9 @@ export default function Register() {
         <CardHeader className="text-center">
           <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Join Builder.Contractors</CardTitle>
-          <p className="text-slate-600 mt-2">Create your contractor account</p>
+          <p className="text-slate-600 mt-2">
+            Join the industry network to exchange work—no sales or builder split required.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -157,31 +154,6 @@ export default function Register() {
               />
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-slate-700 mb-2 block">Role</Label>
-              <RadioGroup
-                value={watchedRole ?? ''}
-                onValueChange={(value) => setValue('role', value as 'sales' | 'builder' | 'dual')}
-                className="space-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="sales" id="sales" />
-                  <Label htmlFor="sales" className="text-sm">Sales Partner</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="builder" id="builder" />
-                  <Label htmlFor="builder" className="text-sm">Builder Partner</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="dual" id="dual" />
-                  <Label htmlFor="dual" className="text-sm">Both Sales & Builder</Label>
-                </div>
-              </RadioGroup>
-              {errors.role && (
-                <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>
               )}
             </div>
 
