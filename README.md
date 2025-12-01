@@ -22,3 +22,4 @@ Copy `.env.example` to `.env` and set:
 
 ## Performance
 - Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.
+- Lead file uploads support drag-and-drop with inline validation/virus scanning and image/PDF previews to keep attachment workflows quick and safe.

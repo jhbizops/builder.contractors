@@ -6,3 +6,4 @@
 - Documented new billing environment variables in `.env.example` and README.
 - Memoised sales dashboard filters/stats, lazy-loaded the lead modal, and covered the helpers with tests to improve perceived responsiveness.
 - Simplified signup by defaulting all new accounts to the shared industry role (no sales vs builder choice) while keeping admin provisioning intact.
+- Added drag-and-drop uploads, inline virus scanning, and file previews to lead attachments.
