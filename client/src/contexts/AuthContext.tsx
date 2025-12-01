@@ -29,7 +29,7 @@ interface AuthContextType {
   register: (
     email: string,
     password: string,
-    role: User["role"],
+    role?: User["role"],
     options?: RegisterOptions,
   ) => Promise<void>;
   logout: () => Promise<void>;
@@ -98,11 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const register = useCallback(
-    async (email: string, password: string, role: User["role"], options?: RegisterOptions) => {
+    async (email: string, password: string, role?: User["role"], options?: RegisterOptions) => {
+      const effectiveRole = role === "admin" ? "admin" : "dual";
       const payload: RegisterPayload = {
         email,
         password,
-        role,
+        role: effectiveRole,
         country: options?.country,
         region: options?.region,
         locale: options?.locale,

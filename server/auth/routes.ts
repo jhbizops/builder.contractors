@@ -14,7 +14,7 @@ const authRouter = Router();
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(["sales", "builder", "admin", "dual"]),
+  role: z.literal("admin").optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   locale: z.string().optional(),
@@ -61,19 +61,21 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    const role: "admin" | "dual" = payload.role === "admin" ? "admin" : "dual";
+
     const salt = generateSalt();
     const passwordHash = await hashPassword(payload.password, salt);
 
     const user = await storage.createUser({
       id: `user_${randomUUID()}`,
       email: payload.email,
-      role: payload.role,
+      role,
       country: payload.country ?? null,
       region: payload.region ?? null,
       locale: payload.locale ?? null,
       currency: payload.currency ?? null,
       languages: payload.languages ?? [],
-      approved: payload.role === "admin",
+      approved: role === "admin",
       passwordHash,
       passwordSalt: salt,
     });
