@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ interface LeadCardProps {
   onDelete: (id: string) => void;
 }
 
-const getStatusColor = (status: string) => {
+export const getStatusColor = (status: string) => {
   switch (status) {
     case 'new':
       return 'bg-blue-100 text-blue-800';
@@ -28,7 +28,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getStatusLabel = (status: string) => {
+export const getStatusLabel = (status: string) => {
   switch (status) {
     case 'new':
       return 'New';
@@ -43,7 +43,7 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, onView, onEdit, onDelete }) => {
+export const LeadCard = memo<LeadCardProps>(function LeadCard({ lead, onView, onEdit, onDelete }) {
   const { formatDateTime } = useGlobalization();
 
   return (
@@ -107,4 +107,4 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onView, onEdit, onDele
       </CardContent>
     </Card>
   );
-};
+});

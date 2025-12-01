@@ -19,3 +19,6 @@ Copy `.env.example` to `.env` and set:
 - Plans and quotas are stored in `shared/schema.ts` and seeded on server start.
 - Server endpoints: `/api/billing/plans`, `/api/billing/subscription`, `/api/billing/checkout`, `/api/billing/cancel`, `/api/billing/webhook`.
 - React billing page lives at `/dashboard/billing` with upgrade/downgrade/cancel actions and entitlement-aware UI gates.
+
+## Performance
+- Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.

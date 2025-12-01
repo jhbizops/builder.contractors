@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useCallback, useMemo, useState, lazy } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LeadCard } from '@/components/LeadCard';
-import { LeadModal } from '@/components/modals/LeadModal';
 import { CountrySelector } from '@/components/CountrySelector';
 import { RegionFilter } from '@/components/RegionFilter';
-import { Plus, Download, Filter, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
+import { Plus, Download, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
 import { Lead } from '@/types';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +19,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { EntitlementGate } from '@/components/EntitlementGate';
+import { calculateLeadStats, filterLeadsByStatusAndRegion } from '@/lib/leads';
+
+const LeadModal = lazy(() => import('@/components/modals/LeadModal'));
 
 const leadSchema = z.object({
   clientName: z.string().min(1, 'Client name is required'),
@@ -52,22 +54,12 @@ export default function SalesDashboard() {
     resolver: zodResolver(leadSchema),
   });
 
-  const filteredLeads = leads.filter(lead => {
-    // Filter by status
-    if (statusFilter !== 'all' && lead.status !== statusFilter) return false;
-    
-    // Filter by region
-    if (regionFilter !== 'all' && lead.region !== regionFilter) return false;
-    
-    return true;
-  });
+  const filteredLeads = useMemo(
+    () => filterLeadsByStatusAndRegion(leads, statusFilter, regionFilter),
+    [leads, regionFilter, statusFilter],
+  );
 
-  const stats = {
-    totalLeads: leads.length,
-    activeLeads: leads.filter(l => l.status === 'in_progress').length,
-    completedLeads: leads.filter(l => l.status === 'completed').length,
-    newLeads: leads.filter(l => l.status === 'new').length,
-  };
+  const stats = useMemo(() => calculateLeadStats(leads), [leads]);
 
   const onSubmit = async (data: LeadFormData) => {
     if (!userData) return;
@@ -94,34 +86,40 @@ export default function SalesDashboard() {
     }
   };
 
-  const handleViewLead = (lead: Lead) => {
+  const handleViewLead = useCallback((lead: Lead) => {
     setSelectedLead(lead);
-  };
+  }, []);
 
-  const handleEditLead = (lead: Lead) => {
+  const handleEditLead = useCallback((lead: Lead) => {
     setSelectedLead(lead);
-  };
+  }, []);
 
-  const handleDeleteLead = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this lead?')) {
-      try {
-        await remove(id);
-      } catch (error) {
-        console.error('Error deleting lead:', error);
+  const handleDeleteLead = useCallback(
+    async (id: string) => {
+      if (window.confirm('Are you sure you want to delete this lead?')) {
+        try {
+          await remove(id);
+        } catch (error) {
+          console.error('Error deleting lead:', error);
+        }
       }
-    }
-  };
+    },
+    [remove],
+  );
 
-  const handleSaveLead = async (leadData: Partial<Lead>) => {
-    if (!selectedLead) return;
-    
-    try {
-      await update(selectedLead.id, leadData);
-      setSelectedLead(null);
-    } catch (error) {
-      console.error('Error updating lead:', error);
-    }
-  };
+  const handleSaveLead = useCallback(
+    async (leadData: Partial<Lead>) => {
+      if (!selectedLead) return;
+
+      try {
+        await update(selectedLead.id, leadData);
+        setSelectedLead(null);
+      } catch (error) {
+        console.error('Error updating lead:', error);
+      }
+    },
+    [selectedLead, update],
+  );
 
   return (
     <ProtectedRoute requiredRole={['sales', 'dual']}>
@@ -343,12 +341,14 @@ export default function SalesDashboard() {
         </div>
 
         {/* Lead Detail Modal */}
-        <LeadModal
-          lead={selectedLead}
-          isOpen={!!selectedLead}
-          onClose={() => setSelectedLead(null)}
-          onSave={handleSaveLead}
-        />
+        <Suspense fallback={null}>
+          <LeadModal
+            lead={selectedLead}
+            isOpen={!!selectedLead}
+            onClose={() => setSelectedLead(null)}
+            onSave={handleSaveLead}
+          />
+        </Suspense>
       </div>
     </ProtectedRoute>
   );
