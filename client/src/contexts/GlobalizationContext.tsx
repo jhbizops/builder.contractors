@@ -4,15 +4,20 @@ import {
   GlobalizationSettings,
   createCurrencyFormatter,
   createDateTimeFormatter,
+  createDualCurrencyFormatter,
   createNumberFormatter,
+  currencyDisplayModes,
   deriveDefaultSettings,
   deriveSettingsFromGeo,
   measurementSystems,
   normalizeSettings,
+  PLATFORM_CURRENCY,
   priorityTimeZones,
   supportedCurrencies,
   supportedLocales,
+  type CurrencyDisplayMode,
   type DateLike,
+  type DualCurrencyOptions,
 } from '@/lib/globalization';
 import type { GeoCountry, GeoSession } from '@/types/geo';
 
@@ -26,11 +31,14 @@ interface GlobalizationContextValue {
   settings: GlobalizationSettings;
   locales: readonly string[];
   currencies: readonly string[];
+  currencyDisplayModes: typeof currencyDisplayModes;
+  platformCurrency: string;
   timeZones: readonly string[];
   measurementSystems: typeof measurementSystems;
   updateSettings: (update: Partial<GlobalizationSettings>) => void;
   resetSettings: () => void;
   formatCurrency: (value: number, options?: Intl.NumberFormatOptions) => string;
+  formatDualCurrency: (valueInAUD: number, options?: DualCurrencyOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
   formatDateTime: (value: DateLike, options?: Intl.DateTimeFormatOptions) => string;
   geo: GeoSession;
@@ -145,6 +153,7 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [geoSession.country]);
 
   const formatCurrency = useMemo(() => createCurrencyFormatter(settings), [settings]);
+  const formatDualCurrency = useMemo(() => createDualCurrencyFormatter(settings), [settings]);
   const formatNumber = useMemo(() => createNumberFormatter(settings), [settings]);
   const formatDateTime = useMemo(() => createDateTimeFormatter(settings), [settings]);
 
@@ -153,11 +162,14 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
       settings,
       locales: supportedLocales,
       currencies: supportedCurrencies,
+      currencyDisplayModes,
+      platformCurrency: PLATFORM_CURRENCY,
       timeZones: priorityTimeZones,
       measurementSystems,
       updateSettings,
       resetSettings,
       formatCurrency,
+      formatDualCurrency,
       formatNumber,
       formatDateTime,
       geo: geoSession,
@@ -180,6 +192,7 @@ export const GlobalizationProvider: React.FC<{ children: React.ReactNode }> = ({
     [
       formatCurrency,
       formatDateTime,
+      formatDualCurrency,
       formatNumber,
       geoSession,
       resetSettings,

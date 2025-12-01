@@ -21,7 +21,7 @@ export default function AdminDashboard() {
     queryKey: USERS_QUERY_KEY,
     queryFn: fetchUsers,
   });
-  const { formatCurrency, formatNumber } = useGlobalization();
+  const { formatDualCurrency, formatNumber } = useGlobalization();
 
   const stats = useMemo(
     () => ({
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Monthly Revenue</p>
-                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.monthlyRevenue)}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatDualCurrency(stats.monthlyRevenue)}</p>
                   </div>
                 </div>
               </CardContent>

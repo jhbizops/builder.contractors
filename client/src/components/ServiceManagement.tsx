@@ -30,7 +30,7 @@ export const ServiceManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const { data: services, loading, add, update } = useCollection<Service>('services');
-  const { formatCurrency, settings } = useGlobalization();
+  const { formatDualCurrency, settings } = useGlobalization();
   const measurementLabel = useMemo(() => {
     switch (settings.measurementSystem) {
       case 'metric':
@@ -123,7 +123,7 @@ export const ServiceManagement: React.FC = () => {
 
   const formatPrice = (price: number, unit: string) => {
     const humanUnit = getUnitLabel(unit);
-    return `${formatCurrency(price)} per ${humanUnit}`;
+    return `${formatDualCurrency(price)} per ${humanUnit}`;
   };
 
   if (loading) {

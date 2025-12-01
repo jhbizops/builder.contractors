@@ -12,7 +12,7 @@ import { EntitlementGate } from '@/components/EntitlementGate';
 
 export default function BuilderDashboard() {
   const { data: services } = useCollection<Service>('services');
-  const { formatCurrency, formatNumber, settings } = useGlobalization();
+  const { formatDualCurrency, formatNumber, settings } = useGlobalization();
   const { userData } = useAuth();
   const hasAutomation = userData?.entitlements.includes('billing.paid');
   const canExport = userData?.entitlements.includes('reports.export');
@@ -87,7 +87,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-slate-600">Avg Price</p>
-                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.avgPrice)}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatDualCurrency(stats.avgPrice)}</p>
                   </div>
                 </div>
               </CardContent>

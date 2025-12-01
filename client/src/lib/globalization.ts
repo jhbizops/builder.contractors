@@ -3,6 +3,11 @@ import { z } from 'zod';
 export const measurementSystems = ['metric', 'imperial', 'us'] as const;
 export type MeasurementSystem = (typeof measurementSystems)[number];
 
+export const currencyDisplayModes = ['platform', 'local', 'both'] as const;
+export type CurrencyDisplayMode = (typeof currencyDisplayModes)[number];
+
+export const PLATFORM_CURRENCY = 'AUD';
+
 export const globalizationSettingsSchema = z.object({
   locale: z.string().min(2),
   currency: z
@@ -11,6 +16,8 @@ export const globalizationSettingsSchema = z.object({
     .transform((val) => val.toUpperCase()),
   timeZone: z.string().min(2),
   measurementSystem: z.enum(measurementSystems),
+  currencyDisplayMode: z.enum(currencyDisplayModes).default('both'),
+  operateInLocalCurrency: z.boolean().default(false),
 });
 
 export type GlobalizationSettings = z.infer<typeof globalizationSettingsSchema>;
@@ -192,6 +199,8 @@ export const deriveSettingsFromGeo = (
     currency,
     timeZone: fallback.timeZone ?? fallbackTimeZone,
     measurementSystem: resolveMeasurementForLocale(normalizedLocale),
+    currencyDisplayMode: fallback.currencyDisplayMode ?? 'both',
+    operateInLocalCurrency: fallback.operateInLocalCurrency ?? false,
   });
 };
 
@@ -213,6 +222,8 @@ export const deriveDefaultSettings = (): GlobalizationSettings => {
     currency,
     timeZone,
     measurementSystem,
+    currencyDisplayMode: 'both',
+    operateInLocalCurrency: false,
   });
 };
 
@@ -234,6 +245,11 @@ export const normalizeSettings = (
       measurementSystems.includes(merged.measurementSystem)
         ? merged.measurementSystem
         : resolveMeasurementForLocale(locale),
+    currencyDisplayMode:
+      currencyDisplayModes.includes(merged.currencyDisplayMode)
+        ? merged.currencyDisplayMode
+        : fallback.currencyDisplayMode,
+    operateInLocalCurrency: merged.operateInLocalCurrency ?? fallback.operateInLocalCurrency,
   };
 
   const parsed = globalizationSettingsSchema.safeParse(normalized);
@@ -272,6 +288,72 @@ export const createCurrencyFormatter = (settings: GlobalizationSettings) =>
     } catch {
       return value.toFixed(2);
     }
+  };
+
+export interface DualCurrencyOptions {
+  readonly exchangeRate?: number;
+}
+
+export const createDualCurrencyFormatter = (settings: GlobalizationSettings) =>
+  (valueInAUD: number, options?: DualCurrencyOptions): string => {
+    if (!Number.isFinite(valueInAUD)) {
+      return '—';
+    }
+
+    const { currencyDisplayMode, currency, operateInLocalCurrency, locale } = settings;
+    const isLocalCurrencyAUD = currency === PLATFORM_CURRENCY;
+    const exchangeRate = options?.exchangeRate;
+    const hasExchangeRate = exchangeRate !== undefined && exchangeRate !== 1;
+
+    const formatAUD = (val: number): string => {
+      try {
+        return new Intl.NumberFormat('en-AU', {
+          style: 'currency',
+          currency: PLATFORM_CURRENCY,
+        }).format(val);
+      } catch {
+        return `A$${val.toFixed(2)}`;
+      }
+    };
+
+    const formatLocal = (val: number): string => {
+      try {
+        return new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency: currency,
+        }).format(val);
+      } catch {
+        return `${currency} ${val.toFixed(2)}`;
+      }
+    };
+
+    if (isLocalCurrencyAUD) {
+      return formatAUD(valueInAUD);
+    }
+
+    if (operateInLocalCurrency) {
+      if (hasExchangeRate) {
+        return formatLocal(valueInAUD * exchangeRate);
+      }
+      return formatLocal(valueInAUD);
+    }
+
+    if (currencyDisplayMode === 'platform') {
+      return formatAUD(valueInAUD);
+    }
+
+    if (currencyDisplayMode === 'local') {
+      if (hasExchangeRate) {
+        return formatLocal(valueInAUD * exchangeRate);
+      }
+      return formatLocal(valueInAUD);
+    }
+
+    if (hasExchangeRate) {
+      return `${formatAUD(valueInAUD)} (${formatLocal(valueInAUD * exchangeRate)})`;
+    }
+
+    return formatAUD(valueInAUD);
   };
 
 export type DateLike = Date | string | number;

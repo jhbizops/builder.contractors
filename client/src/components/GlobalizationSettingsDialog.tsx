@@ -4,19 +4,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
-import { measurementSystems } from '@/lib/globalization';
+import { measurementSystems, type CurrencyDisplayMode } from '@/lib/globalization';
+
+const currencyDisplayModeLabels: Record<CurrencyDisplayMode, string> = {
+  platform: 'AUD only (platform currency)',
+  local: 'Local currency only',
+  both: 'Show both AUD and local currency',
+};
 
 export const GlobalizationSettingsDialog: React.FC = () => {
   const {
     settings,
     locales,
     currencies,
+    currencyDisplayModes,
+    platformCurrency,
     timeZones,
     updateSettings,
     resetSettings,
   } = useGlobalization();
   const [open, setOpen] = useState(false);
+  
+  const isLocalCurrencyAUD = settings.currency === platformCurrency;
 
   const localeOptions = useMemo(() => locales.map((locale) => ({ value: locale, label: locale })), [locales]);
   const currencyOptions = useMemo(
@@ -74,7 +85,7 @@ export const GlobalizationSettingsDialog: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency">Your local currency</Label>
             <Select
               value={settings.currency}
               onValueChange={(value) => updateSettings({ currency: value })}
@@ -91,6 +102,48 @@ export const GlobalizationSettingsDialog: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {!isLocalCurrencyAUD && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="currencyDisplayMode">Currency display</Label>
+                <Select
+                  value={settings.currencyDisplayMode}
+                  onValueChange={(value) => updateSettings({ currencyDisplayMode: value as CurrencyDisplayMode })}
+                >
+                  <SelectTrigger id="currencyDisplayMode">
+                    <SelectValue placeholder="Select display mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencyDisplayModes.map((mode) => (
+                      <SelectItem key={mode} value={mode}>
+                        {currencyDisplayModeLabels[mode]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Platform prices are in AUD. Choose how to display them.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="operateInLocalCurrency" className="font-medium">
+                    Show prices in {settings.currency}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Display all amounts in your local currency format.
+                  </p>
+                </div>
+                <Switch
+                  id="operateInLocalCurrency"
+                  checked={settings.operateInLocalCurrency}
+                  onCheckedChange={(checked) => updateSettings({ operateInLocalCurrency: checked })}
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="timezone">Time zone</Label>
