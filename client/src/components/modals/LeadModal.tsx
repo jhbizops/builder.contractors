@@ -28,7 +28,7 @@ interface LeadModalProps {
   onSave: (leadData: Partial<Lead>) => Promise<void>;
 }
 
-export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) => {
+const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) => {
   const [status, setStatus] = useState(lead?.status || 'new');
   const [comment, setComment] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -489,3 +489,6 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
     </Dialog>
   );
 };
+
+export { LeadModal };
+export default LeadModal;

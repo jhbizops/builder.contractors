@@ -123,6 +123,7 @@ export default function Register() {
                 placeholder="your@email.com"
                 {...register('email')}
                 className={errors.email ? 'border-red-500' : ''}
+                data-testid="input-email"
               />
               {errors.email && (
                 <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
@@ -137,6 +138,7 @@ export default function Register() {
                 placeholder="••••••••"
                 {...register('password')}
                 className={errors.password ? 'border-red-500' : ''}
+                data-testid="input-password"
               />
               {errors.password && (
                 <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
@@ -151,6 +153,7 @@ export default function Register() {
                 placeholder="••••••••"
                 {...register('confirmPassword')}
                 className={errors.confirmPassword ? 'border-red-500' : ''}
+                data-testid="input-confirm-password"
               />
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
@@ -221,7 +224,7 @@ export default function Register() {
               <p className="text-sm text-red-500">{errors.agreeToTerms.message}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-register">
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>

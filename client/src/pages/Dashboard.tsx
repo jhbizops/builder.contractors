@@ -13,6 +13,7 @@ export default function Dashboard() {
     
     switch (userData.role) {
       case 'admin':
+      case 'super_admin':
         return '/dashboard/admin';
       case 'sales':
         return '/dashboard/sales';
