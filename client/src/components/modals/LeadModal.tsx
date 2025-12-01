@@ -7,12 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { CloudUpload, Download, Trash2, FileText, User, Circle } from 'lucide-react';
+import { CloudUpload, Download, Trash2, FileText, User, Circle, Eye } from 'lucide-react';
 import { Lead, LeadComment, ActivityLog, LeadFile } from '@/types';
 import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import {
+  isPreviewableImage,
+  isPreviewablePdf,
+  MAX_FILE_SIZE_BYTES,
+  readFileAsLeadFile,
+  scanFileForThreats,
+} from '@/lib/fileUpload';
 
 interface LeadModalProps {
   lead: Lead | null;
@@ -25,6 +32,8 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
   const [status, setStatus] = useState(lead?.status || 'new');
   const [comment, setComment] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [previewFile, setPreviewFile] = useState<LeadFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userData } = useAuth();
   const { formatDateTime } = useGlobalization();
@@ -54,35 +63,37 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
     });
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || !lead) return;
+  const handleFiles = async (fileList: FileList | File[]) => {
+    if (!lead) return;
+
+    const incomingFiles = Array.from(fileList);
+    if (!incomingFiles.length) return;
 
     setUploading(true);
 
-    const readFile = (file: File) =>
-      new Promise<LeadFile>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result !== 'string') {
-            reject(new Error('Unsupported file format'));
-            return;
-          }
-          resolve({
-            id: `file_${crypto.randomUUID()}`,
-            name: file.name,
-            mimeType: file.type || 'application/octet-stream',
-            size: file.size,
-            dataUrl: reader.result,
-            uploadedAt: new Date(),
-          });
-        };
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      });
-
     try {
-      const uploadedFiles = await Promise.all(Array.from(files).map(readFile));
+      const safeFiles: File[] = [];
+
+      for (const file of incomingFiles) {
+        const scanResult = await scanFileForThreats(file);
+
+        if (scanResult.status === 'blocked') {
+          toast({
+            title: 'Upload blocked',
+            description: scanResult.reason || 'File failed virus scan',
+            variant: 'destructive',
+          });
+          continue;
+        }
+
+        safeFiles.push(file);
+      }
+
+      if (!safeFiles.length) {
+        return;
+      }
+
+      const uploadedFiles = await Promise.all(safeFiles.map(readFileAsLeadFile));
       const updatedFiles = [...lead.files, ...uploadedFiles];
 
       await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
@@ -110,6 +121,32 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    await handleFiles(files);
+  };
+
+  const handleFileDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFile(false);
+
+    if (!event.dataTransfer.files.length) return;
+
+    await handleFiles(event.dataTransfer.files);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFile(false);
   };
 
   const handleDeleteFile = async (file: LeadFile) => {
@@ -242,15 +279,27 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
           {/* File Upload Section */}
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">Files</Label>
-            <div 
-              className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer"
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                isDraggingFile ? 'border-primary bg-primary/5' : 'border-slate-300 hover:border-primary'
+              }`}
               onClick={() => fileInputRef.current?.click()}
+              onDrop={handleFileDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload files"
+              aria-busy={uploading}
+              data-testid="file-dropzone"
             >
               <CloudUpload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
               <p className="text-slate-600">
                 Drag and drop files here, or <span className="text-primary font-medium">browse</span>
               </p>
-              <p className="text-sm text-slate-500 mt-1">Supports: PDF, DOC, JPG, PNG (Max 10MB)</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Supports: PDF, DOC, JPG, PNG (Max {(MAX_FILE_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB)
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -284,6 +333,15 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => setPreviewFile(file)}
+                        className="text-slate-400 hover:text-primary p-1"
+                        aria-label={`Preview ${file.name}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleDownloadFile(file)}
                         className="text-slate-400 hover:text-primary p-1"
                       >
@@ -299,10 +357,47 @@ export const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onS
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {previewFile && (
+            <div className="mt-4" data-testid="file-preview">
+              <Label className="text-sm font-medium text-slate-700 mb-2 block">File preview</Label>
+              <Card className="border border-slate-200">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{previewFile.name}</p>
+                      <p className="text-xs text-slate-500">{formatFileSize(previewFile.size)}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setPreviewFile(null)}>
+                      Close
+                    </Button>
+                  </div>
+                  {isPreviewableImage(previewFile.mimeType) && (
+                    <img
+                      src={previewFile.dataUrl}
+                      alt={`Preview of ${previewFile.name}`}
+                      className="max-h-72 w-full object-contain rounded"
+                    />
+                  )}
+                  {isPreviewablePdf(previewFile.mimeType) && (
+                    <iframe
+                      src={previewFile.dataUrl}
+                      title={`Preview of ${previewFile.name}`}
+                      className="w-full h-72 rounded border border-slate-200"
+                    />
+                  )}
+                  {!isPreviewableImage(previewFile.mimeType) &&
+                    !isPreviewablePdf(previewFile.mimeType) && (
+                      <p className="text-sm text-slate-600">Preview not available for this file type.</p>
+                    )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
 
           {/* Comments Section */}
           <div>
