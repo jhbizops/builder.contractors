@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { codeToFlagEmoji, fetchCountries } from '@/lib/countries';
 import type { GeoCountry } from '@/types/geo';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
@@ -188,9 +187,6 @@ export default function Register() {
                           <div className="flex items-center gap-2">
                             <span aria-hidden="true">{codeToFlagEmoji(country.code)}</span>
                             <span className="truncate">{country.name}</span>
-                            {country.localize ? (
-                              <Badge variant="secondary" className="ml-2">Localized</Badge>
-                            ) : null}
                           </div>
                         </SelectItem>
                       ))}

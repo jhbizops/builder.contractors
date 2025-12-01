@@ -16,7 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import type { GeoCountry } from '@/types/geo';
 import { codeToFlagEmoji, fetchCountries } from '@/lib/countries';
@@ -104,11 +103,6 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
                   {codeToFlagEmoji(selectedCountry.code)}
                 </span>
                 <span className="truncate">{selectedCountry.name}</span>
-                {selectedCountry.localize && (
-                  <Badge variant="secondary" className="ml-2 shrink-0">
-                    Localized
-                  </Badge>
-                )}
               </>
             ) : (
               <>
@@ -155,11 +149,6 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
                     {codeToFlagEmoji(country.code)}
                   </span>
                   <span className="flex-1 truncate">{country.name}</span>
-                  {country.localize && (
-                    <Badge variant="secondary" className="ml-2 shrink-0">
-                      Localized
-                    </Badge>
-                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
