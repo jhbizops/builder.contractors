@@ -14,7 +14,6 @@ const authRouter = Router();
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.literal("admin").optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   locale: z.string().optional(),
@@ -61,7 +60,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const role: "admin" | "dual" = payload.role === "admin" ? "admin" : "dual";
+    const role = "dual";
 
     const salt = generateSalt();
     const passwordHash = await hashPassword(payload.password, salt);
@@ -75,7 +74,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       locale: payload.locale ?? null,
       currency: payload.currency ?? null,
       languages: payload.languages ?? [],
-      approved: role === "admin",
+      approved: false,
       passwordHash,
       passwordSalt: salt,
     });
