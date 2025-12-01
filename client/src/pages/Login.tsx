@@ -64,6 +64,7 @@ export default function Login() {
                 placeholder="your@email.com"
                 {...register('email')}
                 className={errors.email ? 'border-red-500' : ''}
+                data-testid="input-email"
               />
               {errors.email && (
                 <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
@@ -78,6 +79,7 @@ export default function Login() {
                 placeholder="••••••••"
                 {...register('password')}
                 className={errors.password ? 'border-red-500' : ''}
+                data-testid="input-password"
               />
               {errors.password && (
                 <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
@@ -94,7 +96,7 @@ export default function Login() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signin">
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>

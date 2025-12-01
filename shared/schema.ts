@@ -42,7 +42,7 @@ export const billingPlans = pgTable("billing_plans", {
 
 export const subscriptions = pgTable("subscriptions", {
   id: text("id").primaryKey(),
-  userId: text("user_id").notNull(),
+  userId: text("user_id").notNull().unique(),
   planId: text("plan_id").notNull(),
   status: text("status").notNull().default("active"),
   currentPeriodEnd: timestamp("current_period_end"),
