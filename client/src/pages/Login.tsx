@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [authError, setAuthError] = useState<string | null>(null);
 
   if (currentUser) {
     return <Redirect to="/dashboard" />;
@@ -44,11 +45,13 @@ export default function Login() {
     if (!validateForm()) {
       return;
     }
-    
+
     setIsLoading(true);
+    setAuthError(null);
     try {
       await login(email, password);
     } catch (error) {
+      setAuthError('Unable to sign in. Please check your credentials and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -113,14 +116,15 @@ export default function Login() {
               </Link>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading} 
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
               data-testid="button-signin"
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
+            {authError && <p className="text-sm text-red-500 text-center">{authError}</p>}
           </form>
 
           <div className="mt-6 text-center">
