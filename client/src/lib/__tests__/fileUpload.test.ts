@@ -12,7 +12,6 @@ class MockFileReader {
   public onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
   public onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   readAsDataURL(file: File) {
     this.result = `data:${file.type};base64,ZWx5bWVudA==`;
     if (this.onload) {
@@ -26,12 +25,10 @@ describe('fileUpload helpers', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    // @ts-expect-error overriding for tests
-    global.FileReader = MockFileReader;
+    global.FileReader = MockFileReader as unknown as typeof FileReader;
   });
 
   afterEach(() => {
-    // @ts-expect-error restore after tests
     global.FileReader = originalFileReader;
   });
 
