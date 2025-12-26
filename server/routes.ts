@@ -7,6 +7,7 @@ import { billingRouter } from "./billing/routes";
 import { getBillingService, initializeStripe } from "./billing/instance";
 import { ensureDatabase } from "./dbBootstrap";
 import { pool } from "./db";
+import { createHealthRouter } from "./routes/health";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await ensureDatabase(pool);
@@ -53,9 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(403).send("Service not available in your region");
   });
 
-  app.get("/healthz", (_req, res) => {
-    res.json({ status: "live", countries: supportedCountries.length });
-  });
+  app.use(
+    "/healthz",
+    createHealthRouter({ db: pool, countriesCount: supportedCountries.length }),
+  );
 
   const httpServer = createServer(app);
 
