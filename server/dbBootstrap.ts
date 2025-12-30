@@ -4,6 +4,20 @@ interface PoolLike {
   query<T = any>(text: string, params?: unknown[]): Promise<{ rows: T[] }>;
 }
 
+const requiredTables = [
+  "users",
+  "jobs",
+  "leads",
+  "lead_comments",
+  "services",
+  "custom_pricing",
+  "activity_logs",
+  "billing_plans",
+  "subscriptions",
+  "user_entitlements",
+  "countries",
+];
+
 const bootstrapStatements = [
   `CREATE TABLE IF NOT EXISTS users (
     id text PRIMARY KEY,
@@ -133,25 +147,40 @@ async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> 
   return Boolean(result.rows[0]?.oid);
 }
 
+async function getMissingTables(pool: PoolLike): Promise<string[]> {
+  const missing: string[] = [];
+  for (const tableName of requiredTables) {
+    const exists = await tableExists(pool, tableName);
+    if (!exists) {
+      missing.push(tableName);
+    }
+  }
+  return missing;
+}
+
 export async function ensureDatabase(pool: PoolLike): Promise<void> {
   try {
-    const hasUsersTable = await tableExists(pool, "users");
+    const missingTables = await getMissingTables(pool);
 
-    if (hasUsersTable) {
+    if (missingTables.length === 0) {
+      // All tables exist, just run post-bootstrap alterations
       for (const statement of postBootstrapStatements) {
         await pool.query(statement);
       }
       return;
     }
 
+    // Create all missing tables
     for (const statement of bootstrapStatements) {
       await pool.query(statement);
     }
+
+    // Run post-bootstrap alterations
     for (const statement of postBootstrapStatements) {
       await pool.query(statement);
     }
 
-    log("database schema bootstrapped", "db");
+    log(`database schema bootstrapped (missing tables: ${missingTables.join(", ")})`, "db");
   } catch (error) {
     log(`failed to bootstrap database: ${(error as Error).message}`, "db");
     throw error;
