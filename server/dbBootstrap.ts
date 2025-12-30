@@ -19,6 +19,18 @@ const bootstrapStatements = [
     password_salt text NOT NULL,
     created_at timestamp DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS jobs (
+    id text PRIMARY KEY,
+    title text NOT NULL,
+    description text,
+    status text NOT NULL DEFAULT 'open',
+    owner_id text NOT NULL,
+    assignee_id text,
+    region text,
+    country text,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS billing_plans (
     id text PRIMARY KEY,
     name text NOT NULL,
@@ -102,6 +114,8 @@ const bootstrapStatements = [
     performed_by text NOT NULL,
     timestamp timestamp DEFAULT now()
   )`,
+  `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS job_id text`,
+  `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb`,
 ];
 
 async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> {

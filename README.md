@@ -20,6 +20,11 @@ Copy `.env.example` to `.env` and set:
 - Server endpoints: `/api/billing/plans`, `/api/billing/subscription`, `/api/billing/checkout`, `/api/billing/cancel`, `/api/billing/webhook`.
 - React billing page lives at `/dashboard/billing` with upgrade/downgrade/cancel actions and entitlement-aware UI gates.
 
+## Jobs API
+- Endpoints: `/api/jobs` for create/list, `/api/jobs/:id` for updates, `/api/jobs/:id/status` for transitions, `/api/jobs/:id/assign` for owner/admin assignment, `/api/jobs/:id/claim` for self-claiming unassigned jobs, and `/api/jobs/:id/activity` for history.
+- Statuses: `open`, `in_progress`, `completed`, `on_hold`, `cancelled`.
+- Authorization: owners/admins can mutate; assignees can transition status; anyone authenticated can list/claim open unassigned jobs.
+
 ## Performance
 - Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.
 - Lead file uploads support drag-and-drop with inline validation/virus scanning and image/PDF previews to keep attachment workflows quick and safe.

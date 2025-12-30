@@ -6,6 +6,7 @@ process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgres://user:pass@loc
 
 class InMemoryUserStorage implements IStorage {
   private users: schema.User[] = [];
+  private jobs: schema.Job[] = [];
 
   async getUser(id: string) {
     return this.users.find((user) => user.id === id);
@@ -30,6 +31,40 @@ class InMemoryUserStorage implements IStorage {
     if (!user) return null;
     user.approved = approved;
     return user;
+  }
+
+  // The job and activity methods are unused in these tests.
+  // Implementations are provided to satisfy the interface and guard against accidental use.
+  async createJob() {
+    throw new Error("Not implemented");
+  }
+
+  async getJob() {
+    throw new Error("Not implemented");
+  }
+
+  async listJobs() {
+    return this.jobs;
+  }
+
+  async updateJob() {
+    throw new Error("Not implemented");
+  }
+
+  async setJobStatus() {
+    throw new Error("Not implemented");
+  }
+
+  async assignJob() {
+    throw new Error("Not implemented");
+  }
+
+  async addActivityLog() {
+    throw new Error("Not implemented");
+  }
+
+  async listJobActivity() {
+    return [];
   }
 }
 
