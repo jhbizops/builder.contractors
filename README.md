@@ -22,8 +22,10 @@ Copy `.env.example` to `.env` and set:
 
 ## Jobs API
 - Endpoints: `/api/jobs` for create/list, `/api/jobs/:id` for updates, `/api/jobs/:id/status` for transitions, `/api/jobs/:id/assign` for owner/admin assignment, `/api/jobs/:id/claim` for self-claiming unassigned jobs, and `/api/jobs/:id/activity` for history.
+- Activity updates: `/api/jobs/:id/activity` now supports POST for collaboration requests/comments with optional attachment metadata; activity logs return the details payload alongside timestamps.
 - Statuses: `open`, `in_progress`, `completed`, `on_hold`, `cancelled`.
-- Authorization: owners/admins can mutate; assignees can transition status; anyone authenticated can list/claim open unassigned jobs.
+- Authorization: owners/admins can mutate; assignees can transition status; only approved builders/admins can create, assign, or claim jobs; anyone authenticated can list/claim open unassigned jobs when approved.
+- UI: `/dashboard/jobs` surfaces a Job Board with trade/region/status filters, claim and collaboration requests, and a shared job poster modal; the Builder dashboard adds My jobs/Shared with me tabs for assignment, status control, and file/comment threads.
 
 ## Leads & Services API
 - Leads endpoints: `/api/leads` (list/create), `/api/leads/:id` (update/delete), `/api/leads/:id/comments` (list/add), `/api/leads/:id/activity` (list/add).

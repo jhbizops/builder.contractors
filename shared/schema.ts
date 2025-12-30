@@ -116,6 +116,7 @@ export const jobs = pgTable("jobs", {
   assigneeId: text("assignee_id"),
   region: text("region"),
   country: text("country"),
+  trade: text("trade"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -197,17 +198,17 @@ export const insertUserEntitlementSchema = createInsertSchema(userEntitlements);
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Lead = typeof leads.$inferSelect;
-export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type InsertLead = typeof leads.$inferInsert;
 export type LeadComment = typeof leadComments.$inferSelect;
-export type InsertLeadComment = z.infer<typeof insertLeadCommentSchema>;
+export type InsertLeadComment = typeof leadComments.$inferInsert;
 export type Service = typeof services.$inferSelect;
-export type InsertService = z.infer<typeof insertServiceSchema>;
+export type InsertService = typeof services.$inferInsert;
 export type CustomPricing = typeof customPricing.$inferSelect;
-export type InsertCustomPricing = z.infer<typeof insertCustomPricingSchema>;
+export type InsertCustomPricing = typeof customPricing.$inferInsert;
 export type ActivityLog = typeof activityLogs.$inferSelect;
-export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type InsertActivityLog = typeof activityLogs.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
-export type InsertJob = z.infer<typeof insertJobSchema>;
+export type InsertJob = typeof jobs.$inferInsert;
 export type Country = typeof countries.$inferSelect;
 export type InsertCountry = z.infer<typeof insertCountrySchema>;
 export type BillingPlan = typeof billingPlans.$inferSelect;

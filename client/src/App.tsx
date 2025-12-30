@@ -21,6 +21,7 @@ const AdminSetup = lazy(() => import("@/pages/AdminSetup"));
 const ClearSession = lazy(() => import("@/pages/ClearSession"));
 const Billing = lazy(() => import("@/pages/Billing"));
 const Reports = lazy(() => import("@/pages/Reports"));
+const JobBoard = lazy(() => import("@/pages/JobBoard"));
 
 // Loading placeholder
 function LoadingFallback() {
@@ -40,6 +41,7 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/dashboard/sales" component={SalesDashboard} />
         <Route path="/dashboard/builder" component={BuilderDashboard} />
+        <Route path="/dashboard/jobs" component={JobBoard} />
         <Route path="/dashboard/admin" component={AdminDashboard} />
         <Route path="/dashboard/billing" component={Billing} />
         <Route path="/dashboard/reports" component={Reports} />

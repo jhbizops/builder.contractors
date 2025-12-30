@@ -1,13 +1,34 @@
 import { randomUUID } from "node:crypto";
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
-import { insertLeadSchema, insertLeadCommentSchema, insertActivityLogSchema } from "@shared/schema";
+import { insertLeadSchema, insertLeadCommentSchema, insertActivityLogSchema, type InsertLead } from "@shared/schema";
 import { requireAuth } from "../middleware/auth";
 import { storage } from "../storageInstance";
 
 const leadsRouter = Router();
 
 const statusEnum = z.enum(["new", "in_progress", "completed", "on_hold"]);
+
+const leadFileSchema = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+  dataUrl: z.string(),
+  uploadedAt: z.union([z.string(), z.date()]).transform((value) => new Date(value)),
+});
+
+const createLeadSchema = z.object({
+  partnerId: z.string().optional(),
+  clientName: z.string().min(1),
+  status: statusEnum.default("new"),
+  location: z.string().optional(),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  notes: z.array(z.string()).default([]),
+  files: z.array(leadFileSchema).default([]),
+  createdBy: z.string().optional(),
+});
 
 const updateLeadSchema = insertLeadSchema
   .omit({ partnerId: true, createdBy: true })
@@ -45,6 +66,21 @@ const activitySchema = insertActivityLogSchema.pick({
   details: true,
 });
 
+type AuthenticatedUser = {
+  id: string;
+  email: string;
+  role: string;
+  approved: boolean;
+};
+
+function getUser(res: Response): AuthenticatedUser {
+  const user = res.locals.authenticatedUser as AuthenticatedUser | undefined;
+  if (!user) {
+    throw new Error("Authenticated user missing");
+  }
+  return user;
+}
+
 function parseListFilters(query: unknown) {
   const raw = filterSchema.parse(query);
 
@@ -67,7 +103,7 @@ leadsRouter.use(requireAuth);
 leadsRouter.get("/", async (req, res, next) => {
   try {
     const filters = parseListFilters(req.query);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
     const leads = await storage.listLeads({
       ...filters,
       partnerId: isAdmin(user.role) ? undefined : user.id,
@@ -84,21 +120,29 @@ leadsRouter.get("/", async (req, res, next) => {
 
 leadsRouter.post("/", async (req, res, next) => {
   try {
-    const user = res.locals.authenticatedUser;
-    const payload = insertLeadSchema
-      .extend({ status: statusEnum.default("new") })
-      .omit({ id: true, createdAt: true, updatedAt: true })
-      .parse(req.body);
+    const user = getUser(res);
+    const parsed = createLeadSchema.parse(req.body);
 
-    const lead = await storage.createLead({
-      ...payload,
+    const leadPayload: InsertLead = {
       id: `lead_${randomUUID()}`,
-      partnerId: payload.partnerId ?? user.id,
-      createdBy: payload.createdBy ?? user.email,
+      partnerId: parsed.partnerId ?? user.id,
+      clientName: parsed.clientName,
+      status: parsed.status,
+      location: parsed.location ?? null,
+      country: parsed.country ?? null,
+      region: parsed.region ?? null,
+      notes: parsed.notes ?? [],
+      files: (parsed.files ?? []).map((file) => ({
+        ...file,
+        id: file.id ?? `lead_file_${randomUUID()}`,
+      })),
+      createdBy: parsed.createdBy ?? user.email,
       updatedBy: user.email,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    };
+
+    const lead = await storage.createLead(leadPayload);
 
     await storage.addActivityLog({
       id: `log_${randomUUID()}`,
@@ -122,7 +166,7 @@ leadsRouter.post("/", async (req, res, next) => {
 leadsRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateLeadSchema.parse(req.body);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
     const lead = await storage.updateLead(req.params.id, { ...payload, updatedBy: user.email });
 
     if (!lead) {
@@ -164,7 +208,7 @@ leadsRouter.get("/:id/comments", async (req, res, next) => {
 
 leadsRouter.post("/:id/comments", async (req, res, next) => {
   try {
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
     const payload = commentSchema.parse(req.body);
     const comment = await storage.addLeadComment({
       ...payload,
@@ -194,7 +238,7 @@ leadsRouter.get("/:id/activity", async (req, res, next) => {
 
 leadsRouter.post("/:id/activity", async (req, res, next) => {
   try {
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
     const payload = activitySchema.parse(req.body);
     const log = await storage.addActivityLog({
       ...payload,

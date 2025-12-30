@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import {
   billingPlans,
@@ -46,10 +46,11 @@ export interface IStorage {
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
+    trade?: string | string[];
   }): Promise<Job[]>;
   updateJob(
     id: string,
-    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "updatedAt">>,
+    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
   ): Promise<Job | null>;
   setJobStatus(id: string, status: Job["status"]): Promise<Job | null>;
   assignJob(id: string, assigneeId: string | null): Promise<Job | null>;
@@ -294,6 +295,7 @@ export class DatabaseStorage implements IStorage {
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
+    trade?: string | string[];
   } = {}): Promise<Job[]> {
     const conditions = [];
 
@@ -320,23 +322,24 @@ export class DatabaseStorage implements IStorage {
       conditions.push(inArray(jobs.country, countries));
     }
 
-    const whereClause =
-      conditions.length > 0
-        ? conditions.reduce((acc, condition) => (acc ? and(acc, condition) : condition))
-        : undefined;
-
-    let query = this.db.select().from(jobs);
-
-    if (whereClause) {
-      query = query.where(whereClause);
+    if (filters.trade) {
+      const trades = Array.isArray(filters.trade) ? filters.trade : [filters.trade];
+      conditions.push(inArray(jobs.trade, trades));
     }
 
-    return query.orderBy(desc(jobs.updatedAt), desc(jobs.createdAt));
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+
+    const baseQuery = this.db.select().from(jobs);
+    const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    return filteredQuery.orderBy(desc(jobs.updatedAt), desc(jobs.createdAt));
   }
 
   async updateJob(
     id: string,
-    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "updatedAt">>,
+    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
   ): Promise<Job | null> {
     const [record] = await this.db
       .update(jobs)
@@ -416,18 +419,14 @@ export class DatabaseStorage implements IStorage {
       conditions.push(inArray(leads.country, countries));
     }
 
-    const whereClause =
-      conditions.length > 0
-        ? conditions.reduce((acc, condition) => (acc ? and(acc, condition) : condition))
-        : undefined;
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
 
-    let query = this.db.select().from(leads);
-
-    if (whereClause) {
-      query = query.where(whereClause);
-    }
-
-    return query.orderBy(desc(leads.updatedAt), desc(leads.createdAt));
+    const baseQuery = this.db.select().from(leads);
+    const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    return filteredQuery.orderBy(desc(leads.updatedAt), desc(leads.createdAt));
   }
 
   async updateLead(

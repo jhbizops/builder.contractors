@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { bootstrapStatements, ensureDatabase } from "../dbBootstrap";
+import { bootstrapStatements, ensureDatabase, postBootstrapStatements } from "../dbBootstrap";
 
 interface MockRow {
   oid: string | null;
@@ -14,10 +14,13 @@ describe("ensureDatabase", () => {
 
     await ensureDatabase({ query });
 
-    expect(query).toHaveBeenCalledTimes(1 + bootstrapStatements.length);
+    expect(query).toHaveBeenCalledTimes(1 + bootstrapStatements.length + postBootstrapStatements.length);
     expect(query).toHaveBeenNthCalledWith(1, "select to_regclass($1) as oid", ["public.users"]);
     bootstrapStatements.forEach((statement, index) => {
       expect(query).toHaveBeenNthCalledWith(index + 2, statement);
+    });
+    postBootstrapStatements.forEach((statement, index) => {
+      expect(query).toHaveBeenNthCalledWith(bootstrapStatements.length + index + 2, statement);
     });
   });
 
@@ -28,7 +31,10 @@ describe("ensureDatabase", () => {
 
     await ensureDatabase({ query });
 
-    expect(query).toHaveBeenCalledOnce();
-    expect(query).toHaveBeenCalledWith("select to_regclass($1) as oid", ["public.users"]);
+    expect(query).toHaveBeenCalledTimes(1 + postBootstrapStatements.length);
+    expect(query).toHaveBeenNthCalledWith(1, "select to_regclass($1) as oid", ["public.users"]);
+    postBootstrapStatements.forEach((statement, index) => {
+      expect(query).toHaveBeenNthCalledWith(index + 2, statement);
+    });
   });
 });
