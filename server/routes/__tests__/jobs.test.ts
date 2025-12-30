@@ -105,6 +105,36 @@ vi.mock("../../storageInstance", () => {
     async listJobActivity(jobId: string) {
       return Array.from(activityLogs.values()).filter((log) => log.jobId === jobId);
     },
+    async createLead() {
+      throw new Error("Not implemented");
+    },
+    async listLeads() {
+      return [];
+    },
+    async updateLead() {
+      throw new Error("Not implemented");
+    },
+    async deleteLead() {
+      return false;
+    },
+    async addLeadComment() {
+      throw new Error("Not implemented");
+    },
+    async listLeadComments() {
+      return [];
+    },
+    async listLeadActivity() {
+      return [];
+    },
+    async listServices() {
+      return [];
+    },
+    async createService() {
+      throw new Error("Not implemented");
+    },
+    async updateService() {
+      throw new Error("Not implemented");
+    },
   };
 
   return {

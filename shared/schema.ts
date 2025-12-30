@@ -70,6 +70,15 @@ export const countries = pgTable("countries", {
 });
 
 // Leads table
+export type LeadFileRecord = {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  dataUrl: string;
+  uploadedAt: Date;
+};
+
 export const leads = pgTable("leads", {
   id: text("id").primaryKey(),
   partnerId: text("partner_id").notNull(),
@@ -79,7 +88,7 @@ export const leads = pgTable("leads", {
   country: text("country"), // Lead's country
   region: text("region"), // Auto-populated based on country
   notes: jsonb("notes").$type<string[]>().default([]),
-  files: jsonb("files").$type<string[]>().default([]),
+  files: jsonb("files").$type<LeadFileRecord[]>().default([]),
   createdBy: text("created_by").notNull(),
   updatedBy: text("updated_by"),
   createdAt: timestamp("created_at").defaultNow(),

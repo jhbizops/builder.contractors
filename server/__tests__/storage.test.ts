@@ -66,6 +66,46 @@ class InMemoryUserStorage implements IStorage {
   async listJobActivity() {
     return [];
   }
+
+  async createLead() {
+    throw new Error("Not implemented");
+  }
+
+  async listLeads() {
+    return [];
+  }
+
+  async updateLead() {
+    return null;
+  }
+
+  async deleteLead() {
+    return false;
+  }
+
+  async addLeadComment() {
+    throw new Error("Not implemented");
+  }
+
+  async listLeadComments() {
+    return [];
+  }
+
+  async listLeadActivity() {
+    return [];
+  }
+
+  async listServices() {
+    return [];
+  }
+
+  async createService() {
+    throw new Error("Not implemented");
+  }
+
+  async updateService() {
+    return null;
+  }
 }
 
 describe("DatabaseStorage", () => {

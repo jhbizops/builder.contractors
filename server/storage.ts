@@ -7,6 +7,9 @@ import {
   users,
   jobs,
   activityLogs,
+  leads,
+  leadComments,
+  services,
   type BillingPlan,
   type InsertBillingPlan,
   type InsertSubscription,
@@ -20,6 +23,12 @@ import {
   type Job,
   type ActivityLog,
   type InsertActivityLog,
+  type Lead,
+  type InsertLead,
+  type LeadComment,
+  type InsertLeadComment,
+  type Service,
+  type InsertService,
 } from "@shared/schema";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -46,6 +55,32 @@ export interface IStorage {
   assignJob(id: string, assigneeId: string | null): Promise<Job | null>;
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  listLeads(filters?: {
+    partnerId?: string;
+    status?: string | string[];
+    region?: string | string[];
+    country?: string | string[];
+  }): Promise<Lead[]>;
+  updateLead(
+    id: string,
+    updates: Partial<
+      Pick<
+        Lead,
+        "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
+      >
+    >,
+  ): Promise<Lead | null>;
+  deleteLead(id: string): Promise<boolean>;
+  addLeadComment(comment: InsertLeadComment): Promise<LeadComment>;
+  listLeadComments(leadId: string): Promise<LeadComment[]>;
+  listLeadActivity(leadId: string): Promise<ActivityLog[]>;
+  listServices(): Promise<Service[]>;
+  createService(service: InsertService): Promise<Service>;
+  updateService(
+    id: string,
+    updates: Partial<Pick<Service, "name" | "description" | "unit" | "basePrice" | "active">>,
+  ): Promise<Service | null>;
 }
 
 export interface UserProfile {
@@ -344,5 +379,125 @@ export class DatabaseStorage implements IStorage {
       .from(activityLogs)
       .where(eq(activityLogs.jobId, jobId))
       .orderBy(desc(activityLogs.timestamp));
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [record] = await this.db.insert(leads).values(lead).returning();
+    if (!record) {
+      throw new Error("Failed to insert lead");
+    }
+    return record;
+  }
+
+  async listLeads(filters: {
+    partnerId?: string;
+    status?: string | string[];
+    region?: string | string[];
+    country?: string | string[];
+  } = {}): Promise<Lead[]> {
+    const conditions = [];
+
+    if (filters.partnerId) {
+      conditions.push(eq(leads.partnerId, filters.partnerId));
+    }
+
+    if (filters.status) {
+      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
+      conditions.push(inArray(leads.status, statuses));
+    }
+
+    if (filters.region) {
+      const regions = Array.isArray(filters.region) ? filters.region : [filters.region];
+      conditions.push(inArray(leads.region, regions));
+    }
+
+    if (filters.country) {
+      const countries = Array.isArray(filters.country) ? filters.country : [filters.country];
+      conditions.push(inArray(leads.country, countries));
+    }
+
+    const whereClause =
+      conditions.length > 0
+        ? conditions.reduce((acc, condition) => (acc ? and(acc, condition) : condition))
+        : undefined;
+
+    let query = this.db.select().from(leads);
+
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+
+    return query.orderBy(desc(leads.updatedAt), desc(leads.createdAt));
+  }
+
+  async updateLead(
+    id: string,
+    updates: Partial<
+      Pick<
+        Lead,
+        "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
+      >
+    >,
+  ): Promise<Lead | null> {
+    const [record] = await this.db
+      .update(leads)
+      .set({ ...updates, updatedAt: updates.updatedAt ?? new Date() })
+      .where(eq(leads.id, id))
+      .returning();
+
+    return record ?? null;
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
+    const deleted = await this.db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id });
+    return deleted.length > 0;
+  }
+
+  async addLeadComment(comment: InsertLeadComment): Promise<LeadComment> {
+    const [record] = await this.db.insert(leadComments).values(comment).returning();
+    if (!record) {
+      throw new Error("Failed to insert comment");
+    }
+    return record;
+  }
+
+  async listLeadComments(leadId: string): Promise<LeadComment[]> {
+    return this.db
+      .select()
+      .from(leadComments)
+      .where(eq(leadComments.leadId, leadId))
+      .orderBy(desc(leadComments.timestamp));
+  }
+
+  async listLeadActivity(leadId: string): Promise<ActivityLog[]> {
+    return this.db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.leadId, leadId))
+      .orderBy(desc(activityLogs.timestamp));
+  }
+
+  async listServices(): Promise<Service[]> {
+    return this.db.select().from(services).orderBy(desc(services.active), services.name);
+  }
+
+  async createService(service: InsertService): Promise<Service> {
+    const [record] = await this.db.insert(services).values(service).returning();
+    if (!record) {
+      throw new Error("Failed to insert service");
+    }
+    return record;
+  }
+
+  async updateService(
+    id: string,
+    updates: Partial<Pick<Service, "name" | "description" | "unit" | "basePrice" | "active">>,
+  ): Promise<Service | null> {
+    const [record] = await this.db
+      .update(services)
+      .set(updates)
+      .where(eq(services.id, id))
+      .returning();
+    return record ?? null;
   }
 }

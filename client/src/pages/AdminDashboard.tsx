@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +10,36 @@ import { LeadCard } from "@/components/LeadCard";
 import { LeadModal } from "@/components/modals/LeadModal";
 import { Plus, Download, Users, Handshake, Clock, TrendingUp } from "lucide-react";
 import { Lead } from "@/types";
-import { useCollection } from "@/hooks/useCollection";
 import { useGlobalization } from "@/contexts/GlobalizationContext";
 import { USERS_QUERY_KEY, fetchUsers } from "@/api/users";
+import { fetchLeads, leadsQueryKey, updateLead } from "@/api/leads";
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, update } = useCollection<Lead>("leads");
+  const queryClient = useQueryClient();
+  const { data: leads = [] } = useQuery({
+    queryKey: leadsQueryKey,
+    queryFn: fetchLeads,
+  });
+  const updateLeadMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Lead> }) => updateLead(id, updates),
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: leadsQueryKey });
+      const previous = queryClient.getQueryData<Lead[]>(leadsQueryKey) ?? [];
+      queryClient.setQueryData<Lead[]>(leadsQueryKey, (current = []) =>
+        current.map((lead) => (lead.id === id ? { ...lead, ...updates, updatedAt: new Date() } : lead)),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(leadsQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+    },
+  });
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: USERS_QUERY_KEY,
     queryFn: fetchUsers,
@@ -51,7 +74,7 @@ export default function AdminDashboard() {
     if (!selectedLead) return;
 
     try {
-      await update(selectedLead.id, leadData);
+      await updateLeadMutation.mutateAsync({ id: selectedLead.id, updates: leadData });
       setSelectedLead(null);
     } catch (error) {
       console.error("Error updating lead:", error);

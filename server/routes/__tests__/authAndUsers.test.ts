@@ -44,6 +44,60 @@ vi.mock("../../storage", async () => {
       store.set(id, updated);
       return updated;
     },
+    async createJob() {
+      throw new Error("Not implemented");
+    },
+    async getJob() {
+      return null;
+    },
+    async listJobs() {
+      return [];
+    },
+    async updateJob() {
+      return null;
+    },
+    async setJobStatus() {
+      return null;
+    },
+    async assignJob() {
+      return null;
+    },
+    async addActivityLog() {
+      throw new Error("Not implemented");
+    },
+    async listJobActivity() {
+      return [];
+    },
+    async createLead() {
+      throw new Error("Not implemented");
+    },
+    async listLeads() {
+      return [];
+    },
+    async updateLead() {
+      return null;
+    },
+    async deleteLead() {
+      return false;
+    },
+    async addLeadComment() {
+      throw new Error("Not implemented");
+    },
+    async listLeadComments() {
+      return [];
+    },
+    async listLeadActivity() {
+      return [];
+    },
+    async listServices() {
+      return [];
+    },
+    async createService() {
+      throw new Error("Not implemented");
+    },
+    async updateService() {
+      return null;
+    },
   };
 
   return {

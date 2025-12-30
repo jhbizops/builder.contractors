@@ -4,14 +4,17 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceManagement } from '@/components/ServiceManagement';
 import { Settings, DollarSign, FileText, Wrench } from 'lucide-react';
-import { useCollection } from '@/hooks/useCollection';
-import { Service } from '@/types';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { EntitlementGate } from '@/components/EntitlementGate';
+import { useQuery } from '@tanstack/react-query';
+import { fetchServices, servicesQueryKey } from '@/api/services';
 
 export default function BuilderDashboard() {
-  const { data: services } = useCollection<Service>('services');
+  const { data: services = [] } = useQuery({
+    queryKey: servicesQueryKey,
+    queryFn: fetchServices,
+  });
   const { formatDualCurrency, formatNumber, settings } = useGlobalization();
   const { userData } = useAuth();
   const hasAutomation = userData?.entitlements.includes('billing.paid');

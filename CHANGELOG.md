@@ -8,3 +8,4 @@
 - Simplified signup by defaulting all new accounts to the shared industry role (no sales vs builder choice) while keeping admin provisioning intact.
 - Added drag-and-drop uploads, inline virus scanning, and file previews to lead attachments.
 - Added jobs CRUD API with status transitions, assignment controls, and activity logging.
+- Added authenticated leads/services APIs with Zod validation plus client React Query data hooks, replacing local collection storage.

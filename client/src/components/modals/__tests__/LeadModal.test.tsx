@@ -5,10 +5,48 @@ import { LeadModal } from '../LeadModal';
 import { Lead } from '@/types';
 
 const toastMock = vi.fn();
+const mutateAsyncMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/hooks/use-toast', () => ({
   toast: (...args: unknown[]) => toastMock(...args),
 }));
+
+vi.mock('@/api/leads', () => ({
+  fetchLeadComments: vi.fn().mockResolvedValue([]),
+  fetchLeadActivity: vi.fn().mockResolvedValue([]),
+  addLeadComment: vi.fn().mockResolvedValue({
+    id: 'comment-1',
+    leadId: 'lead-1',
+    body: 'New comment',
+    author: 'tester@example.com',
+    timestamp: new Date(),
+  }),
+  addLeadActivity: vi.fn().mockResolvedValue({
+    id: 'log-1',
+    leadId: 'lead-1',
+    jobId: null,
+    action: 'test',
+    performedBy: 'tester@example.com',
+    details: {},
+    timestamp: new Date(),
+  }),
+  leadsQueryKey: ['leads'] as const,
+}));
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  return {
+    ...actual,
+    useQuery: () => ({ data: [] }),
+    useMutation: () => ({ mutateAsync: mutateAsyncMock }),
+    useQueryClient: () => ({
+      cancelQueries: vi.fn(),
+      getQueryData: vi.fn(),
+      setQueryData: vi.fn(),
+      invalidateQueries: vi.fn(),
+    }),
+  };
+});
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ userData: { email: 'tester@example.com' } }),
@@ -18,11 +56,6 @@ vi.mock('@/contexts/GlobalizationContext', () => ({
   useGlobalization: () => ({
     formatDateTime: () => 'Jan 1',
   }),
-}));
-
-vi.mock('@/hooks/useCollection', () => ({
-  useCollection: () => ({ add: vi.fn().mockResolvedValue(undefined) }),
-  useCollectionQuery: () => ({ data: [] }),
 }));
 
 class MockFileReader {
@@ -57,6 +90,7 @@ describe('LeadModal file management', () => {
 
   beforeEach(() => {
     toastMock.mockReset();
+    mutateAsyncMock.mockReset();
     global.FileReader = MockFileReader as unknown as typeof FileReader;
   });
 

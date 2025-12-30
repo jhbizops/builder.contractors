@@ -9,6 +9,8 @@ import { ensureDatabase } from "./dbBootstrap";
 import { pool } from "./db";
 import { createHealthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
+import { leadsRouter } from "./routes/leads";
+import { servicesRouter } from "./routes/services";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await ensureDatabase(pool);
@@ -24,6 +26,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/users", usersRouter);
   app.use("/api/billing", billingRouter);
   app.use("/api/jobs", jobsRouter);
+  app.use("/api/leads", leadsRouter);
+  app.use("/api/services", servicesRouter);
 
   app.get("/api/session/geo", (req, res) => {
     if (!req.session.countryCode) {

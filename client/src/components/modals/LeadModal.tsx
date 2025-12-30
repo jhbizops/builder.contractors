@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CloudUpload, Download, Trash2, FileText, User, Circle, Eye } from 'lucide-react';
-import { Lead, LeadComment, ActivityLog, LeadFile } from '@/types';
-import { useCollection, useCollectionQuery } from '@/hooks/useCollection';
+import { Lead, LeadFile } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
+import { addLeadActivity, addLeadComment, fetchLeadActivity, fetchLeadComments, leadsQueryKey } from '@/api/leads';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   isPreviewableImage,
   isPreviewablePdf,
@@ -37,17 +38,74 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userData } = useAuth();
   const { formatDateTime } = useGlobalization();
-  
-  const { add: addComment } = useCollection<LeadComment>('lead_comments');
-  const { add: addLog } = useCollection<ActivityLog>('activity_logs');
-  const { data: comments } = useCollectionQuery<LeadComment>(
-    'lead_comments',
-    (comment) => (lead ? comment.leadId === lead.id : false),
-  );
-  const { data: logs } = useCollectionQuery<ActivityLog>(
-    'activity_logs',
-    (log) => (lead ? log.leadId === lead.id : false),
-  );
+  const queryClient = useQueryClient();
+  const commentsQueryKey = lead ? [...leadsQueryKey, lead.id, 'comments'] : leadsQueryKey;
+  const activityQueryKey = lead ? [...leadsQueryKey, lead.id, 'activity'] : leadsQueryKey;
+
+  const { data: comments = [] } = useQuery({
+    enabled: Boolean(lead),
+    queryKey: commentsQueryKey,
+    queryFn: () => fetchLeadComments(lead!.id),
+  });
+
+  const { data: logs = [] } = useQuery({
+    enabled: Boolean(lead),
+    queryKey: activityQueryKey,
+    queryFn: () => fetchLeadActivity(lead!.id),
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: ({ leadId, body }: { leadId: string; body: string }) => addLeadComment(leadId, body),
+    onMutate: async ({ leadId, body }) => {
+      await queryClient.cancelQueries({ queryKey: commentsQueryKey });
+      const previous = queryClient.getQueryData<typeof comments>(commentsQueryKey) ?? [];
+      const optimistic = {
+        id: `temp_comment_${crypto.randomUUID()}`,
+        leadId,
+        body,
+        author: userData?.email ?? 'You',
+        timestamp: new Date(),
+      };
+      queryClient.setQueryData(commentsQueryKey, [...previous, optimistic]);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(commentsQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+    },
+  });
+
+  const addActivityMutation = useMutation({
+    mutationFn: ({ leadId, action, details }: { leadId: string; action: string; details?: Record<string, unknown> }) =>
+      addLeadActivity(leadId, action, details ?? {}),
+    onMutate: async ({ leadId, action }) => {
+      await queryClient.cancelQueries({ queryKey: activityQueryKey });
+      const previous = queryClient.getQueryData<typeof logs>(activityQueryKey) ?? [];
+      const optimistic = {
+        id: `temp_activity_${crypto.randomUUID()}`,
+        leadId,
+        jobId: null,
+        action,
+        performedBy: userData?.email ?? 'You',
+        details: {},
+        timestamp: new Date(),
+      };
+      queryClient.setQueryData(activityQueryKey, [...previous, optimistic]);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(activityQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: activityQueryKey });
+    },
+  });
 
   const handleStatusChange = async (newStatus: string) => {
     if (!lead || !userData) return;
@@ -55,11 +113,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
     setStatus(newStatus as 'new' | 'in_progress' | 'completed' | 'on_hold');
     
     // Log the status change
-    await addLog({
+    await addActivityMutation.mutateAsync({
       leadId: lead.id,
       action: `Status changed from "${lead.status}" to "${newStatus}"`,
-      performedBy: userData.email,
-      timestamp: new Date(),
     });
   };
 
@@ -98,11 +154,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
 
       await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
 
-      await addLog({
+      await addActivityMutation.mutateAsync({
         leadId: lead.id,
         action: `${uploadedFiles.length} file(s) uploaded`,
-        performedBy: userData?.email || 'Unknown',
-        timestamp: new Date(),
       });
 
       toast({
@@ -156,11 +210,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
       const updatedFiles = lead.files.filter((existingFile) => existingFile.id !== file.id);
       await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
 
-      await addLog({
+      await addActivityMutation.mutateAsync({
         leadId: lead.id,
         action: `File deleted: "${file.name}"`,
-        performedBy: userData?.email || 'Unknown',
-        timestamp: new Date(),
       });
 
       toast({
@@ -180,13 +232,8 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
     if (!comment.trim() || !lead || !userData) return;
     
     try {
-      await addComment({
-        leadId: lead.id,
-        body: comment,
-        author: userData.email,
-        timestamp: new Date(),
-      });
-      
+      await addCommentMutation.mutateAsync({ leadId: lead.id, body: comment });
+
       setComment('');
       toast({
         title: "Success",
