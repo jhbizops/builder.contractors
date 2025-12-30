@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit } from 'lucide-react';
 import { Service } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createService, fetchServices, servicesQueryKey, updateService } from '@/api/services';
 
 const serviceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -29,7 +30,52 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 export const ServiceManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const { data: services, loading, add, update } = useCollection<Service>('services');
+  const queryClient = useQueryClient();
+  const { data: services = [], isPending: loading } = useQuery({
+    queryKey: servicesQueryKey,
+    queryFn: fetchServices,
+  });
+  const createServiceMutation = useMutation({
+    mutationFn: createService,
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: servicesQueryKey });
+      const previous = queryClient.getQueryData<Service[]>(servicesQueryKey) ?? [];
+      const optimistic: Service = {
+        ...payload,
+        id: `temp_service_${crypto.randomUUID()}`,
+      };
+      queryClient.setQueryData<Service[]>(servicesQueryKey, [...previous, optimistic]);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(servicesQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: servicesQueryKey });
+    },
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Service> }) => updateService(id, updates),
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: servicesQueryKey });
+      const previous = queryClient.getQueryData<Service[]>(servicesQueryKey) ?? [];
+      queryClient.setQueryData<Service[]>(servicesQueryKey, (current = []) =>
+        current.map((service) => (service.id === id ? { ...service, ...updates } : service)),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(servicesQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: servicesQueryKey });
+    },
+  });
   const { formatDualCurrency, settings } = useGlobalization();
   const measurementLabel = useMemo(() => {
     switch (settings.measurementSystem) {
@@ -61,9 +107,9 @@ export const ServiceManagement: React.FC = () => {
   const onSubmit = async (data: ServiceFormData) => {
     try {
       if (editingService) {
-        await update(editingService.id, data);
+        await updateServiceMutation.mutateAsync({ id: editingService.id, updates: data });
       } else {
-        await add(data);
+        await createServiceMutation.mutateAsync(data);
       }
       handleCloseDialog();
     } catch (error) {

@@ -94,8 +94,10 @@ export interface Service {
 export interface ActivityLog {
   id: string;
   leadId?: string;
+  jobId?: string;
   action: string;
   performedBy: string;
+  details?: Record<string, unknown>;
   timestamp: Date;
 }
 

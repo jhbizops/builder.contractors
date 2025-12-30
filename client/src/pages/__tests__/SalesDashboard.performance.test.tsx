@@ -87,39 +87,46 @@ vi.mock('@/contexts/GlobalizationContext', () => ({
   }),
 }));
 
-vi.mock('@/hooks/useCollection', () => ({
-  useCollection: () => ({
-    data: [
-      {
-        id: 'lead-1',
-        partnerId: 'p1',
-        clientName: 'Lead One',
-        status: 'new',
-        notes: [],
-        files: [],
-        createdBy: 'user@example.com',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'lead-2',
-        partnerId: 'p1',
-        clientName: 'Lead Two',
-        status: 'completed',
-        notes: [],
-        files: [],
-        region: 'emea',
-        createdBy: 'user@example.com',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    loading: false,
-    add: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-  }),
-}));
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const leads = [
+    {
+      id: 'lead-1',
+      partnerId: 'p1',
+      clientName: 'Lead One',
+      status: 'new',
+      notes: [],
+      files: [],
+      createdBy: 'user@example.com',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 'lead-2',
+      partnerId: 'p1',
+      clientName: 'Lead Two',
+      status: 'completed',
+      notes: [],
+      files: [],
+      region: 'emea',
+      createdBy: 'user@example.com',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
+
+  return {
+    ...actual,
+    useQuery: () => ({ data: leads, isPending: false }),
+    useMutation: () => ({ mutateAsync: vi.fn() }),
+    useQueryClient: () => ({
+      cancelQueries: vi.fn(),
+      getQueryData: vi.fn().mockReturnValue(leads),
+      setQueryData: vi.fn(),
+      invalidateQueries: vi.fn(),
+    }),
+  };
+});
 
 describe('SalesDashboard performance paths', () => {
   it('renders memoised stats and respects filters', async () => {

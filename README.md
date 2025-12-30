@@ -25,6 +25,11 @@ Copy `.env.example` to `.env` and set:
 - Statuses: `open`, `in_progress`, `completed`, `on_hold`, `cancelled`.
 - Authorization: owners/admins can mutate; assignees can transition status; anyone authenticated can list/claim open unassigned jobs.
 
+## Leads & Services API
+- Leads endpoints: `/api/leads` (list/create), `/api/leads/:id` (update/delete), `/api/leads/:id/comments` (list/add), `/api/leads/:id/activity` (list/add).
+- Services endpoints: `/api/services` (list/create) and `/api/services/:id` (update).
+- All endpoints are authenticated and validated with Zod; React Query clients optimistically update UI and refetch after mutations.
+
 ## Performance
 - Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.
 - Lead file uploads support drag-and-drop with inline validation/virus scanning and image/PDF previews to keep attachment workflows quick and safe.

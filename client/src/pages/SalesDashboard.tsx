@@ -12,7 +12,6 @@ import { CountrySelector } from '@/components/CountrySelector';
 import { RegionFilter } from '@/components/RegionFilter';
 import { Plus, Download, Users, Handshake, Clock, TrendingUp, Globe } from 'lucide-react';
 import { Lead } from '@/types';
-import { useCollection } from '@/hooks/useCollection';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +19,15 @@ import { z } from 'zod';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { EntitlementGate } from '@/components/EntitlementGate';
 import { calculateLeadStats, filterLeadsByStatusAndRegion } from '@/lib/leads';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  addLeadActivity,
+  createLead,
+  deleteLead,
+  fetchLeads,
+  leadsQueryKey,
+  updateLead,
+} from '@/api/leads';
 
 const LeadModal = lazy(() => import('@/components/modals/LeadModal'));
 
@@ -41,9 +49,74 @@ export default function SalesDashboard() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const { userData } = useAuth();
-  const { data: leads, loading, add, update, remove } = useCollection<Lead>('leads');
+  const queryClient = useQueryClient();
+  const { data: leads = [], isPending: loading } = useQuery({
+    queryKey: leadsQueryKey,
+    queryFn: fetchLeads,
+  });
   const { formatNumber } = useGlobalization();
   const canExport = userData?.entitlements.includes('reports.export');
+  const createLeadMutation = useMutation({
+    mutationFn: createLead,
+    onMutate: async (newLead) => {
+      await queryClient.cancelQueries({ queryKey: leadsQueryKey });
+      const previous = queryClient.getQueryData<Lead[]>(leadsQueryKey) ?? [];
+      const optimistic: Lead = {
+        ...newLead,
+        id: `temp_${crypto.randomUUID()}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      queryClient.setQueryData<Lead[]>(leadsQueryKey, [...previous, optimistic]);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(leadsQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+    },
+  });
+
+  const updateLeadMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Lead> }) => updateLead(id, updates),
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: leadsQueryKey });
+      const previous = queryClient.getQueryData<Lead[]>(leadsQueryKey) ?? [];
+      queryClient.setQueryData<Lead[]>(leadsQueryKey, (current = []) =>
+        current.map((lead) => (lead.id === id ? { ...lead, ...updates, updatedAt: new Date() } : lead)),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(leadsQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+    },
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: deleteLead,
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: leadsQueryKey });
+      const previous = queryClient.getQueryData<Lead[]>(leadsQueryKey) ?? [];
+      queryClient.setQueryData<Lead[]>(leadsQueryKey, (current = []) => current.filter((lead) => lead.id !== id));
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(leadsQueryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+    },
+  });
 
   const {
     register,
@@ -65,7 +138,7 @@ export default function SalesDashboard() {
     if (!userData) return;
     
     try {
-      await add({
+      await createLeadMutation.mutateAsync({
         ...data,
         country: selectedCountry || undefined,
         region: selectedRegion || undefined,
@@ -98,13 +171,13 @@ export default function SalesDashboard() {
     async (id: string) => {
       if (window.confirm('Are you sure you want to delete this lead?')) {
         try {
-          await remove(id);
+          await deleteLeadMutation.mutateAsync(id);
         } catch (error) {
           console.error('Error deleting lead:', error);
         }
       }
     },
-    [remove],
+    [deleteLeadMutation],
   );
 
   const handleSaveLead = useCallback(
@@ -112,13 +185,19 @@ export default function SalesDashboard() {
       if (!selectedLead) return;
 
       try {
-        await update(selectedLead.id, leadData);
+        await updateLeadMutation.mutateAsync({ id: selectedLead.id, updates: leadData });
         setSelectedLead(null);
+        if (leadData.status && userData?.email) {
+          await addLeadActivity(selectedLead.id, `Status changed to "${leadData.status}"`, {
+            performedBy: userData.email,
+          });
+          queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+        }
       } catch (error) {
         console.error('Error updating lead:', error);
       }
     },
-    [selectedLead, update],
+    [queryClient, selectedLead, updateLeadMutation, userData?.email],
   );
 
   return (
