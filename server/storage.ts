@@ -1,10 +1,12 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import {
   billingPlans,
   subscriptions,
   userEntitlements,
   users,
+  jobs,
+  activityLogs,
   type BillingPlan,
   type InsertBillingPlan,
   type InsertSubscription,
@@ -14,6 +16,10 @@ import {
   type Subscription,
   type User,
   type UserEntitlement,
+  type InsertJob,
+  type Job,
+  type ActivityLog,
+  type InsertActivityLog,
 } from "@shared/schema";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -23,6 +29,23 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   listUsers(): Promise<User[]>;
   updateUserApproval(id: string, approved: boolean): Promise<User | null>;
+  createJob(job: InsertJob): Promise<Job>;
+  getJob(id: string): Promise<Job | null>;
+  listJobs(filters?: {
+    ownerId?: string;
+    assigneeId?: string;
+    status?: string | string[];
+    region?: string | string[];
+    country?: string | string[];
+  }): Promise<Job[]>;
+  updateJob(
+    id: string,
+    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "updatedAt">>,
+  ): Promise<Job | null>;
+  setJobStatus(id: string, status: Job["status"]): Promise<Job | null>;
+  assignJob(id: string, assigneeId: string | null): Promise<Job | null>;
+  addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+  listJobActivity(jobId: string): Promise<ActivityLog[]>;
 }
 
 export interface UserProfile {
@@ -213,5 +236,113 @@ export class DatabaseStorage implements IStorage {
     const quotas = userEntitlementRecord?.quotas ?? plan.quotas;
 
     return { user, subscription, plan, entitlements, quotas };
+  }
+
+  async createJob(job: InsertJob): Promise<Job> {
+    const [record] = await this.db.insert(jobs).values(job).returning();
+    if (!record) {
+      throw new Error("Failed to insert job");
+    }
+    return record;
+  }
+
+  async getJob(id: string): Promise<Job | null> {
+    const record = await this.db.query.jobs.findFirst({
+      where: eq(jobs.id, id),
+    });
+    return record ?? null;
+  }
+
+  async listJobs(filters: {
+    ownerId?: string;
+    assigneeId?: string;
+    status?: string | string[];
+    region?: string | string[];
+    country?: string | string[];
+  } = {}): Promise<Job[]> {
+    const conditions = [];
+
+    if (filters.ownerId) {
+      conditions.push(eq(jobs.ownerId, filters.ownerId));
+    }
+
+    if (filters.assigneeId) {
+      conditions.push(eq(jobs.assigneeId, filters.assigneeId));
+    }
+
+    if (filters.status) {
+      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
+      conditions.push(inArray(jobs.status, statuses));
+    }
+
+    if (filters.region) {
+      const regions = Array.isArray(filters.region) ? filters.region : [filters.region];
+      conditions.push(inArray(jobs.region, regions));
+    }
+
+    if (filters.country) {
+      const countries = Array.isArray(filters.country) ? filters.country : [filters.country];
+      conditions.push(inArray(jobs.country, countries));
+    }
+
+    const whereClause =
+      conditions.length > 0
+        ? conditions.reduce((acc, condition) => (acc ? and(acc, condition) : condition))
+        : undefined;
+
+    let query = this.db.select().from(jobs);
+
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+
+    return query.orderBy(desc(jobs.updatedAt), desc(jobs.createdAt));
+  }
+
+  async updateJob(
+    id: string,
+    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "updatedAt">>,
+  ): Promise<Job | null> {
+    const [record] = await this.db
+      .update(jobs)
+      .set({ ...updates, updatedAt: updates.updatedAt ?? new Date() })
+      .where(eq(jobs.id, id))
+      .returning();
+
+    return record ?? null;
+  }
+
+  async setJobStatus(id: string, status: Job["status"]): Promise<Job | null> {
+    const [record] = await this.db
+      .update(jobs)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(jobs.id, id))
+      .returning();
+    return record ?? null;
+  }
+
+  async assignJob(id: string, assigneeId: string | null): Promise<Job | null> {
+    const [record] = await this.db
+      .update(jobs)
+      .set({ assigneeId, updatedAt: new Date() })
+      .where(eq(jobs.id, id))
+      .returning();
+    return record ?? null;
+  }
+
+  async addActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const [record] = await this.db.insert(activityLogs).values(log).returning();
+    if (!record) {
+      throw new Error("Failed to insert activity log");
+    }
+    return record;
+  }
+
+  async listJobActivity(jobId: string): Promise<ActivityLog[]> {
+    return this.db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.jobId, jobId))
+      .orderBy(desc(activityLogs.timestamp));
   }
 }

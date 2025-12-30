@@ -1,0 +1,277 @@
+import { Router } from "express";
+import { z } from "zod";
+import { randomUUID } from "node:crypto";
+import { jobStatusEnum } from "@shared/schema";
+import { requireAuth } from "../middleware/auth";
+import { storage } from "../storageInstance";
+
+const jobsRouter = Router();
+
+const createJobSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  region: z.string().optional(),
+  country: z.string().optional(),
+});
+
+const updateJobSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  region: z.string().optional(),
+  country: z.string().optional(),
+});
+
+const statusSchema = z.object({
+  status: jobStatusEnum,
+});
+
+const assignSchema = z.object({
+  assigneeId: z.string().nullable(),
+});
+
+const filterSchema = z.object({
+  ownerId: z.string().optional(),
+  assigneeId: z.string().optional(),
+  status: z.string().optional(),
+  region: z.string().optional(),
+  country: z.string().optional(),
+});
+
+function parseListFilters(query: unknown) {
+  const raw = filterSchema.parse(query);
+
+  const parseList = (value?: string) =>
+    value?.split(",").map((v) => v.trim()).filter(Boolean) ?? undefined;
+
+  const statuses = parseList(raw.status);
+  if (statuses) {
+    const invalidStatus = statuses.find((status) => !jobStatusEnum.safeParse(status).success);
+    if (invalidStatus) {
+      throw new z.ZodError([
+        {
+          code: z.ZodIssueCode.custom,
+          message: `Invalid status: ${invalidStatus}`,
+          path: ["status"],
+        },
+      ]);
+    }
+  }
+
+  return {
+    ownerId: raw.ownerId,
+    assigneeId: raw.assigneeId,
+    status: statuses,
+    region: parseList(raw.region),
+    country: parseList(raw.country),
+  };
+}
+
+function isAdmin(role: string | undefined): boolean {
+  return role === "admin" || role === "super_admin";
+}
+
+jobsRouter.use(requireAuth);
+
+jobsRouter.get("/", async (req, res, next) => {
+  try {
+    const filters = parseListFilters(req.query);
+    const jobs = await storage.listJobs(filters);
+    res.json({ jobs });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+jobsRouter.post("/", async (req, res, next) => {
+  try {
+    const payload = createJobSchema.parse(req.body);
+    const user = res.locals.authenticatedUser;
+
+    const job = await storage.createJob({
+      id: `job_${randomUUID()}`,
+      title: payload.title,
+      description: payload.description ?? null,
+      region: payload.region ?? null,
+      country: payload.country ?? null,
+      ownerId: user.id,
+      assigneeId: null,
+      status: "open",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: "job_created",
+      performedBy: user.id,
+      details: { title: job.title },
+    });
+
+    res.status(201).json({ job });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+jobsRouter.get("/:id/activity", async (req, res, next) => {
+  try {
+    const job = await storage.getJob(req.params.id);
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+    const activity = await storage.listJobActivity(job.id);
+    res.json({ activity });
+  } catch (error) {
+    next(error);
+  }
+});
+
+jobsRouter.patch("/:id", async (req, res, next) => {
+  try {
+    const payload = updateJobSchema.parse(req.body);
+    const job = await storage.getJob(req.params.id);
+    const user = res.locals.authenticatedUser;
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (job.ownerId !== user.id && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() });
+    res.json({ job: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+jobsRouter.patch("/:id/status", async (req, res, next) => {
+  try {
+    const payload = statusSchema.parse(req.body);
+    const job = await storage.getJob(req.params.id);
+    const user = res.locals.authenticatedUser;
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    const isOwnerOrAdmin = job.ownerId === user.id || isAdmin(user.role);
+    const isAssignee = job.assigneeId === user.id;
+
+    if (!isOwnerOrAdmin && !isAssignee) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const updated = await storage.setJobStatus(job.id, payload.status);
+
+    await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: "job_status_changed",
+      performedBy: user.id,
+      details: { from: job.status, to: payload.status },
+    });
+
+    res.json({ job: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+jobsRouter.post("/:id/assign", async (req, res, next) => {
+  try {
+    const payload = assignSchema.parse(req.body);
+    const job = await storage.getJob(req.params.id);
+    const user = res.locals.authenticatedUser;
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (job.ownerId !== user.id && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const updated = await storage.assignJob(job.id, payload.assigneeId);
+
+    await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: payload.assigneeId ? "job_assigned" : "job_unassigned",
+      performedBy: user.id,
+      details: { previousAssigneeId: job.assigneeId, assigneeId: payload.assigneeId },
+    });
+
+    res.json({ job: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+jobsRouter.post("/:id/claim", async (req, res, next) => {
+  try {
+    const job = await storage.getJob(req.params.id);
+    const user = res.locals.authenticatedUser;
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (job.assigneeId) {
+      res.status(409).json({ message: "Job already assigned" });
+      return;
+    }
+
+    const assigned = await storage.assignJob(job.id, user.id);
+    const updated = await storage.setJobStatus(job.id, job.status === "open" ? "in_progress" : job.status);
+
+    await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: "job_claimed",
+      performedBy: user.id,
+      details: { assigneeId: user.id },
+    });
+
+    res.json({ job: updated ?? assigned });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export { jobsRouter };

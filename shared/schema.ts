@@ -95,6 +95,22 @@ export const leadComments = pgTable("lead_comments", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+const jobStatusValues = ["open", "in_progress", "completed", "on_hold", "cancelled"] as const;
+export const jobStatusEnum = z.enum(jobStatusValues);
+
+export const jobs = pgTable("jobs", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("open"),
+  ownerId: text("owner_id").notNull(),
+  assigneeId: text("assignee_id"),
+  region: text("region"),
+  country: text("country"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Services table
 export const services = pgTable("services", {
   id: text("id").primaryKey(),
@@ -119,8 +135,10 @@ export const customPricing = pgTable("custom_pricing", {
 export const activityLogs = pgTable("activity_logs", {
   id: text("id").primaryKey(),
   leadId: text("lead_id"),
+  jobId: text("job_id"),
   action: text("action").notNull(),
   performedBy: text("performed_by").notNull(),
+  details: jsonb("details").$type<Record<string, unknown>>().default({}).notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
@@ -156,6 +174,12 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
   timestamp: true,
 });
 
+export const insertJobSchema = createInsertSchema(jobs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertBillingPlanSchema = createInsertSchema(billingPlans);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertUserEntitlementSchema = createInsertSchema(userEntitlements);
@@ -173,6 +197,8 @@ export type CustomPricing = typeof customPricing.$inferSelect;
 export type InsertCustomPricing = z.infer<typeof insertCustomPricingSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type Job = typeof jobs.$inferSelect;
+export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Country = typeof countries.$inferSelect;
 export type InsertCountry = z.infer<typeof insertCountrySchema>;
 export type BillingPlan = typeof billingPlans.$inferSelect;
