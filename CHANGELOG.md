@@ -9,3 +9,5 @@
 - Added drag-and-drop uploads, inline virus scanning, and file previews to lead attachments.
 - Added jobs CRUD API with status transitions, assignment controls, and activity logging.
 - Added authenticated leads/services APIs with Zod validation plus client React Query data hooks, replacing local collection storage.
+- Added a Job Board page with trade/region/status filters, claim and collaboration actions, and a shared job creation modal.
+- Extended the builder dashboard with job tabs (My jobs/Shared with me), assignment/status controls, comment/file threads, and trade-aware job metadata with approval checks.

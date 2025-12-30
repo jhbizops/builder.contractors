@@ -511,7 +511,7 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
                   <span className="text-slate-400">by</span>
                   <span>{log.performedBy}</span>
                   <span className="text-slate-400">
-                    {formatDateTime(log.timestamp, {
+                    {formatDateTime(log.timestamp ?? new Date(), {
                       month: 'short',
                       day: 'numeric',
                       hour: 'numeric',

@@ -28,6 +28,7 @@ const bootstrapStatements = [
     assignee_id text,
     region text,
     country text,
+    trade text,
     created_at timestamp DEFAULT now(),
     updated_at timestamp DEFAULT now()
   )`,
@@ -110,12 +111,18 @@ const bootstrapStatements = [
   `CREATE TABLE IF NOT EXISTS activity_logs (
     id text PRIMARY KEY,
     lead_id text,
+    job_id text,
     action text NOT NULL,
     performed_by text NOT NULL,
-    timestamp timestamp DEFAULT now()
+    timestamp timestamp DEFAULT now(),
+    details jsonb NOT NULL DEFAULT '{}'::jsonb
   )`,
+];
+
+const postBootstrapStatements = [
   `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS job_id text`,
   `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS trade text`,
 ];
 
 async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> {
@@ -131,10 +138,16 @@ export async function ensureDatabase(pool: PoolLike): Promise<void> {
     const hasUsersTable = await tableExists(pool, "users");
 
     if (hasUsersTable) {
+      for (const statement of postBootstrapStatements) {
+        await pool.query(statement);
+      }
       return;
     }
 
     for (const statement of bootstrapStatements) {
+      await pool.query(statement);
+    }
+    for (const statement of postBootstrapStatements) {
       await pool.query(statement);
     }
 
@@ -145,4 +158,4 @@ export async function ensureDatabase(pool: PoolLike): Promise<void> {
   }
 }
 
-export { bootstrapStatements };
+export { bootstrapStatements, postBootstrapStatements };

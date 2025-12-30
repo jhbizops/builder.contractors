@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Job, ActivityLog } from "@shared/schema";
+import type { JobAttachment } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
 
 const dateSchema = z
@@ -15,6 +16,7 @@ const jobSchema = z.object({
   assigneeId: z.string().nullable(),
   region: z.string().nullable(),
   country: z.string().nullable(),
+  trade: z.string().nullable(),
   createdAt: dateSchema,
   updatedAt: dateSchema,
 });
@@ -29,16 +31,62 @@ const activitySchema = z.object({
   timestamp: dateSchema,
 });
 
-export const jobsQueryKey = ["jobs"] as const;
+export interface JobFilters {
+  ownerId?: string;
+  assigneeId?: string;
+  status?: string | string[];
+  region?: string | string[];
+  country?: string | string[];
+  trade?: string | string[];
+}
 
-export async function fetchJobs(): Promise<Job[]> {
-  const res = await apiRequest("GET", "/api/jobs");
+export interface CreateJobActivityPayload {
+  note: string;
+  kind?: "comment" | "collaboration_request";
+  attachments?: JobAttachment[];
+}
+
+export interface CreateJobPayload {
+  title: string;
+  description?: string;
+  region?: string;
+  country?: string;
+  trade: string;
+}
+
+export const jobsKeyRoot = ["jobs"] as const;
+export const jobsQueryKey = (filters: JobFilters = {}) => [...jobsKeyRoot, filters] as const;
+
+function buildQuery(filters: JobFilters): string {
+  const params = new URLSearchParams();
+
+  const appendValue = (key: string, value?: string | string[]) => {
+    if (!value) return;
+    const values = Array.isArray(value) ? value : [value];
+    if (values.length > 0) {
+      params.append(key, values.join(","));
+    }
+  };
+
+  appendValue("ownerId", filters.ownerId);
+  appendValue("assigneeId", filters.assigneeId);
+  appendValue("status", filters.status);
+  appendValue("region", filters.region);
+  appendValue("country", filters.country);
+  appendValue("trade", filters.trade);
+
+  const queryString = params.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+export async function fetchJobs(filters: JobFilters = {}): Promise<Job[]> {
+  const res = await apiRequest("GET", `/api/jobs${buildQuery(filters)}`);
   const json = await res.json();
   const parsed = z.object({ jobs: z.array(jobSchema) }).parse(json);
   return parsed.jobs.map(mapJob);
 }
 
-export async function createJob(payload: Omit<Job, "id" | "createdAt" | "updatedAt">): Promise<Job> {
+export async function createJob(payload: CreateJobPayload): Promise<Job> {
   const res = await apiRequest("POST", "/api/jobs", payload);
   const json = await res.json();
   const parsed = z.object({ job: jobSchema }).parse(json);
@@ -66,6 +114,13 @@ export async function assignJob(id: string, assigneeId: string | null): Promise<
   return mapJob(parsed.job);
 }
 
+export async function claimJob(id: string): Promise<Job> {
+  const res = await apiRequest("POST", `/api/jobs/${id}/claim`);
+  const json = await res.json();
+  const parsed = z.object({ job: jobSchema }).parse(json);
+  return mapJob(parsed.job);
+}
+
 export async function fetchJobActivity(id: string): Promise<ActivityLog[]> {
   const res = await apiRequest("GET", `/api/jobs/${id}/activity`);
   const json = await res.json();
@@ -73,11 +128,16 @@ export async function fetchJobActivity(id: string): Promise<ActivityLog[]> {
   return parsed.activity;
 }
 
+export async function createJobActivity(
+  id: string,
+  payload: CreateJobActivityPayload,
+): Promise<ActivityLog> {
+  const res = await apiRequest("POST", `/api/jobs/${id}/activity`, payload);
+  const json = await res.json();
+  const parsed = z.object({ activity: activitySchema }).parse(json);
+  return parsed.activity;
+}
+
 function mapJob(job: z.infer<typeof jobSchema>): Job {
-  return {
-    ...job,
-    description: job.description ?? undefined,
-    region: job.region ?? undefined,
-    country: job.country ?? undefined,
-  };
+  return { ...job };
 }

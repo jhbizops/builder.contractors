@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { jobStatusEnum } from "@shared/schema";
@@ -12,6 +12,7 @@ const createJobSchema = z.object({
   description: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
+  trade: z.string().min(1, "Trade is required"),
 });
 
 const updateJobSchema = z.object({
@@ -19,6 +20,7 @@ const updateJobSchema = z.object({
   description: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
+  trade: z.string().min(1).optional(),
 });
 
 const statusSchema = z.object({
@@ -35,6 +37,19 @@ const filterSchema = z.object({
   status: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
+  trade: z.string().optional(),
+});
+
+const attachmentSchema = z.object({
+  name: z.string().min(1),
+  url: z.string().url().optional(),
+  kind: z.string().optional(),
+});
+
+const activityNoteSchema = z.object({
+  note: z.string().min(1, "Note is required"),
+  kind: z.enum(["comment", "collaboration_request"]).default("comment"),
+  attachments: z.array(attachmentSchema).max(5).optional(),
 });
 
 function parseListFilters(query: unknown) {
@@ -63,11 +78,35 @@ function parseListFilters(query: unknown) {
     status: statuses,
     region: parseList(raw.region),
     country: parseList(raw.country),
+  trade: parseList(raw.trade),
   };
+}
+
+type AuthenticatedUser = {
+  id: string;
+  email: string;
+  role: string;
+  approved: boolean;
+};
+
+function getUser(res: Response): AuthenticatedUser {
+  const user = res.locals.authenticatedUser as AuthenticatedUser | undefined;
+  if (!user) {
+    throw new Error("Authenticated user missing");
+  }
+  return user;
 }
 
 function isAdmin(role: string | undefined): boolean {
   return role === "admin" || role === "super_admin";
+}
+
+function isBuilder(role: string | undefined): boolean {
+  return role === "builder" || role === "dual";
+}
+
+function isApprovedBuilder(user: AuthenticatedUser): boolean {
+  return user.approved && isBuilder(user.role);
 }
 
 jobsRouter.use(requireAuth);
@@ -89,7 +128,12 @@ jobsRouter.get("/", async (req, res, next) => {
 jobsRouter.post("/", async (req, res, next) => {
   try {
     const payload = createJobSchema.parse(req.body);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
+
+    if (!isApprovedBuilder(user) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Only approved builders can post jobs" });
+      return;
+    }
 
     const job = await storage.createJob({
       id: `job_${randomUUID()}`,
@@ -97,6 +141,7 @@ jobsRouter.post("/", async (req, res, next) => {
       description: payload.description ?? null,
       region: payload.region ?? null,
       country: payload.country ?? null,
+      trade: payload.trade ?? null,
       ownerId: user.id,
       assigneeId: null,
       status: "open",
@@ -141,7 +186,7 @@ jobsRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateJobSchema.parse(req.body);
     const job = await storage.getJob(req.params.id);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -168,7 +213,7 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
   try {
     const payload = statusSchema.parse(req.body);
     const job = await storage.getJob(req.params.id);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -208,10 +253,15 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
   try {
     const payload = assignSchema.parse(req.body);
     const job = await storage.getJob(req.params.id);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (!isApprovedBuilder(user) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Approval required to assign jobs" });
       return;
     }
 
@@ -244,10 +294,20 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
 jobsRouter.post("/:id/claim", async (req, res, next) => {
   try {
     const job = await storage.getJob(req.params.id);
-    const user = res.locals.authenticatedUser;
+    const user = getUser(res);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (!isApprovedBuilder(user) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Approval required to claim jobs" });
+      return;
+    }
+
+    if (!isBuilder(user.role) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Only builders can claim jobs" });
       return;
     }
 
@@ -270,6 +330,53 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
 
     res.json({ job: updated ?? assigned });
   } catch (error) {
+    next(error);
+  }
+});
+
+jobsRouter.post("/:id/activity", async (req, res, next) => {
+  try {
+    const payload = activityNoteSchema.parse(req.body);
+    const job = await storage.getJob(req.params.id);
+    const user = getUser(res);
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (!isApprovedBuilder(user) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Approval required to collaborate" });
+      return;
+    }
+
+    const isOwnerOrAssignee = job.ownerId === user.id || job.assigneeId === user.id;
+    const isCollaborationRequest = payload.kind === "collaboration_request";
+
+    if (!isOwnerOrAssignee && !isAdmin(user.role) && !isCollaborationRequest) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const activity = await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: isCollaborationRequest ? "job_collaboration_request" : "job_comment",
+      performedBy: user.id,
+      details: {
+        note: payload.note,
+        kind: payload.kind,
+        attachments: payload.attachments ?? [],
+      },
+    });
+
+    res.status(201).json({ activity });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
     next(error);
   }
 });

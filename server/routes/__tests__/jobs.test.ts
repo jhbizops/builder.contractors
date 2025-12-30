@@ -2,7 +2,7 @@ import express from "express";
 import session from "express-session";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { InsertUser, Job, ActivityLog } from "@shared/schema";
+import type { InsertUser, Job, ActivityLog, InsertJob, User } from "@shared/schema";
 import { SESSION_COOKIE_NAME } from "../../session";
 import type { IStorage } from "../../storage";
 
@@ -45,6 +45,7 @@ vi.mock("../../storageInstance", () => {
     async createJob(job: InsertJob) {
       const record: Job = {
         ...job,
+        trade: job.trade ?? null,
         createdAt: job.createdAt ?? new Date(),
         updatedAt: job.updatedAt ?? new Date(),
       };
@@ -69,6 +70,10 @@ vi.mock("../../storageInstance", () => {
         if (filters.country) {
           const countries = Array.isArray(filters.country) ? filters.country : [filters.country];
           if (!job.country || !countries.includes(job.country)) return false;
+        }
+        if (filters.trade) {
+          const trades = Array.isArray(filters.trade) ? filters.trade : [filters.trade];
+          if (!job.trade || !trades.includes(job.trade)) return false;
         }
         return true;
       });
@@ -229,7 +234,7 @@ describe("jobs router", () => {
 
     const res = await agent
       .post("/api/jobs")
-      .send({ title: "New job", region: "apac" })
+      .send({ title: "New job", region: "apac", trade: "carpentry" })
       .expect(201);
 
     expect(res.body.job.ownerId).toBe(owner.id);
@@ -255,6 +260,7 @@ describe("jobs router", () => {
       assigneeId: null,
       region: "apac",
       country: "AU",
+      trade: "carpentry",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -267,6 +273,7 @@ describe("jobs router", () => {
       assigneeId: null,
       region: "na",
       country: "US",
+      trade: "plumbing",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -274,6 +281,43 @@ describe("jobs router", () => {
     const res = await agent.get("/api/jobs").query({ ownerId: owner.id, status: "open" }).expect(200);
     expect(res.body.jobs).toHaveLength(1);
     expect(res.body.jobs[0]?.id).toBe("job_1");
+  });
+
+  it("filters by trade when provided", async () => {
+    const owner = await createUser();
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    await storage.createJob({
+      id: "job_trade_one",
+      title: "Framing job",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "apac",
+      country: "AU",
+      trade: "framing",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await storage.createJob({
+      id: "job_trade_two",
+      title: "Electrical job",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "apac",
+      country: "AU",
+      trade: "electrical",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const res = await agent.get("/api/jobs").query({ trade: "framing" }).expect(200);
+    expect(res.body.jobs).toHaveLength(1);
+    expect(res.body.jobs[0]?.trade).toBe("framing");
   });
 
   it("allows owners to update details but blocks others", async () => {
@@ -288,6 +332,7 @@ describe("jobs router", () => {
       assigneeId: null,
       region: null,
       country: null,
+      trade: "general",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -318,6 +363,7 @@ describe("jobs router", () => {
       assigneeId: assignee.id,
       region: null,
       country: null,
+      trade: "roofing",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -348,6 +394,7 @@ describe("jobs router", () => {
       assigneeId: null,
       region: null,
       country: null,
+      trade: "framing",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -358,6 +405,34 @@ describe("jobs router", () => {
     const res = await agent.post(`/api/jobs/${job.id}/claim`).expect(200);
     expect(res.body.job.assigneeId).toBe(claimer.id);
     expect(res.body.job.status).toBe("in_progress");
+  });
+
+  it("blocks unapproved builders from posting or claiming", async () => {
+    const owner = await createUser({ approved: false });
+    const approvedOwner = await createUser({ email: "owner2@example.com" });
+    const job = await storage.createJob({
+      id: "job_unapproved_claim",
+      title: "Need approval",
+      description: null,
+      status: "open",
+      ownerId: approvedOwner.id,
+      assigneeId: null,
+      region: null,
+      country: null,
+      trade: "landscaping",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    await agent
+      .post("/api/jobs")
+      .send({ title: "Blocked", region: "apac", trade: "carpentry" })
+      .expect(403);
+
+    await agent.post(`/api/jobs/${job.id}/claim`).expect(403);
   });
 
   it("permits admins to assign jobs", async () => {
@@ -372,6 +447,7 @@ describe("jobs router", () => {
       assigneeId: null,
       region: null,
       country: null,
+      trade: "electrical",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -385,5 +461,60 @@ describe("jobs router", () => {
       .expect(200);
 
     expect(res.body.job.assigneeId).toBe(assignee.id);
+  });
+
+  it("allows collaborators to request access and stores activity", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const collaborator = await createUser({ email: "collab@example.com" });
+    const job = await storage.createJob({
+      id: "job_activity",
+      title: "Collaborative",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "na",
+      country: "US",
+      trade: "tiling",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, collaborator.id);
+
+    const response = await agent
+      .post(`/api/jobs/${job.id}/activity`)
+      .send({ note: "Happy to collaborate", kind: "collaboration_request" })
+      .expect(201);
+
+    expect(response.body.activity.action).toBe("job_collaboration_request");
+    expect(response.body.activity.details.note).toBe("Happy to collaborate");
+  });
+
+  it("prevents non-owners from posting standard comments", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const collaborator = await createUser({ email: "collab2@example.com" });
+    const job = await storage.createJob({
+      id: "job_comment_guard",
+      title: "Guarded",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "na",
+      country: "US",
+      trade: "masonry",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, collaborator.id);
+
+    await agent
+      .post(`/api/jobs/${job.id}/activity`)
+      .send({ note: "General comment", kind: "comment" })
+      .expect(403);
   });
 });

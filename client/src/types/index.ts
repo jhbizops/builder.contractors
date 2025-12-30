@@ -53,13 +53,13 @@ export interface Lead {
   partnerId: string;
   clientName: string;
   status: 'new' | 'in_progress' | 'completed' | 'on_hold';
-  location?: string;
-  country?: string;
-  region?: string;
+  location?: string | null;
+  country?: string | null;
+  region?: string | null;
   notes: string[];
   files: LeadFile[];
   createdBy: string;
-  updatedBy?: string;
+  updatedBy?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,14 +91,28 @@ export interface Service {
   active: boolean;
 }
 
+export interface JobAttachment {
+  name: string;
+  url?: string;
+  kind?: string;
+}
+
+export interface JobActivityDetails {
+  note?: string;
+  attachments?: JobAttachment[];
+  from?: string;
+  to?: string;
+  kind?: string;
+}
+
 export interface ActivityLog {
   id: string;
-  leadId?: string;
-  jobId?: string;
+  leadId?: string | null;
+  jobId?: string | null;
   action: string;
   performedBy: string;
-  details?: Record<string, unknown>;
-  timestamp: Date;
+  details?: JobActivityDetails & Record<string, unknown>;
+  timestamp: Date | null;
 }
 
 export interface CustomPricing {
