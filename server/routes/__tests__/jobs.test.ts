@@ -2,7 +2,7 @@ import express from "express";
 import session from "express-session";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { InsertUser, Job, ActivityLog, InsertJob, User } from "@shared/schema";
+import type { InsertUser, Job, ActivityLog, InsertJob, User, Lead } from "@shared/schema";
 import { SESSION_COOKIE_NAME } from "../../session";
 import type { IStorage } from "../../storage";
 
@@ -12,6 +12,7 @@ vi.mock("../../storageInstance", () => {
   const users = new Map<string, User>();
   const jobs = new Map<string, Job>();
   const activityLogs = new Map<string, ActivityLog>();
+  const leads = new Map<string, Lead>();
 
   const storage: IStorage = {
     async getUser(id: string) {
@@ -112,6 +113,9 @@ vi.mock("../../storageInstance", () => {
     },
     async createLead() {
       throw new Error("Not implemented");
+    },
+    async getLead(id: string) {
+      return leads.get(id) ?? null;
     },
     async listLeads() {
       return [];
