@@ -57,6 +57,7 @@ export interface IStorage {
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
   createLead(lead: InsertLead): Promise<Lead>;
+  getLead(id: string, options?: { partnerId?: string }): Promise<Lead | null>;
   listLeads(filters?: {
     partnerId?: string;
     status?: string | string[];
@@ -71,11 +72,12 @@ export interface IStorage {
         "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
       >
     >,
+    options?: { partnerId?: string },
   ): Promise<Lead | null>;
-  deleteLead(id: string): Promise<boolean>;
+  deleteLead(id: string, options?: { partnerId?: string }): Promise<boolean>;
   addLeadComment(comment: InsertLeadComment): Promise<LeadComment>;
-  listLeadComments(leadId: string): Promise<LeadComment[]>;
-  listLeadActivity(leadId: string): Promise<ActivityLog[]>;
+  listLeadComments(leadId: string, options?: { partnerId?: string }): Promise<LeadComment[]>;
+  listLeadActivity(leadId: string, options?: { partnerId?: string }): Promise<ActivityLog[]>;
   listServices(): Promise<Service[]>;
   createService(service: InsertService): Promise<Service>;
   updateService(
@@ -392,6 +394,14 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
+  async getLead(id: string, options: { partnerId?: string } = {}): Promise<Lead | null> {
+    const whereClause = options.partnerId ? and(eq(leads.id, id), eq(leads.partnerId, options.partnerId)) : eq(leads.id, id);
+    const lead = await this.db.query.leads.findFirst({
+      where: whereClause,
+    });
+    return lead ?? null;
+  }
+
   async listLeads(filters: {
     partnerId?: string;
     status?: string | string[];
@@ -437,18 +447,38 @@ export class DatabaseStorage implements IStorage {
         "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
       >
     >,
+    options: { partnerId?: string } = {},
   ): Promise<Lead | null> {
+    const conditions: SQL<unknown>[] = [eq(leads.id, id)];
+    if (options.partnerId) {
+      conditions.push(eq(leads.partnerId, options.partnerId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
     const [record] = await this.db
       .update(leads)
       .set({ ...updates, updatedAt: updates.updatedAt ?? new Date() })
-      .where(eq(leads.id, id))
+      .where(whereClause ?? eq(leads.id, id))
       .returning();
 
     return record ?? null;
   }
 
-  async deleteLead(id: string): Promise<boolean> {
-    const deleted = await this.db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id });
+  async deleteLead(id: string, options: { partnerId?: string } = {}): Promise<boolean> {
+    const conditions: SQL<unknown>[] = [eq(leads.id, id)];
+    if (options.partnerId) {
+      conditions.push(eq(leads.partnerId, options.partnerId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+    const deleted = await this.db
+      .delete(leads)
+      .where(whereClause ?? eq(leads.id, id))
+      .returning({ id: leads.id });
     return deleted.length > 0;
   }
 
@@ -460,20 +490,42 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async listLeadComments(leadId: string): Promise<LeadComment[]> {
+  async listLeadComments(leadId: string, options: { partnerId?: string } = {}): Promise<LeadComment[]> {
+    const conditions: SQL<unknown>[] = [eq(leadComments.leadId, leadId)];
+    if (options.partnerId) {
+      conditions.push(eq(leads.partnerId, options.partnerId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+
     return this.db
       .select()
       .from(leadComments)
-      .where(eq(leadComments.leadId, leadId))
-      .orderBy(desc(leadComments.timestamp));
+      .leftJoin(leads, eq(leadComments.leadId, leads.id))
+      .where(whereClause ?? eq(leadComments.leadId, leadId))
+      .orderBy(desc(leadComments.timestamp))
+      .then((rows) => rows.map((row) => row.lead_comments).filter((comment): comment is LeadComment => Boolean(comment)));
   }
 
-  async listLeadActivity(leadId: string): Promise<ActivityLog[]> {
+  async listLeadActivity(leadId: string, options: { partnerId?: string } = {}): Promise<ActivityLog[]> {
+    const conditions: SQL<unknown>[] = [eq(activityLogs.leadId, leadId)];
+    if (options.partnerId) {
+      conditions.push(eq(leads.partnerId, options.partnerId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+
     return this.db
       .select()
       .from(activityLogs)
-      .where(eq(activityLogs.leadId, leadId))
-      .orderBy(desc(activityLogs.timestamp));
+      .leftJoin(leads, eq(activityLogs.leadId, leads.id))
+      .where(whereClause ?? eq(activityLogs.leadId, leadId))
+      .orderBy(desc(activityLogs.timestamp))
+      .then((rows) => rows.map((row) => row.activity_logs).filter((log): log is ActivityLog => Boolean(log)));
   }
 
   async listServices(): Promise<Service[]> {

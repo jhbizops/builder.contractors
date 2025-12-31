@@ -71,6 +71,9 @@ vi.mock("../../storage", async () => {
     async createLead() {
       throw new Error("Not implemented");
     },
+    async getLead() {
+      return null;
+    },
     async listLeads() {
       return [];
     },

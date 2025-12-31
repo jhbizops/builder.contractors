@@ -71,6 +71,10 @@ class InMemoryUserStorage implements IStorage {
     throw new Error("Not implemented");
   }
 
+  async getLead() {
+    return null;
+  }
+
   async listLeads() {
     return [];
   }
