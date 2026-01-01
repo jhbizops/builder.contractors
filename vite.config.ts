@@ -38,7 +38,11 @@ export default defineConfig(() => {
     test: {
       environment: 'jsdom',
       setupFiles: './client/src/test/setup.ts',
-      include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)', '../server/__tests__/**/*.{test,spec}.ts'],
+      include: [
+        '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+        '../server/__tests__/**/*.{test,spec}.ts',
+        '../server/routes/__tests__/**/*.{test,spec}.ts',
+      ],
       environmentMatchGlobs: (
         [
           ['../server/**', 'node'],

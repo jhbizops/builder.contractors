@@ -102,16 +102,35 @@ function requireApproval(user: AuthenticatedUser): boolean {
   return user.approved || isAdmin(user.role);
 }
 
+function ensureApproved(user: AuthenticatedUser, res: Response, message: string): boolean {
+  if (!requireApproval(user)) {
+    res.status(403).json({ message });
+    return false;
+  }
+  return true;
+}
+
+async function getAuthorizedLead(id: string, user: AuthenticatedUser, res: Response) {
+  const lead = await storage.getLead(id, { partnerId: isAdmin(user.role) ? undefined : user.id });
+  if (lead) return lead;
+
+  const existing = await storage.getLead(id);
+  if (existing) {
+    res.status(403).json({ message: "Forbidden" });
+    return null;
+  }
+
+  res.status(404).json({ message: "Lead not found" });
+  return null;
+}
+
 leadsRouter.use(requireAuth);
 
 leadsRouter.get("/", async (req, res, next) => {
   try {
     const filters = parseListFilters(req.query);
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to access leads" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to access leads")) return;
     const leads = await storage.listLeads({
       ...filters,
       partnerId: isAdmin(user.role) ? undefined : user.id,
@@ -131,10 +150,7 @@ leadsRouter.post("/", async (req, res, next) => {
     const user = getUser(res);
     const parsed = createLeadSchema.parse(req.body);
 
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to create leads" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to create leads")) return;
 
     const leadPayload: InsertLead = {
       id: `lead_${randomUUID()}`,
@@ -180,22 +196,21 @@ leadsRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateLeadSchema.parse(req.body);
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to update leads" });
-      return;
-    }
-    const lead = await storage.updateLead(
-      req.params.id,
+    if (!ensureApproved(user, res, "Approval required to update leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
+    const updated = await storage.updateLead(
+      lead.id,
       { ...payload, updatedBy: user.email },
       { partnerId: isAdmin(user.role) ? undefined : user.id },
     );
 
-    if (!lead) {
+    if (!updated) {
       res.status(404).json({ message: "Lead not found" });
       return;
     }
 
-    res.json({ lead });
+    res.json({ lead: updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -208,11 +223,10 @@ leadsRouter.patch("/:id", async (req, res, next) => {
 leadsRouter.delete("/:id", async (req, res, next) => {
   try {
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to delete leads" });
-      return;
-    }
-    const deleted = await storage.deleteLead(req.params.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
+    if (!ensureApproved(user, res, "Approval required to delete leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
+    const deleted = await storage.deleteLead(lead.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
     if (!deleted) {
       res.status(404).json({ message: "Lead not found" });
       return;
@@ -223,23 +237,27 @@ leadsRouter.delete("/:id", async (req, res, next) => {
   }
 });
 
+leadsRouter.get("/:id", async (req, res, next) => {
+  try {
+    const user = getUser(res);
+    if (!ensureApproved(user, res, "Approval required to access leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
+    res.json({ lead });
+  } catch (error) {
+    next(error);
+  }
+});
+
 leadsRouter.get("/:id/comments", async (req, res, next) => {
   try {
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to access leads" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to access leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
     const comments = await storage.listLeadComments(req.params.id, {
       partnerId: isAdmin(user.role) ? undefined : user.id,
     });
-    if (!comments.length) {
-      const lead = await storage.getLead(req.params.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
-      if (!lead) {
-        res.status(404).json({ message: "Lead not found" });
-        return;
-      }
-    }
     res.json({ comments });
   } catch (error) {
     next(error);
@@ -249,20 +267,14 @@ leadsRouter.get("/:id/comments", async (req, res, next) => {
 leadsRouter.post("/:id/comments", async (req, res, next) => {
   try {
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to comment on leads" });
-      return;
-    }
-    const lead = await storage.getLead(req.params.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
-    if (!lead) {
-      res.status(404).json({ message: "Lead not found" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to comment on leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
     const payload = commentSchema.parse(req.body);
     const comment = await storage.addLeadComment({
       ...payload,
       id: `comment_${randomUUID()}`,
-      leadId: req.params.id,
+      leadId: lead.id,
       author: user.email,
       timestamp: new Date(),
     });
@@ -279,20 +291,12 @@ leadsRouter.post("/:id/comments", async (req, res, next) => {
 leadsRouter.get("/:id/activity", async (req, res, next) => {
   try {
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to access leads" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to access leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
     const activity = await storage.listLeadActivity(req.params.id, {
       partnerId: isAdmin(user.role) ? undefined : user.id,
     });
-    if (!activity.length) {
-      const lead = await storage.getLead(req.params.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
-      if (!lead) {
-        res.status(404).json({ message: "Lead not found" });
-        return;
-      }
-    }
     res.json({ activity });
   } catch (error) {
     next(error);
@@ -302,20 +306,14 @@ leadsRouter.get("/:id/activity", async (req, res, next) => {
 leadsRouter.post("/:id/activity", async (req, res, next) => {
   try {
     const user = getUser(res);
-    if (!requireApproval(user)) {
-      res.status(403).json({ message: "Approval required to update leads" });
-      return;
-    }
-    const lead = await storage.getLead(req.params.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
-    if (!lead) {
-      res.status(404).json({ message: "Lead not found" });
-      return;
-    }
+    if (!ensureApproved(user, res, "Approval required to update leads")) return;
+    const lead = await getAuthorizedLead(req.params.id, user, res);
+    if (!lead) return;
     const payload = activitySchema.parse(req.body);
     const log = await storage.addActivityLog({
       ...payload,
       id: `log_${randomUUID()}`,
-      leadId: req.params.id,
+      leadId: lead.id,
       jobId: null,
       performedBy: user.email,
       timestamp: new Date(),

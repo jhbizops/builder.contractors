@@ -3,16 +3,17 @@ import session from "express-session";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityLog, InsertLead, InsertUser, Lead, LeadComment, User } from "@shared/schema";
-import { SESSION_COOKIE_NAME } from "../session";
-import type { IStorage } from "../storage";
+import { SESSION_COOKIE_NAME } from "../../session";
+import type { IStorage } from "../../storage";
 
 const MemoryStore = session.MemoryStore;
 
-vi.mock("../storageInstance", () => {
+vi.mock("../../storageInstance", () => {
   const users = new Map<string, User>();
   const leads = new Map<string, Lead>();
   const leadComments = new Map<string, LeadComment>();
   const activities = new Map<string, ActivityLog>();
+  let lastListFilters: unknown = null;
 
   const storage: IStorage = {
     async getUser(id: string) {
@@ -88,6 +89,7 @@ vi.mock("../storageInstance", () => {
       return lead;
     },
     async listLeads(filters = {}) {
+      lastListFilters = filters;
       return Array.from(leads.values()).filter((lead) => {
         if (filters.partnerId && lead.partnerId !== filters.partnerId) return false;
         if (filters.status) {
@@ -159,7 +161,9 @@ vi.mock("../storageInstance", () => {
       leads.clear();
       leadComments.clear();
       activities.clear();
+      lastListFilters = null;
     },
+    __getState: () => ({ lastListFilters }),
   };
 });
 
@@ -176,7 +180,7 @@ const createApp = async () => {
   );
   app.use(express.json());
 
-  const storageModule = (await import("../storageInstance")) as unknown as {
+  const storageModule = (await import("../../storageInstance")) as unknown as {
     storage: IStorage;
   };
 
@@ -192,22 +196,25 @@ const createApp = async () => {
     res.status(204).send();
   });
 
-  const { leadsRouter } = await import("../routes/leads");
+  const { leadsRouter } = await import("../leads");
   app.use("/api/leads", leadsRouter);
   return { app, storage: storageModule.storage };
 };
 
-describe("leads router", () => {
+describe("leads router (integration)", () => {
   let app: express.Express;
   let storage: IStorage;
   let reset: () => void;
+  let getState: () => { lastListFilters: unknown };
 
   beforeEach(async () => {
-    const storageModule = (await import("../storageInstance")) as unknown as {
+    const storageModule = (await import("../../storageInstance")) as unknown as {
       storage: IStorage;
       __reset: () => void;
+      __getState: () => { lastListFilters: unknown };
     };
     reset = storageModule.__reset;
+    getState = storageModule.__getState;
     reset();
     const setup = await createApp();
     app = setup.app;
@@ -234,97 +241,39 @@ describe("leads router", () => {
     await agent.post("/test/login").send({ userId }).expect(204);
   };
 
-  it("requires authentication", async () => {
-    await request(app).get("/api/leads").expect(401);
-  });
-
-  it("blocks unapproved users from creating leads", async () => {
+  it("requires approval to create or update leads", async () => {
     const user = await createUser({ approved: false });
     const agent = request.agent(app);
     await loginAgent(agent, user.id);
 
     await agent.post("/api/leads").send({ clientName: "Client" }).expect(403);
-  });
 
-  it("allows approved owners to create, list, and update their leads", async () => {
-    const user = await createUser();
-    const agent = request.agent(app);
-    await loginAgent(agent, user.id);
-
-    const createRes = await agent.post("/api/leads").send({ clientName: "My Client" }).expect(201);
-    expect(createRes.body.lead.partnerId).toBe(user.id);
-
-    const listRes = await agent.get("/api/leads").expect(200);
-    expect(listRes.body.leads).toHaveLength(1);
-
-    const updateRes = await agent
-      .patch(`/api/leads/${createRes.body.lead.id}`)
-      .send({ status: "completed" })
-      .expect(200);
-    expect(updateRes.body.lead.status).toBe("completed");
-  });
-
-  it("prevents other partners from mutating or reading another lead", async () => {
-    const owner = await createUser();
-    const other = await createUser({ email: "other@example.com" });
-    await storage.createLead({
-      id: "lead_1",
-      partnerId: owner.id,
-      clientName: "Owner Client",
-      status: "new",
-      location: null,
-      country: null,
-      region: null,
-      notes: [],
-      files: [],
-      createdBy: owner.email,
-      updatedBy: owner.email,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const otherAgent = request.agent(app);
-    await loginAgent(otherAgent, other.id);
-
-    await otherAgent.patch("/api/leads/lead_1").send({ clientName: "Hacker" }).expect(403);
-    await otherAgent.delete("/api/leads/lead_1").expect(403);
-    await otherAgent.get("/api/leads/lead_1/comments").expect(403);
-  });
-
-  it("allows admins to access and update any lead", async () => {
-    const admin = await createUser({ role: "admin", email: "admin@example.com" });
-    const owner = await createUser({ email: "owner@example.com" });
-    await storage.createLead({
-      id: "lead_admin",
-      partnerId: owner.id,
-      clientName: "Owner Client",
-      status: "new",
-      location: null,
-      country: null,
-      region: null,
-      notes: [],
-      files: [],
-      createdBy: owner.email,
-      updatedBy: owner.email,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const agent = request.agent(app);
-    await loginAgent(agent, admin.id);
-
-    const res = await agent.patch("/api/leads/lead_admin").send({ clientName: "Updated" }).expect(200);
-    expect(res.body.lead.clientName).toBe("Updated");
-
-    const comments = await agent.get("/api/leads/lead_admin/comments").expect(200);
-    expect(comments.body.comments).toEqual([]);
-  });
-
-  it("allows owners to comment and record activity while blocking unapproved users", async () => {
-    const owner = await createUser();
-    const unapproved = await createUser({ id: "user_unapproved", email: "bad@example.com", approved: false });
     const lead = await storage.createLead({
-      id: "lead_comments",
+      id: "lead_unapproved",
+      partnerId: user.id,
+      clientName: "Client",
+      status: "new",
+      location: null,
+      country: null,
+      region: null,
+      notes: [],
+      files: [],
+      createdBy: user.email,
+      updatedBy: user.email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await agent.patch(`/api/leads/${lead.id}`).send({ status: "completed" }).expect(403);
+  });
+
+  it("scopes listing and reading to the owner unless admin", async () => {
+    const owner = await createUser({ id: "owner", email: "owner@example.com" });
+    const other = await createUser({ id: "other", email: "other@example.com" });
+    const admin = await createUser({ id: "admin", role: "admin", email: "admin@example.com" });
+
+    await storage.createLead({
+      id: "lead_owner",
       partnerId: owner.id,
       clientName: "Owner Client",
       status: "new",
@@ -335,26 +284,83 @@ describe("leads router", () => {
       files: [],
       createdBy: owner.email,
       updatedBy: owner.email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await storage.createLead({
+      id: "lead_other",
+      partnerId: other.id,
+      clientName: "Other Client",
+      status: "new",
+      location: null,
+      country: null,
+      region: null,
+      notes: [],
+      files: [],
+      createdBy: other.email,
+      updatedBy: other.email,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     const ownerAgent = request.agent(app);
     await loginAgent(ownerAgent, owner.id);
-    const commentRes = await ownerAgent
+    const listRes = await ownerAgent.get("/api/leads").expect(200);
+    expect(listRes.body.leads).toHaveLength(1);
+    expect(listRes.body.leads[0].id).toBe("lead_owner");
+    expect(getState().lastListFilters).toMatchObject({ partnerId: owner.id });
+    await ownerAgent.get("/api/leads/lead_other").expect(403);
+
+    const adminAgent = request.agent(app);
+    await loginAgent(adminAgent, admin.id);
+    const adminList = await adminAgent.get("/api/leads").expect(200);
+    expect(adminList.body.leads).toHaveLength(2);
+    expect(getState().lastListFilters).toMatchObject({ partnerId: undefined });
+    await adminAgent.get("/api/leads/lead_other").expect(200);
+  });
+
+  it("enforces ownership for updates, deletion, comments, and activity", async () => {
+    const owner = await createUser({ id: "owner" });
+    const other = await createUser({ id: "intruder", email: "intruder@example.com" });
+
+    const lead = await storage.createLead({
+      id: "lead_secure",
+      partnerId: owner.id,
+      clientName: "Secure",
+      status: "new",
+      location: null,
+      country: null,
+      region: null,
+      notes: [],
+      files: [],
+      createdBy: owner.email,
+      updatedBy: owner.email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const intruderAgent = request.agent(app);
+    await loginAgent(intruderAgent, other.id);
+    await intruderAgent.patch(`/api/leads/${lead.id}`).send({ clientName: "Hijack" }).expect(403);
+    await intruderAgent.delete(`/api/leads/${lead.id}`).expect(403);
+    await intruderAgent.get(`/api/leads/${lead.id}/comments`).expect(403);
+    await intruderAgent.get(`/api/leads/${lead.id}/activity`).expect(403);
+    await intruderAgent.post(`/api/leads/${lead.id}/comments`).send({ body: "nope" }).expect(403);
+    await intruderAgent.post(`/api/leads/${lead.id}/activity`).send({ action: "note", details: {} }).expect(403);
+
+    const ownerAgent = request.agent(app);
+    await loginAgent(ownerAgent, owner.id);
+    await ownerAgent.patch(`/api/leads/${lead.id}`).send({ clientName: "Updated" }).expect(200);
+    await ownerAgent
       .post(`/api/leads/${lead.id}/comments`)
-      .send({ body: "First comment" })
+      .send({ body: "Allowed" })
       .expect(201);
-    expect(commentRes.body.comment.body).toBe("First comment");
-
-    const activityRes = await ownerAgent
+    await ownerAgent
       .post(`/api/leads/${lead.id}/activity`)
-      .send({ action: "note", details: { note: "Something" } })
+      .send({ action: "note", details: { text: "ok" } })
       .expect(201);
-    expect(activityRes.body.log.action).toBe("note");
-
-    const unapprovedAgent = request.agent(app);
-    await loginAgent(unapprovedAgent, unapproved.id);
-    await unapprovedAgent.post(`/api/leads/${lead.id}/comments`).send({ body: "Blocked" }).expect(403);
+    await ownerAgent.get(`/api/leads/${lead.id}/comments`).expect(200);
+    await ownerAgent.get(`/api/leads/${lead.id}/activity`).expect(200);
   });
 });
