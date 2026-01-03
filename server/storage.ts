@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import {
   billingPlans,
@@ -53,7 +53,8 @@ export interface IStorage {
     updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
   ): Promise<Job | null>;
   setJobStatus(id: string, status: Job["status"]): Promise<Job | null>;
-  assignJob(id: string, assigneeId: string | null): Promise<Job | null>;
+  assignJob(id: string, assigneeId: string | null, options?: { allowReassign?: boolean }): Promise<Job | null>;
+  claimJob(id: string, assigneeId: string): Promise<Job | null>;
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
   createLead(lead: InsertLead): Promise<Lead>;
@@ -361,13 +362,47 @@ export class DatabaseStorage implements IStorage {
     return record ?? null;
   }
 
-  async assignJob(id: string, assigneeId: string | null): Promise<Job | null> {
+  async assignJob(id: string, assigneeId: string | null, options: { allowReassign?: boolean } = {}): Promise<Job | null> {
+    const now = new Date();
+    const condition = options.allowReassign ? eq(jobs.id, id) : and(eq(jobs.id, id), isNull(jobs.assigneeId));
+
     const [record] = await this.db
       .update(jobs)
-      .set({ assigneeId, updatedAt: new Date() })
-      .where(eq(jobs.id, id))
+      .set({ assigneeId, updatedAt: now })
+      .where(condition)
       .returning();
+
     return record ?? null;
+  }
+
+  async claimJob(id: string, assigneeId: string): Promise<Job | null> {
+    const now = new Date();
+
+    return this.db.transaction(async (tx) => {
+      const [assigned] = await tx
+        .update(jobs)
+        .set({ assigneeId, updatedAt: now })
+        .where(and(eq(jobs.id, id), isNull(jobs.assigneeId)))
+        .returning();
+
+      if (!assigned) {
+        return null;
+      }
+
+      const nextStatus = assigned.status === "open" ? "in_progress" : assigned.status;
+
+      if (nextStatus === assigned.status) {
+        return assigned;
+      }
+
+      const [statusUpdated] = await tx
+        .update(jobs)
+        .set({ status: nextStatus, updatedAt: now })
+        .where(eq(jobs.id, id))
+        .returning();
+
+      return statusUpdated ?? { ...assigned, status: nextStatus, updatedAt: now };
+    });
   }
 
   async addActivityLog(log: InsertActivityLog): Promise<ActivityLog> {

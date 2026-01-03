@@ -59,6 +59,10 @@ class InMemoryUserStorage implements IStorage {
     throw new Error("Not implemented");
   }
 
+  async claimJob() {
+    throw new Error("Not implemented");
+  }
+
   async addActivityLog() {
     throw new Error("Not implemented");
   }

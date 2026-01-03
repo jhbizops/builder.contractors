@@ -265,12 +265,22 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
       return;
     }
 
-    if (job.ownerId !== user.id && !isAdmin(user.role)) {
+    const isOwnerOrAdmin = job.ownerId === user.id || isAdmin(user.role);
+
+    if (!isOwnerOrAdmin) {
       res.status(403).json({ message: "Forbidden" });
       return;
     }
 
-    const updated = await storage.assignJob(job.id, payload.assigneeId);
+    const isReassignment = job.assigneeId !== null && payload.assigneeId !== job.assigneeId;
+    const updated = await storage.assignJob(job.id, payload.assigneeId, {
+      allowReassign: isReassignment,
+    });
+
+    if (!updated) {
+      res.status(409).json({ message: "Job already assigned" });
+      return;
+    }
 
     await storage.addActivityLog({
       id: `log_${randomUUID()}`,
@@ -311,13 +321,12 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
       return;
     }
 
-    if (job.assigneeId) {
+    const claimed = await storage.claimJob(job.id, user.id);
+
+    if (!claimed) {
       res.status(409).json({ message: "Job already assigned" });
       return;
     }
-
-    const assigned = await storage.assignJob(job.id, user.id);
-    const updated = await storage.setJobStatus(job.id, job.status === "open" ? "in_progress" : job.status);
 
     await storage.addActivityLog({
       id: `log_${randomUUID()}`,
@@ -328,7 +337,7 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
       details: { assigneeId: user.id },
     });
 
-    res.json({ job: updated ?? assigned });
+    res.json({ job: claimed });
   } catch (error) {
     next(error);
   }

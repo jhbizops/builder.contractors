@@ -93,10 +93,20 @@ vi.mock("../../storageInstance", () => {
       jobs.set(id, updated);
       return updated;
     },
-    async assignJob(id: string, assigneeId: string | null) {
+    async assignJob(id: string, assigneeId: string | null, options: { allowReassign?: boolean } = {}) {
       const existing = jobs.get(id);
       if (!existing) return null;
+      if (!options.allowReassign && existing.assigneeId && assigneeId !== existing.assigneeId) return null;
+      if (!options.allowReassign && existing.assigneeId) return null;
       const updated: Job = { ...existing, assigneeId, updatedAt: new Date() };
+      jobs.set(id, updated);
+      return updated;
+    },
+    async claimJob(id: string, assigneeId: string) {
+      const existing = jobs.get(id);
+      if (!existing || existing.assigneeId) return null;
+      const nextStatus = existing.status === "open" ? "in_progress" : existing.status;
+      const updated: Job = { ...existing, assigneeId, status: nextStatus, updatedAt: new Date() };
       jobs.set(id, updated);
       return updated;
     },
