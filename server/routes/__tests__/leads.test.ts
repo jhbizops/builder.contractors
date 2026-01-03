@@ -60,6 +60,9 @@ vi.mock("../../storageInstance", () => {
     async assignJob() {
       return null;
     },
+    async claimJob() {
+      return null;
+    },
     async addActivityLog(log) {
       const record: ActivityLog = { ...log, timestamp: log.timestamp ?? new Date() };
       activities.set(record.id, record);

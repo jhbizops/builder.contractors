@@ -62,6 +62,9 @@ vi.mock("../../storage", async () => {
     async assignJob() {
       return null;
     },
+    async claimJob() {
+      return null;
+    },
     async addActivityLog() {
       throw new Error("Not implemented");
     },
