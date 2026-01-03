@@ -5,6 +5,7 @@
 - Introduced billing dashboard with entitlement-gated UI cards and protected premium actions.
 - Documented new billing environment variables in `.env.example` and README.
 - Memoised sales dashboard filters/stats, lazy-loaded the lead modal, and covered the helpers with tests to improve perceived responsiveness.
+- Added per-IP and per-email rate limiting for auth login/registration with generic 429 responses and retry hints.
 - Simplified signup by defaulting all new accounts to the shared industry role (no sales vs builder choice) while keeping admin provisioning intact.
 - Added drag-and-drop uploads, inline virus scanning, and file previews to lead attachments.
 - Added jobs CRUD API with status transitions, assignment controls, and activity logging.

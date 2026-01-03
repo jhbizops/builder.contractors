@@ -8,6 +8,7 @@ import type { RequestHandler } from "express";
 import { SESSION_COOKIE_NAME } from "../session";
 import { toPublicUser } from "../users/serializers";
 import { getBillingService } from "../billing/instance";
+import { authLoginRateLimit, authRegisterRateLimit } from "../middleware/authRateLimit";
 
 const authRouter = Router();
 
@@ -56,7 +57,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
     const existing = await storage.getUserByEmail(payload.email);
 
     if (existing) {
-      res.status(409).json({ message: "An account with this email already exists." });
+      res.status(409).json({ message: "Unable to process the request." });
       return;
     }
 
@@ -182,8 +183,8 @@ const logoutHandler: RequestHandler = async (req, res, next) => {
   }
 };
 
-authRouter.post("/register", registerHandler);
-authRouter.post("/login", loginHandler);
+authRouter.post("/register", authRegisterRateLimit, registerHandler);
+authRouter.post("/login", authLoginRateLimit, loginHandler);
 authRouter.post("/logout", logoutHandler);
 authRouter.get("/me", meHandler);
 
