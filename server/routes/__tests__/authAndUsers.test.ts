@@ -5,17 +5,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE_NAME } from "../../session";
 import type { User } from "@shared/schema";
 import type { IStorage } from "../../storage";
+import { defaultBillingPlans } from "@shared/billingPlans";
 
-vi.mock("../../storage", async () => {
-  const actual = await vi.importActual<typeof import("../../storage")>("../../storage");
-  const store = new Map<string, User>();
+const mockStore = new Map<string, User>();
 
+vi.mock("../../storageInstance", () => {
   const storage: IStorage = {
     async getUser(id: string) {
-      return store.get(id);
+      return mockStore.get(id);
     },
     async getUserByEmail(email: string) {
-      for (const user of store.values()) {
+      for (const user of mockStore.values()) {
         if (user.email.toLowerCase() === email.toLowerCase()) {
           return user;
         }
@@ -27,21 +27,21 @@ vi.mock("../../storage", async () => {
         ...user,
         createdAt: user.createdAt ?? new Date(),
       };
-      store.set(next.id, next);
+      mockStore.set(next.id, next);
       return next;
     },
     async listUsers() {
-      return Array.from(store.values()).sort(
+      return Array.from(mockStore.values()).sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
       );
     },
     async updateUserApproval(id: string, approved: boolean) {
-      const existing = store.get(id);
+      const existing = mockStore.get(id);
       if (!existing) {
         return null;
       }
       const updated: User = { ...existing, approved };
-      store.set(id, updated);
+      mockStore.set(id, updated);
       return updated;
     },
     async createJob() {
@@ -107,9 +107,32 @@ vi.mock("../../storage", async () => {
   };
 
   return {
-    ...actual,
     storage,
-    __resetMockStorage: () => store.clear(),
+    __resetMockStorage: () => mockStore.clear(),
+    __setUserRole: (id: string, role: User["role"]) => {
+      const existing = mockStore.get(id);
+      if (!existing) return;
+      mockStore.set(id, { ...existing, role });
+    },
+  };
+});
+
+vi.mock("../../billing/instance", () => {
+  const plan = defaultBillingPlans[0];
+  return {
+    getBillingService: () => ({
+      getUserBilling: async (userId: string) => {
+        const user = mockStore.get(userId);
+        if (!user) return null;
+        return {
+          user,
+          plan,
+          subscription: null,
+          entitlements: plan.entitlements,
+          quotas: plan.quotas,
+        };
+      },
+    }),
   };
 });
 
@@ -132,18 +155,26 @@ const createApp = () => {
 describe("auth and users routes", () => {
   let app: express.Express;
   let resetStorage: () => void;
+  let setUserRole: (id: string, role: User["role"]) => void;
 
   beforeEach(async () => {
-    const storageModule = (await import("../../storage")) as unknown as {
+    const storageModule = (await import("../../storageInstance")) as unknown as {
       __resetMockStorage: () => void;
+      __setUserRole: (id: string, role: User["role"]) => void;
     };
     resetStorage = storageModule.__resetMockStorage;
+    setUserRole = storageModule.__setUserRole;
     resetStorage();
     app = createApp();
     const { authRouter } = await import("../../auth/routes");
     const { usersRouter } = await import("../../users/routes");
     app.use("/api/auth", authRouter);
     app.use("/api/users", usersRouter);
+    app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      // eslint-disable-next-line no-console
+      console.error("auth/users test error", err);
+      res.status(500).json({ message: err instanceof Error ? err.message : String(err) });
+    });
   });
 
   it("registers, logs out, and logs in a user", async () => {
@@ -174,10 +205,18 @@ describe("auth and users routes", () => {
 
   it("allows admins to list and approve users", async () => {
     const adminAgent = request.agent(app);
-    await adminAgent
+    const adminRes = await adminAgent
       .post("/api/auth/register")
       .send({ email: "admin@example.com", password: "AdminPass123!", role: "admin" })
       .expect(201);
+    setUserRole(adminRes.body.user.id, "admin");
+    const storageModule = (await import("../../storageInstance")) as unknown as { storage: IStorage };
+    const adminRecord = await storageModule.storage.getUser(adminRes.body.user.id);
+    expect(adminRecord?.role).toBe("admin");
+    await adminAgent
+      .post("/api/auth/login")
+      .send({ email: "admin@example.com", password: "AdminPass123!" })
+      .expect(200);
 
     const userAgent = request.agent(app);
     const userRes = await userAgent
@@ -187,7 +226,12 @@ describe("auth and users routes", () => {
 
     const userId = userRes.body.user.id as string;
 
-    const listRes = await adminAgent.get("/api/users").expect(200);
+    const listRes = await adminAgent.get("/api/users");
+    if (listRes.status !== 200) {
+      // eslint-disable-next-line no-console
+      console.error("users list response", listRes.status, listRes.body);
+    }
+    expect(listRes.status).toBe(200);
     expect(listRes.body.users).toHaveLength(2);
 
     const approvalRes = await adminAgent

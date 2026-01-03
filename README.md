@@ -32,6 +32,9 @@ Copy `.env.example` to `.env` and set:
 - Services endpoints: `/api/services` (list/create) and `/api/services/:id` (update).
 - All endpoints are authenticated and validated with Zod; React Query clients optimistically update UI and refetch after mutations.
 
+## Authentication
+- Login and registration are protected with per-IP and per-email rate limits; repeated failures return generic errors with `Retry-After` guidance and valid credentials reset the failed-attempt counter.
+
 ## Performance
 - Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.
 - Lead file uploads support drag-and-drop with inline validation/virus scanning and image/PDF previews to keep attachment workflows quick and safe.
