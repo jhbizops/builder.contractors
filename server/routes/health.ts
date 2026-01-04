@@ -24,7 +24,7 @@ export async function probeDatabase(
 ): Promise<HealthProbeResult> {
   const startedAt = Date.now();
 
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error("health-db-timeout")), timeoutMs);
   });

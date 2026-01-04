@@ -171,7 +171,6 @@ describe("auth and users routes", () => {
     app.use("/api/auth", authRouter);
     app.use("/api/users", usersRouter);
     app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      // eslint-disable-next-line no-console
       console.error("auth/users test error", err);
       res.status(500).json({ message: err instanceof Error ? err.message : String(err) });
     });
@@ -228,7 +227,6 @@ describe("auth and users routes", () => {
 
     const listRes = await adminAgent.get("/api/users");
     if (listRes.status !== 200) {
-      // eslint-disable-next-line no-console
       console.error("users list response", listRes.status, listRes.body);
     }
     expect(listRes.status).toBe(200);
