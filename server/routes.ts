@@ -12,6 +12,7 @@ import { jobsRouter } from "./routes/jobs";
 import { leadsRouter } from "./routes/leads";
 import { reportsRouter } from "./routes/reports";
 import { servicesRouter } from "./routes/services";
+import { adminRouter } from "./routes/admin";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await ensureDatabase(pool);
@@ -30,6 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/leads", leadsRouter);
   app.use("/api/reports", reportsRouter);
   app.use("/api/services", servicesRouter);
+  app.use("/api/admin", adminRouter);
 
   app.get("/api/session/geo", (req, res) => {
     if (!req.session.countryCode) {

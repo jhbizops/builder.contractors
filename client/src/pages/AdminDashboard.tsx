@@ -11,8 +11,10 @@ import { LeadModal } from "@/components/modals/LeadModal";
 import { Plus, Download, Users, Handshake, Clock, TrendingUp } from "lucide-react";
 import { Lead } from "@/types";
 import { useGlobalization } from "@/contexts/GlobalizationContext";
-import { USERS_QUERY_KEY, fetchUsers } from "@/api/users";
-import { fetchLeads, leadsQueryKey, updateLead } from "@/api/leads";
+import { toast } from "@/hooks/use-toast";
+import { fetchLeads, leadsQueryKey, updateLead, deleteLead } from "@/api/leads";
+import { adminMetricsQueryKey, fetchAdminMetrics } from "@/api/admin";
+import { createExport } from "@/api/reports";
 
 export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -20,6 +22,10 @@ export default function AdminDashboard() {
   const { data: leads = [] } = useQuery({
     queryKey: leadsQueryKey,
     queryFn: fetchLeads,
+  });
+  const { data: metrics } = useQuery({
+    queryKey: adminMetricsQueryKey,
+    queryFn: fetchAdminMetrics,
   });
   const updateLeadMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Lead> }) => updateLead(id, updates),
@@ -40,20 +46,40 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: leadsQueryKey });
     },
   });
-  const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: USERS_QUERY_KEY,
-    queryFn: fetchUsers,
+  const deleteLeadMutation = useMutation({
+    mutationFn: (id: string) => deleteLead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadsQueryKey });
+      queryClient.invalidateQueries({ queryKey: adminMetricsQueryKey });
+    },
+  });
+  const exportMutation = useMutation({
+    mutationFn: () => createExport({ report: "leads" }),
+    onSuccess: (exportJob) => {
+      toast({
+        title: "Export queued",
+        description: `Export ${exportJob.id} is processing.`,
+      });
+    },
+    onError: (error) => {
+      const description = error instanceof Error ? error.message : "Failed to start export.";
+      toast({
+        title: "Export failed",
+        description,
+        variant: "destructive",
+      });
+    },
   });
   const { formatDualCurrency, formatNumber } = useGlobalization();
 
   const stats = useMemo(
     () => ({
-      totalUsers: users.length,
-      activeLeads: leads.filter((lead) => lead.status === "in_progress").length,
-      pendingApprovals: users.filter((user) => !user.approved).length,
-      monthlyRevenue: 24800,
+      totalUsers: metrics?.totalUsers ?? 0,
+      activeLeads: metrics?.activeLeads ?? 0,
+      pendingApprovals: metrics?.pendingApprovals ?? 0,
+      monthlyRevenue: metrics?.monthlyRevenue ?? 0,
     }),
-    [leads, users],
+    [metrics],
   );
 
   const handleViewLead = (lead: Lead) => {
@@ -66,7 +92,20 @@ export default function AdminDashboard() {
 
   const handleDeleteLead = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this lead?")) {
-      // Would implement delete functionality
+      try {
+        await deleteLeadMutation.mutateAsync(id);
+        toast({
+          title: "Lead deleted",
+          description: "The lead has been removed.",
+        });
+      } catch (error) {
+        const description = error instanceof Error ? error.message : "Failed to delete lead.";
+        toast({
+          title: "Delete failed",
+          description,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -77,7 +116,12 @@ export default function AdminDashboard() {
       await updateLeadMutation.mutateAsync({ id: selectedLead.id, updates: leadData });
       setSelectedLead(null);
     } catch (error) {
-      console.error("Error updating lead:", error);
+      const description = error instanceof Error ? error.message : "Failed to update lead.";
+      toast({
+        title: "Update failed",
+        description,
+        variant: "destructive",
+      });
     }
   };
 
@@ -100,7 +144,11 @@ export default function AdminDashboard() {
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Lead
                 </Button>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  onClick={() => void exportMutation.mutateAsync()}
+                  disabled={exportMutation.isPending}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
                 </Button>
@@ -207,18 +255,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-6">
-              {usersLoading ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pending User Approvals</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-slate-500 text-center py-4">Loading users…</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <UserApprovalPanel />
-              )}
+              <UserApprovalPanel />
               <ServiceManagement />
             </div>
           </div>
