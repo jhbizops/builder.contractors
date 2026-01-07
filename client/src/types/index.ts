@@ -122,3 +122,16 @@ export interface CustomPricing {
   price: number;
   notes?: string;
 }
+
+export type ExportJobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
+export interface ExportJob {
+  id: string;
+  status: ExportJobStatus;
+  filters: Record<string, unknown>;
+  fileUrl?: string | null;
+  createdBy: string;
+  tenantId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
