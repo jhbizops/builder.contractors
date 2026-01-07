@@ -10,6 +10,7 @@ import { pool } from "./db";
 import { createHealthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
 import { leadsRouter } from "./routes/leads";
+import { reportsRouter } from "./routes/reports";
 import { servicesRouter } from "./routes/services";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -27,6 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/billing", billingRouter);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/leads", leadsRouter);
+  app.use("/api/reports", reportsRouter);
   app.use("/api/services", servicesRouter);
 
   app.get("/api/session/geo", (req, res) => {

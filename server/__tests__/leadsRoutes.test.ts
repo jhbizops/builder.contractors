@@ -41,6 +41,9 @@ vi.mock("../storageInstance", () => {
       users.set(id, updated);
       return updated;
     },
+    async getUserProfile() {
+      return null;
+    },
     async createJob() {
       throw new Error("Not implemented");
     },
@@ -140,6 +143,18 @@ vi.mock("../storageInstance", () => {
       return Array.from(activities.values())
         .filter((log) => log.leadId === leadId)
         .sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
+    },
+    async createExportJob() {
+      throw new Error("Not implemented");
+    },
+    async getExportJob() {
+      return null;
+    },
+    async listExportJobs() {
+      return [];
+    },
+    async updateExportJob() {
+      return null;
     },
     async listServices() {
       return [];

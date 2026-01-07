@@ -33,6 +33,10 @@ class InMemoryUserStorage implements IStorage {
     return user;
   }
 
+  async getUserProfile() {
+    return null;
+  }
+
   // The job and activity methods are unused in these tests.
   // Implementations are provided to satisfy the interface and guard against accidental use.
   async createJob() {
@@ -101,6 +105,22 @@ class InMemoryUserStorage implements IStorage {
 
   async listLeadActivity() {
     return [];
+  }
+
+  async createExportJob() {
+    throw new Error("Not implemented");
+  }
+
+  async getExportJob() {
+    return null;
+  }
+
+  async listExportJobs() {
+    return [];
+  }
+
+  async updateExportJob() {
+    return null;
   }
 
   async listServices() {
