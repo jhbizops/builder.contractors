@@ -43,6 +43,9 @@ vi.mock("../../storageInstance", () => {
       users.set(id, updated);
       return updated;
     },
+    async getUserProfile() {
+      return null;
+    },
     async createJob(job: InsertJob) {
       const record: Job = {
         ...job,
@@ -144,6 +147,18 @@ vi.mock("../../storageInstance", () => {
     },
     async listLeadActivity() {
       return [];
+    },
+    async createExportJob() {
+      throw new Error("Not implemented");
+    },
+    async getExportJob() {
+      return null;
+    },
+    async listExportJobs() {
+      return [];
+    },
+    async updateExportJob() {
+      return null;
     },
     async listServices() {
       return [];

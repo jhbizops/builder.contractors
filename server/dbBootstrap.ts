@@ -12,6 +12,7 @@ const requiredTables = [
   "services",
   "custom_pricing",
   "activity_logs",
+  "exports",
   "billing_plans",
   "subscriptions",
   "user_entitlements",
@@ -130,6 +131,16 @@ const bootstrapStatements = [
     performed_by text NOT NULL,
     timestamp timestamp DEFAULT now(),
     details jsonb NOT NULL DEFAULT '{}'::jsonb
+  )`,
+  `CREATE TABLE IF NOT EXISTS exports (
+    id text PRIMARY KEY,
+    status text NOT NULL DEFAULT 'queued',
+    filters jsonb NOT NULL DEFAULT '{}'::jsonb,
+    file_url text,
+    created_by text NOT NULL,
+    tenant_id text NOT NULL,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now()
   )`,
 ];
 

@@ -121,6 +121,20 @@ export const jobs = pgTable("jobs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+const exportStatusValues = ["queued", "processing", "completed", "failed"] as const;
+export const exportStatusEnum = z.enum(exportStatusValues);
+
+export const exportsTable = pgTable("exports", {
+  id: text("id").primaryKey(),
+  status: text("status").notNull().default("queued"),
+  filters: jsonb("filters").$type<Record<string, unknown>>().default({}).notNull(),
+  fileUrl: text("file_url"),
+  createdBy: text("created_by").notNull(),
+  tenantId: text("tenant_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Services table
 export const services = pgTable("services", {
   id: text("id").primaryKey(),
@@ -190,6 +204,11 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   updatedAt: true,
 });
 
+export const insertExportSchema = createInsertSchema(exportsTable).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertBillingPlanSchema = createInsertSchema(billingPlans);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertUserEntitlementSchema = createInsertSchema(userEntitlements);
@@ -209,6 +228,8 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = typeof activityLogs.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = typeof jobs.$inferInsert;
+export type ExportJob = typeof exportsTable.$inferSelect;
+export type InsertExportJob = typeof exportsTable.$inferInsert;
 export type Country = typeof countries.$inferSelect;
 export type InsertCountry = z.infer<typeof insertCountrySchema>;
 export type BillingPlan = typeof billingPlans.$inferSelect;

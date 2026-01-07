@@ -6,6 +6,7 @@ import {
   userEntitlements,
   users,
   jobs,
+  exportsTable,
   activityLogs,
   leads,
   leadComments,
@@ -21,6 +22,8 @@ import {
   type UserEntitlement,
   type InsertJob,
   type Job,
+  type ExportJob,
+  type InsertExportJob,
   type ActivityLog,
   type InsertActivityLog,
   type Lead,
@@ -38,6 +41,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   listUsers(): Promise<User[]>;
   updateUserApproval(id: string, approved: boolean): Promise<User | null>;
+  getUserProfile(userId: string): Promise<UserProfile | null>;
   createJob(job: InsertJob): Promise<Job>;
   getJob(id: string): Promise<Job | null>;
   listJobs(filters?: {
@@ -79,6 +83,13 @@ export interface IStorage {
   addLeadComment(comment: InsertLeadComment): Promise<LeadComment>;
   listLeadComments(leadId: string, options?: { partnerId?: string }): Promise<LeadComment[]>;
   listLeadActivity(leadId: string, options?: { partnerId?: string }): Promise<ActivityLog[]>;
+  createExportJob(exportJob: InsertExportJob): Promise<ExportJob>;
+  getExportJob(id: string, options?: { createdBy?: string; tenantId?: string }): Promise<ExportJob | null>;
+  listExportJobs(filters?: { createdBy?: string; tenantId?: string }): Promise<ExportJob[]>;
+  updateExportJob(
+    id: string,
+    updates: Partial<Pick<ExportJob, "status" | "fileUrl" | "updatedAt">>,
+  ): Promise<ExportJob | null>;
   listServices(): Promise<Service[]>;
   createService(service: InsertService): Promise<Service>;
   updateService(
@@ -561,6 +572,61 @@ export class DatabaseStorage implements IStorage {
       .where(whereClause ?? eq(activityLogs.leadId, leadId))
       .orderBy(desc(activityLogs.timestamp))
       .then((rows) => rows.map((row) => row.activity_logs).filter((log): log is ActivityLog => Boolean(log)));
+  }
+
+  async createExportJob(exportJob: InsertExportJob): Promise<ExportJob> {
+    const [record] = await this.db.insert(exportsTable).values(exportJob).returning();
+    if (!record) {
+      throw new Error("Failed to insert export job");
+    }
+    return record;
+  }
+
+  async getExportJob(id: string, options: { createdBy?: string; tenantId?: string } = {}): Promise<ExportJob | null> {
+    const conditions: SQL<unknown>[] = [eq(exportsTable.id, id)];
+    if (options.createdBy) {
+      conditions.push(eq(exportsTable.createdBy, options.createdBy));
+    }
+    if (options.tenantId) {
+      conditions.push(eq(exportsTable.tenantId, options.tenantId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+    const record = await this.db.query.exportsTable.findFirst({
+      where: whereClause ?? eq(exportsTable.id, id),
+    });
+    return record ?? null;
+  }
+
+  async listExportJobs(filters: { createdBy?: string; tenantId?: string } = {}): Promise<ExportJob[]> {
+    const conditions: SQL<unknown>[] = [];
+    if (filters.createdBy) {
+      conditions.push(eq(exportsTable.createdBy, filters.createdBy));
+    }
+    if (filters.tenantId) {
+      conditions.push(eq(exportsTable.tenantId, filters.tenantId));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+    const baseQuery = this.db.select().from(exportsTable);
+    const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    return filteredQuery.orderBy(desc(exportsTable.createdAt));
+  }
+
+  async updateExportJob(
+    id: string,
+    updates: Partial<Pick<ExportJob, "status" | "fileUrl" | "updatedAt">>,
+  ): Promise<ExportJob | null> {
+    const [record] = await this.db
+      .update(exportsTable)
+      .set({ ...updates, updatedAt: updates.updatedAt ?? new Date() })
+      .where(eq(exportsTable.id, id))
+      .returning();
+    return record ?? null;
   }
 
   async listServices(): Promise<Service[]> {
