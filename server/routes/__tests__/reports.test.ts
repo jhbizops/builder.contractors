@@ -244,7 +244,7 @@ describe("reports router", () => {
 
   it("creates an export job for entitled users", async () => {
     const user = await createUser();
-    attachProfile(user, ["reports_exports"]);
+    attachProfile(user, ["reports.export"]);
 
     const agent = request.agent(app);
     await loginAgent(agent, user.id);
@@ -276,7 +276,7 @@ describe("reports router", () => {
 
   it("rejects unapproved users", async () => {
     const user = await createUser({ approved: false });
-    attachProfile(user, ["reports_exports"]);
+    attachProfile(user, ["reports.export"]);
 
     const agent = request.agent(app);
     await loginAgent(agent, user.id);
@@ -291,7 +291,7 @@ describe("reports router", () => {
 
   it("lists and fetches export jobs", async () => {
     const user = await createUser();
-    attachProfile(user, ["reports_exports"]);
+    attachProfile(user, ["reports.export"]);
 
     await storage.createExportJob({
       id: "export_123",
@@ -313,5 +313,27 @@ describe("reports router", () => {
 
     const getResponse = await agent.get("/api/reports/exports/export_123").expect(200);
     expect(getResponse.body.export.id).toBe("export_123");
+  });
+
+  it("rejects export downloads for users without entitlements", async () => {
+    const user = await createUser();
+    attachProfile(user, []);
+
+    await storage.createExportJob({
+      id: "export_456",
+      status: "completed",
+      filters: { report: "leads" },
+      fileUrl: "/api/reports/exports/export_456/download",
+      createdBy: user.id,
+      tenantId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, user.id);
+
+    const response = await agent.get("/api/reports/exports/export_456/download").expect(403);
+    expect(response.body.message).toBe("Report exports are not enabled");
   });
 });

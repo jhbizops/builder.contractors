@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
+import { requireEntitlement } from "../middleware/entitlements";
 import { storage } from "../storageInstance";
 import { createExportJob } from "../reports/service";
 import { buildExportDownloadUrl, getExportFilePath } from "../reports/storage";
@@ -9,7 +10,7 @@ import { promises as fs } from "node:fs";
 
 const reportsRouter = Router();
 
-const REPORTS_ENTITLEMENT = "reports_exports";
+const REPORTS_ENTITLEMENT = "reports.export";
 
 type AuthenticatedUser = {
   id: string;
@@ -42,21 +43,9 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
   return true;
 }
 
-async function ensureEntitled(user: AuthenticatedUser, res: Response): Promise<boolean> {
-  if (isAdmin(user.role)) {
-    return true;
-  }
-  const profile = await storage.getUserProfile(user.id);
-  if (!profile) {
-    res.status(403).json({ message: "Entitlements not available" });
-    return false;
-  }
-  if (!profile.entitlements.includes(REPORTS_ENTITLEMENT)) {
-    res.status(403).json({ message: "Report exports are not enabled" });
-    return false;
-  }
-  return true;
-}
+const requireReportsEntitlement = requireEntitlement(REPORTS_ENTITLEMENT, {
+  deniedMessage: "Report exports are not enabled",
+});
 
 function resolveTenantId(user: AuthenticatedUser): string {
   return user.id;
@@ -82,11 +71,10 @@ async function getAuthorizedExport(id: string, user: AuthenticatedUser, res: Res
 
 reportsRouter.use(requireAuth);
 
-reportsRouter.post("/exports", async (req, res, next) => {
+reportsRouter.post("/exports", requireReportsEntitlement, async (req, res, next) => {
   try {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to export reports")) return;
-    if (!(await ensureEntitled(user, res))) return;
 
     const payload = createExportRequestSchema.parse(req.body);
     const exportJob = await createExportJob({
@@ -105,11 +93,10 @@ reportsRouter.post("/exports", async (req, res, next) => {
   }
 });
 
-reportsRouter.get("/exports", async (_req, res, next) => {
+reportsRouter.get("/exports", requireReportsEntitlement, async (_req, res, next) => {
   try {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to access exports")) return;
-    if (!(await ensureEntitled(user, res))) return;
 
     const tenantId = resolveTenantId(user);
     const exportJobs = await storage.listExportJobs({
@@ -122,11 +109,10 @@ reportsRouter.get("/exports", async (_req, res, next) => {
   }
 });
 
-reportsRouter.get("/exports/:id", async (req, res, next) => {
+reportsRouter.get("/exports/:id", requireReportsEntitlement, async (req, res, next) => {
   try {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to access exports")) return;
-    if (!(await ensureEntitled(user, res))) return;
     const exportJob = await getAuthorizedExport(req.params.id, user, res);
     if (!exportJob) return;
 
@@ -138,11 +124,10 @@ reportsRouter.get("/exports/:id", async (req, res, next) => {
   }
 });
 
-reportsRouter.get("/exports/:id/download", async (req, res, next) => {
+reportsRouter.get("/exports/:id/download", requireReportsEntitlement, async (req, res, next) => {
   try {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to access exports")) return;
-    if (!(await ensureEntitled(user, res))) return;
     const exportJob = await getAuthorizedExport(req.params.id, user, res);
     if (!exportJob) return;
 
