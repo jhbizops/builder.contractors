@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi, afterEach, beforeAll } from 'vitest';
 import Register from '@/pages/Register';
@@ -105,6 +105,7 @@ describe('Register page', () => {
   });
 
   afterEach(() => {
+    cleanup();
     globalThis.fetch = originalFetch;
   });
 
@@ -134,7 +135,7 @@ describe('Register page', () => {
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.type(screen.getByLabelText(/confirm password/i), 'password123');
 
-    const countrySelect = await screen.findByRole('combobox');
+    const [countrySelect] = screen.getAllByTestId('select-country');
     await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
     fireEvent.change(countrySelect, { target: { value: 'US' } });
 
@@ -154,5 +155,35 @@ describe('Register page', () => {
     expect(
       screen.queryByText(/expected boolean, received string/i)
     ).not.toBeInTheDocument();
+  });
+
+  it('shows a validation error when the password is too short', async () => {
+    const user = userEvent.setup();
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+
+    render(
+      <QueryClientProvider client={client}>
+        <Register />
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByLabelText(/email/i), 'short@example.com');
+    await user.type(screen.getByLabelText(/^password$/i), 'short');
+    await user.type(screen.getByLabelText(/confirm password/i), 'short');
+
+    const [countrySelect] = screen.getAllByTestId('select-country');
+    await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
+    fireEvent.change(countrySelect, { target: { value: 'US' } });
+
+    await user.click(screen.getByLabelText(/terms of service/i));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(
+      await screen.findByText(/password must be at least 8 characters/i),
+    ).toBeInTheDocument();
+    expect(registerMock).not.toHaveBeenCalled();
   });
 });

@@ -25,7 +25,7 @@ import { createLocaleFromCountry } from '@/lib/globalization';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
   country: z.string().length(2, 'Please select your country'),
   agreeToTerms: z.boolean().refine(val => val === true, {
@@ -175,6 +175,7 @@ export default function Register() {
                       }
                     }}
                     disabled={loadingCountries}
+                    data-testid="select-country"
                   >
                     <SelectTrigger id="country" className="mt-1">
                       <SelectValue
