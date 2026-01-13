@@ -6,50 +6,49 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLogo } from '@/components/BrandLogo';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Eye, EyeOff } from 'lucide-react';
+
+const loginSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional(),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { currentUser, login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+  });
 
   if (currentUser) {
     return <Redirect to="/dashboard" />;
   }
 
-  const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
-    
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Invalid email address';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setAuthError(null);
     try {
-      await login(email, password);
+      await login(data.email, data.password);
     } catch (error) {
       setAuthError('Unable to sign in. Please check your credentials and try again.');
     } finally {
@@ -63,57 +62,78 @@ export default function Login() {
         <CardHeader className="text-center">
           <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
-          <p className="text-slate-600 mt-2">Sign in to Builder.Contractors</p>
+          <p className="text-slate-600 mt-2">Sign in to manage your builder network in minutes.</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                {...register('email')}
                 className={errors.email ? 'border-red-500' : ''}
                 data-testid="input-email"
               />
+              <p className="text-xs text-slate-500 mt-1">Use the email you registered with.</p>
               {errors.email && (
-                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
               )}
             </div>
 
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={errors.password ? 'border-red-500' : ''}
-                data-testid="input-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...register('password')}
+                  className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                  data-testid="input-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Minimum 6 characters.</p>
               {errors.password && (
-                <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  data-testid="checkbox-remember"
-                />
-                <Label htmlFor="rememberMe" className="text-sm cursor-pointer">Remember me</Label>
-              </div>
-              <Link href="#" className="text-sm text-primary hover:text-blue-700">
-                Forgot password?
-              </Link>
+            <div className="flex flex-col gap-2">
+              <Controller
+                control={control}
+                name="rememberMe"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={value}
+                      onCheckedChange={(checked) => onChange(checked === true)}
+                      onBlur={onBlur}
+                      data-testid="checkbox-remember"
+                    />
+                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
+                      Keep me signed in on this device
+                    </Label>
+                  </div>
+                )}
+              />
+              <span className="text-xs text-slate-500">
+                Use a shared device? Leave this unchecked.
+              </span>
             </div>
 
             <Button
@@ -124,7 +144,11 @@ export default function Login() {
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
-            {authError && <p className="text-sm text-red-500 text-center">{authError}</p>}
+            {authError && (
+              <p className="text-sm text-red-500 text-center" role="alert">
+                {authError}
+              </p>
+            )}
           </form>
 
           <div className="mt-6 text-center">

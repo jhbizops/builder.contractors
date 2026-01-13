@@ -133,7 +133,7 @@ describe('Register page', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
-    await user.type(screen.getByLabelText(/confirm password/i), 'password123');
+    await user.type(screen.getByLabelText(/^confirm password$/i), 'password123');
 
     const [countrySelect] = screen.getAllByTestId('select-country');
     await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
@@ -172,7 +172,7 @@ describe('Register page', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'short@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'short');
-    await user.type(screen.getByLabelText(/confirm password/i), 'short');
+    await user.type(screen.getByLabelText(/^confirm password$/i), 'short');
 
     const [countrySelect] = screen.getAllByTestId('select-country');
     await waitFor(() => expect(countrySelect).not.toHaveAttribute('disabled'));
