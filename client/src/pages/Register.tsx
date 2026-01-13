@@ -11,6 +11,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -47,6 +48,8 @@ export default function Register() {
     staleTime: 1000 * 60 * 60,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -109,21 +112,23 @@ export default function Register() {
           <BrandLogo size="sm" className="mx-auto mb-4" alt="Builder.Contractors" />
           <CardTitle className="text-2xl font-bold text-slate-900">Join Builder.Contractors</CardTitle>
           <p className="text-slate-600 mt-2">
-            Join the industry network to exchange work—no sales or builder split required.
+            Create your account in less than a minute. No sales or builder split required.
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your@email.com"
+                autoComplete="email"
                 {...register('email')}
                 className={errors.email ? 'border-red-500' : ''}
                 data-testid="input-email"
               />
+              <p className="text-xs text-slate-500 mt-1">We only use this for account access.</p>
               {errors.email && (
                 <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
               )}
@@ -131,14 +136,28 @@ export default function Register() {
 
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-                className={errors.password ? 'border-red-500' : ''}
-                data-testid="input-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  {...register('password')}
+                  className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                  data-testid="input-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Use at least 8 characters.</p>
               {errors.password && (
                 <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
               )}
@@ -146,14 +165,27 @@ export default function Register() {
 
             <div>
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                {...register('confirmPassword')}
-                className={errors.confirmPassword ? 'border-red-500' : ''}
-                data-testid="input-confirm-password"
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  {...register('confirmPassword')}
+                  className={errors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'}
+                  data-testid="input-confirm-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
               )}
@@ -193,6 +225,9 @@ export default function Register() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-slate-500 mt-1">
+                    We use this to localize currency and date formats.
+                  </p>
                   {errors.country && (
                     <p className="text-sm text-red-500 mt-1">{errors.country.message}</p>
                   )}
