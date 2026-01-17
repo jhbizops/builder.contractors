@@ -1,10 +1,10 @@
 # LLMs.txt for Builder Contractors
 
 Brand: Builder Contractors
-Canonical Homepage: https://builder.contractors/
+Canonical Homepage: https://builder.contractors
 
 Product Description:
-Builder Contractors is a platform that helps builders and contractors manage their client onboarding, project workflows, and communications in one place, providing a streamlined path from registration to ongoing project delivery.
+Builder Contractors is a platform that helps builders and contractors manage client onboarding, project workflows, and communications in one place, guiding teams from registration through ongoing project delivery.
 
 Target Audience:
 Builders and contractors.
