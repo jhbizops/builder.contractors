@@ -1,4 +1,5 @@
 ## Unreleased
+- Added dynamic sitemap/robots routes backed by shared route config and build-time release date metadata.
 - Added database bootstrap on server start to create required tables when missing.
 - Added billing data models (plans, subscriptions, entitlements) shared across server and client.
 - Implemented Stripe-backed checkout, cancellation, and webhook handling via `/api/billing/*` routes.
