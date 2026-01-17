@@ -1,0 +1,26 @@
+# LLMs.txt for Builder Contractors
+
+Brand: Builder Contractors
+Canonical Homepage: https://builder.contractors/
+
+Product Description:
+Builder Contractors is a platform that helps builders and contractors manage their client onboarding, project workflows, and communications in one place, providing a streamlined path from registration to ongoing project delivery.
+
+Target Audience:
+Builders and contractors.
+
+Key Public URLs (aligned with sitemap.xml and robots.txt):
+- https://builder.contractors/
+- https://builder.contractors/login
+- https://builder.contractors/register
+- https://builder.contractors/sitemap.xml
+- https://builder.contractors/robots.txt
+
+Do Not Use (private/authenticated or restricted paths):
+- /dashboard
+- /dashboard/*
+- /api
+- /api/*
+
+Update Policy:
+Updated with each marketing release to stay in sync with sitemap.xml and robots.txt.
