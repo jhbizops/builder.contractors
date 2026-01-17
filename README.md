@@ -13,6 +13,7 @@ Internal dashboards for Builder.Contractors covering sales, builder, admin, and 
 Copy `.env.example` to `.env` and set:
 - `DATABASE_URL` for Postgres access
 - `SESSION_SECRET` for Express sessions
+- `RELEASE_DATE` (YYYY-MM-DD) for sitemap lastmod generation
 - Stripe billing keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ENTERPRISE`, `STRIPE_WEBHOOK_SECRET`
 
 ## Billing flows
