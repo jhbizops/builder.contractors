@@ -13,12 +13,58 @@ import { leadsRouter } from "./routes/leads";
 import { reportsRouter } from "./routes/reports";
 import { servicesRouter } from "./routes/services";
 import { adminRouter } from "./routes/admin";
+import { sitemapRoutes } from "../client/src/content/routes";
+
+const sitemapLastmod =
+  (process.env.RELEASE_DATE ?? process.env.BUILD_DATE ?? new Date().toISOString()).split("T")[0];
+
+const formatSitemapXml = (baseUrl: string) => {
+  const urls = sitemapRoutes
+    .map((route) => {
+      const location = new URL(route.path, baseUrl).toString();
+      return [
+        "  <url>",
+        `    <loc>${location}</loc>`,
+        `    <lastmod>${sitemapLastmod}</lastmod>`,
+        `    <changefreq>${route.changefreq}</changefreq>`,
+        `    <priority>${route.priority.toFixed(1)}</priority>`,
+        "  </url>",
+      ].join("\n");
+    })
+    .join("\n");
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    urls,
+    "</urlset>",
+  ].join("\n");
+};
+
+const formatRobotsTxt = (baseUrl: string) => [
+  "User-agent: *",
+  "Disallow: /dashboard",
+  "Disallow: /api",
+  "Allow: /",
+  `Sitemap: ${new URL("/sitemap.xml", baseUrl).toString()}`,
+  "",
+].join("\n");
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await ensureDatabase(pool);
   await initializeStripe();
   const billingService = getBillingService();
   await billingService.ensurePlans();
+
+  app.get("/sitemap.xml", (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.type("application/xml").send(formatSitemapXml(baseUrl));
+  });
+
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.type("text/plain").send(formatRobotsTxt(baseUrl));
+  });
 
   app.get("/api/countries", (_req, res) => {
     res.json(supportedCountries.map(formatCountryPayload));
