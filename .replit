@@ -41,3 +41,9 @@ waitForPort = 5000
 [userenv]
 
 [userenv.shared]
+
+[userenv.development]
+BUILD_DATE = "2026-01-18"
+
+[userenv.production]
+BUILD_DATE = "2026-01-18"
