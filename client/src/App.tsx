@@ -22,6 +22,10 @@ const ClearSession = lazy(() => import("@/pages/ClearSession"));
 const Billing = lazy(() => import("@/pages/Billing"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const JobBoard = lazy(() => import("@/pages/JobBoard"));
+const About = lazy(() => import("@/pages/About"));
+const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
+const FAQ = lazy(() => import("@/pages/FAQ"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
 
 // Loading placeholder
 function LoadingFallback() {
@@ -45,6 +49,10 @@ function Router() {
         <Route path="/dashboard/admin" component={AdminDashboard} />
         <Route path="/dashboard/billing" component={Billing} />
         <Route path="/dashboard/reports" component={Reports} />
+        <Route path="/about" component={About} />
+        <Route path="/how-it-works" component={HowItWorks} />
+        <Route path="/faq" component={FAQ} />
+        <Route path="/pricing" component={Pricing} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

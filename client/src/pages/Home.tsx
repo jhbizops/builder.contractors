@@ -6,11 +6,38 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { CountrySelector } from '@/components/CountrySelector';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { getTranslationsForLocale } from '@/lib/translations';
+import { geoPages } from '@/content/geoPages';
 
 export default function Home() {
   const { settings } = useGlobalization();
   const localized = getTranslationsForLocale(settings.locale);
   const isRtl = settings.locale.startsWith('ar');
+  const publicPageLinks = [
+    {
+      title: geoPages.about.title,
+      description: geoPages.about.summary,
+      href: geoPages.about.slug,
+      icon: Building2,
+    },
+    {
+      title: geoPages.howItWorks.title,
+      description: geoPages.howItWorks.summary,
+      href: geoPages.howItWorks.slug,
+      icon: Share2,
+    },
+    {
+      title: geoPages.faq.title,
+      description: geoPages.faq.summary,
+      href: geoPages.faq.slug,
+      icon: Users,
+    },
+    {
+      title: geoPages.pricing.title,
+      description: geoPages.pricing.summary,
+      href: geoPages.pricing.slug,
+      icon: Zap,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -203,6 +230,42 @@ export default function Home() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Public Pages Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Explore Builder.Contractors</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Learn how we help builders share work, build trust, and expand into new regions.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {publicPageLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Card key={link.href} className="border-2 hover:border-primary transition-colors">
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                      <Icon className="h-6 w-6 text-slate-700" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold text-slate-900">{link.title}</h3>
+                      <p className="text-slate-600 text-sm">{link.description}</p>
+                    </div>
+                    <Button variant="link" className="px-0" asChild>
+                      <Link href={link.href}>
+                        Learn more
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
