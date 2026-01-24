@@ -120,34 +120,40 @@ describe("AdminDashboard", () => {
     deleteMutation.mockClear();
     const reactQuery = await import("@tanstack/react-query");
 
-    vi.mocked(reactQuery.useQuery).mockImplementation(({ queryKey }) => {
-      if (queryKey === leadsQueryKey) {
-        return { data: leads };
-      }
-      if (queryKey === adminMetricsQueryKey) {
-        return { data: metrics };
-      }
-      return { data: [] };
-    });
-
-    vi.mocked(reactQuery.useQueryClient).mockReturnValue({
-      cancelQueries: vi.fn(),
-      getQueryData: vi.fn().mockReturnValue(leads),
-      setQueryData: vi.fn(),
-      invalidateQueries,
-    });
-
-    vi.mocked(reactQuery.useMutation).mockImplementation((options: any) => ({
-      mutateAsync: vi.fn(async (variables) => {
-        if (typeof variables === "string") {
-          deleteMutation(variables);
+    vi.mocked(reactQuery.useQuery).mockImplementation(
+      (({ queryKey }: { queryKey: unknown }) => {
+        if (queryKey === leadsQueryKey) {
+          return { data: leads };
         }
-        const result = await options?.mutationFn?.(variables);
-        await options?.onSuccess?.(result, variables, undefined);
-        return result;
-      }),
-      isPending: false,
-    }));
+        if (queryKey === adminMetricsQueryKey) {
+          return { data: metrics };
+        }
+        return { data: [] };
+      }) as unknown as typeof reactQuery.useQuery,
+    );
+
+    vi.mocked(reactQuery.useQueryClient).mockReturnValue(
+      {
+        cancelQueries: vi.fn(),
+        getQueryData: vi.fn().mockReturnValue(leads),
+        setQueryData: vi.fn(),
+        invalidateQueries,
+      } as unknown as ReturnType<typeof reactQuery.useQueryClient>,
+    );
+
+    vi.mocked(reactQuery.useMutation).mockImplementation(
+      ((options?: { mutationFn?: (variables: unknown) => Promise<unknown>; onSuccess?: (result: unknown, variables: unknown) => Promise<void> | void }) => ({
+        mutateAsync: vi.fn(async (variables: unknown) => {
+          if (typeof variables === "string") {
+            deleteMutation(variables);
+          }
+          const result = await options?.mutationFn?.(variables);
+          await options?.onSuccess?.(result, variables);
+          return result;
+        }),
+        isPending: false,
+      })) as unknown as typeof reactQuery.useMutation,
+    );
   });
 
   it("renders metrics from the admin API", () => {

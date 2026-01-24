@@ -140,7 +140,8 @@ reportsRouter.get("/exports/:id/download", requireReportsEntitlement, async (req
     await fs.access(filePath);
     res.download(filePath, `${exportJob.id}.csv`);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    const err = error as { code?: string };
+    if (err.code === "ENOENT") {
       res.status(404).json({ message: "Export file not found" });
       return;
     }
