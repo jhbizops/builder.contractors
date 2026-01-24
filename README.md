@@ -2,6 +2,9 @@
 
 Internal dashboards for Builder.Contractors covering sales, builder, admin, and billing experiences.
 
+## UX backlog
+- UX execution tasks and sequencing live in `docs/ux/tasks.md`.
+
 ## Setup
 - Install dependencies: `pnpm install`
 - Run dev server: `pnpm dev`
