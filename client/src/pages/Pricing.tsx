@@ -1,13 +1,16 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CheckCircle2 } from "lucide-react";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { geoPages } from "@/content/geoPages";
+import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { resolveMarketingLocaleFromPath } from "@/content/locales";
 
 export default function Pricing() {
-  const content = geoPages.pricing;
+  const [location] = useLocation();
+  const marketingLocale = resolveMarketingLocaleFromPath(location);
+  const content = getGeoPageContent("pricing", marketingLocale?.locale);
 
   return (
     <PublicPageLayout

@@ -20,7 +20,7 @@ type PricingTier = {
   features: string[];
 };
 
-type GeoPageContent = {
+export type GeoPageContent = {
   slug: string;
   title: string;
   summary: string;
@@ -210,4 +210,33 @@ export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing
       },
     ],
   },
+};
+
+export type GeoPageKey = keyof typeof geoPages;
+
+const geoPageLocaleOverrides: Partial<Record<string, Partial<Record<GeoPageKey, Partial<GeoPageContent>>>>> = {
+  "en-US": {
+    home: {
+      summary:
+        "Join the US network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.",
+    },
+  },
+  "en-GB": {
+    home: {
+      summary:
+        "Join the UK network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.",
+    },
+  },
+  "en-AU": {
+    home: {
+      summary:
+        "Join the Australian network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.",
+    },
+  },
+};
+
+export const getGeoPageContent = (key: GeoPageKey, locale?: string): GeoPageContent => {
+  const base = geoPages[key];
+  const override = locale ? geoPageLocaleOverrides[locale]?.[key] : undefined;
+  return override ? { ...base, ...override } : base;
 };

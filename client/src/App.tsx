@@ -11,6 +11,7 @@ import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/not-found";
+import { getLocalizedMarketingPath, marketingLocales } from "@/content/locales";
 
 // Lazy load dashboard pages to improve initial load time
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -26,6 +27,14 @@ const About = lazy(() => import("@/pages/About"));
 const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
+
+const marketingRoutes = [
+  { slug: "/", component: Home },
+  { slug: "/about", component: About },
+  { slug: "/how-it-works", component: HowItWorks },
+  { slug: "/faq", component: FAQ },
+  { slug: "/pricing", component: Pricing },
+];
 
 // Loading placeholder
 function LoadingFallback() {
@@ -53,6 +62,15 @@ function Router() {
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/faq" component={FAQ} />
         <Route path="/pricing" component={Pricing} />
+        {marketingLocales.flatMap((locale) =>
+          marketingRoutes.map((route) => (
+            <Route
+              key={`${locale.locale}-${route.slug}`}
+              path={getLocalizedMarketingPath(locale.prefix, route.slug)}
+              component={route.component}
+            />
+          )),
+        )}
         <Route component={NotFound} />
       </Switch>
     </Suspense>

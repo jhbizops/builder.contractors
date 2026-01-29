@@ -19,6 +19,10 @@ describe('HeadManager', () => {
         description="About page description."
         keywords={['builders', 'contractors']}
         canonicalPath="/about"
+        alternateLinks={[
+          { hrefLang: 'x-default', href: '/about' },
+          { hrefLang: 'en-US', href: '/us/about' },
+        ]}
       />,
     );
 
@@ -38,6 +42,12 @@ describe('HeadManager', () => {
     expect(getMeta('meta[property="twitter:url"]')?.content).toBe(canonicalUrl);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       canonicalUrl,
+    );
+    expect(document.head.querySelector('link[rel="alternate"][hreflang="x-default"]')?.getAttribute('href')).toBe(
+      canonicalUrl,
+    );
+    expect(document.head.querySelector('link[rel="alternate"][hreflang="en-US"]')?.getAttribute('href')).toBe(
+      `${window.location.origin}/us/about`,
     );
   });
 

@@ -5,6 +5,10 @@ type HeadManagerProps = {
   description: string;
   keywords?: string[];
   canonicalPath?: string;
+  alternateLinks?: Array<{
+    hrefLang: string;
+    href: string;
+  }>;
   siteName?: string;
   imageUrl?: string;
   twitterImageUrl?: string;
@@ -43,6 +47,7 @@ export function HeadManager({
   description,
   keywords,
   canonicalPath,
+  alternateLinks,
   siteName = DEFAULT_SITE_NAME,
   imageUrl = DEFAULT_IMAGE_URL,
   twitterImageUrl = DEFAULT_TWITTER_IMAGE_URL,
@@ -52,6 +57,11 @@ export function HeadManager({
     const resolvedPath = canonicalPath ?? window.location.pathname;
     const canonicalUrl = new URL(resolvedPath, baseUrl).toString();
     const keywordContent = keywords?.length ? keywords.join(", ") : undefined;
+    const resolvedAlternates =
+      alternateLinks?.map((alternate) => ({
+        ...alternate,
+        href: new URL(alternate.href, baseUrl).toString(),
+      })) ?? [];
 
     document.title = title;
 
@@ -96,7 +106,20 @@ export function HeadManager({
     );
 
     ensureLinkTag('link[rel="canonical"]', { rel: "canonical" }).setAttribute("href", canonicalUrl);
-  }, [canonicalPath, description, keywords, siteName, title, imageUrl, twitterImageUrl]);
+
+    const managedAlternates = document.head.querySelectorAll<HTMLLinkElement>(
+      'link[rel="alternate"][data-managed="head-manager"]',
+    );
+    managedAlternates.forEach((link) => link.remove());
+    resolvedAlternates.forEach((alternate) => {
+      const link = ensureLinkTag(`link[rel="alternate"][hreflang="${alternate.hrefLang}"]`, {
+        rel: "alternate",
+        hreflang: alternate.hrefLang,
+      });
+      link.setAttribute("href", alternate.href);
+      link.dataset.managed = "head-manager";
+    });
+  }, [alternateLinks, canonicalPath, description, keywords, siteName, title, imageUrl, twitterImageUrl]);
 
   return null;
 }

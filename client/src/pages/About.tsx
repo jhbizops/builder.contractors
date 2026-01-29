@@ -1,12 +1,15 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { geoPages } from "@/content/geoPages";
+import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { resolveMarketingLocaleFromPath } from "@/content/locales";
 
 export default function About() {
-  const content = geoPages.about;
+  const [location] = useLocation();
+  const marketingLocale = resolveMarketingLocaleFromPath(location);
+  const content = getGeoPageContent("about", marketingLocale?.locale);
 
   return (
     <PublicPageLayout
