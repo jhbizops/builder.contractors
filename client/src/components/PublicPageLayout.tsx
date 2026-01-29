@@ -4,19 +4,34 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CountrySelector } from "@/components/CountrySelector";
 import { useGlobalization } from "@/contexts/GlobalizationContext";
+import { HeadManager } from "@/components/HeadManager";
 
 type PublicPageLayoutProps = {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  seo?: {
+    title: string;
+    description: string;
+    keywords?: string[];
+    canonicalPath?: string;
+  };
 };
 
-export function PublicPageLayout({ title, subtitle, children }: PublicPageLayoutProps) {
+export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageLayoutProps) {
   const { settings } = useGlobalization();
   const isRtl = settings.locale.startsWith("ar");
 
   return (
     <div className="min-h-screen bg-slate-50" dir={isRtl ? "rtl" : "ltr"}>
+      {seo ? (
+        <HeadManager
+          title={seo.title}
+          description={seo.description}
+          keywords={seo.keywords}
+          canonicalPath={seo.canonicalPath}
+        />
+      ) : null}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">

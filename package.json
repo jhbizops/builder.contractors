@@ -9,7 +9,7 @@
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && node scripts/cleanup-seo-assets.mjs && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "vite build && tsx scripts/prerender-public.ts && node scripts/cleanup-seo-assets.mjs && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "lint": "eslint \"{client,server,shared}/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"{client,server,shared}/**/*.{ts,tsx}\" --fix",

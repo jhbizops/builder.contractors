@@ -1,0 +1,53 @@
+import { render, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { HeadManager } from '@/components/HeadManager';
+
+const getMeta = (selector: string) => document.head.querySelector<HTMLMetaElement>(selector);
+
+describe('HeadManager', () => {
+  beforeEach(() => {
+    document.head.innerHTML = '';
+    window.history.pushState({}, '', '/');
+  });
+
+  it('sets title, canonical, and meta tags from props', async () => {
+    window.history.pushState({}, '', '/about');
+
+    render(
+      <HeadManager
+        title="About Builder.Contractors"
+        description="About page description."
+        keywords={['builders', 'contractors']}
+        canonicalPath="/about"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(document.title).toBe('About Builder.Contractors');
+    });
+
+    const canonicalUrl = `${window.location.origin}/about`;
+
+    expect(getMeta('meta[name="description"]')?.content).toBe('About page description.');
+    expect(getMeta('meta[name="keywords"]')?.content).toBe('builders, contractors');
+    expect(getMeta('meta[property="og:title"]')?.content).toBe('About Builder.Contractors');
+    expect(getMeta('meta[property="og:description"]')?.content).toBe('About page description.');
+    expect(getMeta('meta[property="og:url"]')?.content).toBe(canonicalUrl);
+    expect(getMeta('meta[property="twitter:title"]')?.content).toBe('About Builder.Contractors');
+    expect(getMeta('meta[property="twitter:description"]')?.content).toBe('About page description.');
+    expect(getMeta('meta[property="twitter:url"]')?.content).toBe(canonicalUrl);
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      canonicalUrl,
+    );
+  });
+
+  it('skips keyword tag creation when keywords are omitted', async () => {
+    render(<HeadManager title="Home" description="Home summary." />);
+
+    await waitFor(() => {
+      expect(document.title).toBe('Home');
+    });
+
+    expect(getMeta('meta[name="keywords"]')).toBeNull();
+  });
+});
