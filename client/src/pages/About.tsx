@@ -9,7 +9,16 @@ export default function About() {
   const content = geoPages.about;
 
   return (
-    <PublicPageLayout title={content.title} subtitle={content.summary}>
+    <PublicPageLayout
+      title={content.title}
+      subtitle={content.summary}
+      seo={{
+        title: content.title,
+        description: content.summary,
+        keywords: content.keywords,
+        canonicalPath: content.slug,
+      }}
+    >
       <section className="grid gap-6 md:grid-cols-3 mb-12">
         {content.highlights?.map((highlight) => (
           <Card key={highlight.title} className="border border-slate-200">

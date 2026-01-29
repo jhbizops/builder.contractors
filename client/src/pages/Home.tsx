@@ -7,11 +7,13 @@ import { CountrySelector } from '@/components/CountrySelector';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { getTranslationsForLocale } from '@/lib/translations';
 import { geoPages } from '@/content/geoPages';
+import { HeadManager } from '@/components/HeadManager';
 
 export default function Home() {
   const { settings } = useGlobalization();
   const localized = getTranslationsForLocale(settings.locale);
   const isRtl = settings.locale.startsWith('ar');
+  const seo = geoPages.home;
   const publicPageLinks = [
     {
       title: geoPages.about.title,
@@ -41,6 +43,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRtl ? 'rtl' : 'ltr'}>
+      <HeadManager
+        title={seo.title}
+        description={seo.summary}
+        keywords={seo.keywords}
+        canonicalPath={seo.slug}
+      />
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

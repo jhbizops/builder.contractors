@@ -31,7 +31,22 @@ type GeoPageContent = {
   tiers?: PricingTier[];
 };
 
-export const geoPages: Record<"about" | "howItWorks" | "faq" | "pricing", GeoPageContent> = {
+export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing", GeoPageContent> = {
+  home: {
+    slug: "/",
+    title: "Builder.Contractors - Exchange Leads, Grow Together",
+    summary:
+      "Join the global network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.",
+    keywords: [
+      "builder network",
+      "contractor leads",
+      "construction leads exchange",
+      "global contractors",
+      "construction network",
+      "trade partners",
+    ],
+    faqs: [],
+  },
   about: {
     slug: "/about",
     title: "About Builder.Contractors",

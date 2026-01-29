@@ -7,7 +7,16 @@ export default function FAQ() {
   const content = geoPages.faq;
 
   return (
-    <PublicPageLayout title={content.title} subtitle={content.summary}>
+    <PublicPageLayout
+      title={content.title}
+      subtitle={content.summary}
+      seo={{
+        title: content.title,
+        description: content.summary,
+        keywords: content.keywords,
+        canonicalPath: content.slug,
+      }}
+    >
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
         <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
         <p className="text-slate-600 mb-6">
