@@ -4,8 +4,10 @@ import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
+import { StructuredData } from "@/components/StructuredData";
+import { buildProductStructuredData } from "@/lib/structuredData";
 
 export default function Pricing() {
   const [location] = useLocation();
@@ -23,6 +25,12 @@ export default function Pricing() {
         canonicalPath: content.slug,
       }}
     >
+      {content.tiers ? (
+        <StructuredData
+          id="pricing-structured-data"
+          data={buildProductStructuredData(content.tiers, content.title, content.summary)}
+        />
+      ) : null}
       <section className="grid gap-6 lg:grid-cols-3 mb-12">
         {content.tiers?.map((tier) => (
           <Card key={tier.name} className="border border-slate-200">

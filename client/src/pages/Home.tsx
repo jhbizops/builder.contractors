@@ -9,6 +9,8 @@ import { getTranslationsForLocale } from '@/lib/translations';
 import { getGeoPageContent, geoPages } from '@/content/geoPages';
 import { HeadManager } from '@/components/HeadManager';
 import { getLocalizedMarketingPath, resolveMarketingCanonical } from '@/content/locales';
+import { StructuredData } from '@/components/StructuredData';
+import { buildOrganizationWebsiteStructuredData } from '@/lib/structuredData';
 
 export default function Home() {
   const { settings } = useGlobalization();
@@ -61,6 +63,10 @@ export default function Home() {
         keywords={seo.keywords}
         canonicalPath={marketingContext.canonicalPath}
         alternateLinks={marketingContext.alternates}
+      />
+      <StructuredData
+        id="home-organization-structured-data"
+        data={buildOrganizationWebsiteStructuredData(seo.title, seo.summary)}
       />
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
