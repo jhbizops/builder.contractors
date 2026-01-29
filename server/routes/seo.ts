@@ -40,9 +40,16 @@ const formatSitemapXml = (baseUrl: string, lastmod: string) => {
   const urls = sitemapRoutes
     .map((route) => {
       const location = new URL(route.path, baseUrl).toString();
+      const alternates = route.alternates
+        ?.map((alternate) => {
+          const alternateUrl = new URL(alternate.path, baseUrl).toString();
+          return `    <xhtml:link rel="alternate" hreflang="${alternate.hreflang}" href="${alternateUrl}" />`;
+        })
+        .join("\n");
       return [
         "  <url>",
         `    <loc>${location}</loc>`,
+        ...(alternates ? [alternates] : []),
         `    <lastmod>${lastmod}</lastmod>`,
         `    <changefreq>${route.changefreq}</changefreq>`,
         `    <priority>${route.priority.toFixed(1)}</priority>`,
@@ -53,7 +60,7 @@ const formatSitemapXml = (baseUrl: string, lastmod: string) => {
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
     urls,
     "</urlset>",
   ].join("\n");

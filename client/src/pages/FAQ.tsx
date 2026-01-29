@@ -1,10 +1,14 @@
+import { useLocation } from "wouter";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
-import { geoPages } from "@/content/geoPages";
+import { getGeoPageContent, geoPages } from "@/content/geoPages";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { resolveMarketingLocaleFromPath } from "@/content/locales";
 
 export default function FAQ() {
-  const content = geoPages.faq;
+  const [location] = useLocation();
+  const marketingLocale = resolveMarketingLocaleFromPath(location);
+  const content = getGeoPageContent("faq", marketingLocale?.locale);
 
   return (
     <PublicPageLayout

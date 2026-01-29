@@ -1,13 +1,16 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { geoPages } from "@/content/geoPages";
+import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { resolveMarketingLocaleFromPath } from "@/content/locales";
 
 export default function HowItWorks() {
-  const content = geoPages.howItWorks;
+  const [location] = useLocation();
+  const marketingLocale = resolveMarketingLocaleFromPath(location);
+  const content = getGeoPageContent("howItWorks", marketingLocale?.locale);
 
   return (
     <PublicPageLayout

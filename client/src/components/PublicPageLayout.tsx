@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CountrySelector } from "@/components/CountrySelector";
 import { useGlobalization } from "@/contexts/GlobalizationContext";
 import { HeadManager } from "@/components/HeadManager";
+import { getLocalizedMarketingPath, resolveMarketingCanonical } from "@/content/locales";
 
 type PublicPageLayoutProps = {
   title: string;
@@ -20,7 +21,12 @@ type PublicPageLayoutProps = {
 
 export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageLayoutProps) {
   const { settings } = useGlobalization();
+  const [location] = useLocation();
   const isRtl = settings.locale.startsWith("ar");
+  const marketingContext = seo ? resolveMarketingCanonical(location, seo.canonicalPath ?? "/") : null;
+  const homePath = marketingContext?.locale
+    ? getLocalizedMarketingPath(marketingContext.locale.prefix, "/")
+    : "/";
 
   return (
     <div className="min-h-screen bg-slate-50" dir={isRtl ? "rtl" : "ltr"}>
@@ -29,14 +35,15 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
           title={seo.title}
           description={seo.description}
           keywords={seo.keywords}
-          canonicalPath={seo.canonicalPath}
+          canonicalPath={marketingContext?.canonicalPath ?? seo.canonicalPath}
+          alternateLinks={marketingContext?.alternates}
         />
       ) : null}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link href="/">
+              <Link href={homePath}>
                 <span className="inline-flex items-center" aria-label="Builder.Contractors home">
                   <BrandLogo size="md" alt="Builder.Contractors home" />
                 </span>

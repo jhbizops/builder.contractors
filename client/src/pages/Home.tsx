@@ -1,4 +1,4 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Building2, Hammer, Share2 } from 'lucide-react';
@@ -6,37 +6,49 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { CountrySelector } from '@/components/CountrySelector';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { getTranslationsForLocale } from '@/lib/translations';
-import { geoPages } from '@/content/geoPages';
+import { getGeoPageContent, geoPages } from '@/content/geoPages';
 import { HeadManager } from '@/components/HeadManager';
+import { getLocalizedMarketingPath, resolveMarketingCanonical } from '@/content/locales';
 
 export default function Home() {
   const { settings } = useGlobalization();
+  const [location] = useLocation();
   const localized = getTranslationsForLocale(settings.locale);
   const isRtl = settings.locale.startsWith('ar');
-  const seo = geoPages.home;
+  const marketingContext = resolveMarketingCanonical(location, geoPages.home.slug);
+  const seo = getGeoPageContent('home', marketingContext.locale?.locale);
+  const homePath = marketingContext.locale ? getLocalizedMarketingPath(marketingContext.locale.prefix, '/') : '/';
   const publicPageLinks = [
     {
       title: geoPages.about.title,
       description: geoPages.about.summary,
-      href: geoPages.about.slug,
+      href: marketingContext.locale
+        ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.about.slug)
+        : geoPages.about.slug,
       icon: Building2,
     },
     {
       title: geoPages.howItWorks.title,
       description: geoPages.howItWorks.summary,
-      href: geoPages.howItWorks.slug,
+      href: marketingContext.locale
+        ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.howItWorks.slug)
+        : geoPages.howItWorks.slug,
       icon: Share2,
     },
     {
       title: geoPages.faq.title,
       description: geoPages.faq.summary,
-      href: geoPages.faq.slug,
+      href: marketingContext.locale
+        ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.faq.slug)
+        : geoPages.faq.slug,
       icon: Users,
     },
     {
       title: geoPages.pricing.title,
       description: geoPages.pricing.summary,
-      href: geoPages.pricing.slug,
+      href: marketingContext.locale
+        ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.pricing.slug)
+        : geoPages.pricing.slug,
       icon: Zap,
     },
   ];
@@ -47,14 +59,15 @@ export default function Home() {
         title={seo.title}
         description={seo.summary}
         keywords={seo.keywords}
-        canonicalPath={seo.slug}
+        canonicalPath={marketingContext.canonicalPath}
+        alternateLinks={marketingContext.alternates}
       />
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link href="/">
+              <Link href={homePath}>
                 <span className="inline-flex items-center" aria-label="Builder.Contractors home">
                   <BrandLogo size="md" alt="Builder.Contractors home" />
                 </span>
