@@ -1,9 +1,11 @@
 import { useLocation } from "wouter";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
 import { KeywordPills } from "@/components/KeywordPills";
-import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { getGeoPageContent } from "@/content/geoPages";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
+import { StructuredData } from "@/components/StructuredData";
+import { buildFaqPageStructuredData } from "@/lib/structuredData";
 
 export default function FAQ() {
   const [location] = useLocation();
@@ -21,6 +23,7 @@ export default function FAQ() {
         canonicalPath: content.slug,
       }}
     >
+      <StructuredData id="faq-structured-data" data={buildFaqPageStructuredData(content.faqs)} />
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
         <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
         <p className="text-slate-600 mb-6">
