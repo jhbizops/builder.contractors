@@ -11,10 +11,32 @@ Builders and contractors.
 
 Key Public URLs (aligned with sitemap.xml and robots.txt):
 - https://builder.contractors/
+- https://builder.contractors/about
+- https://builder.contractors/how-it-works
+- https://builder.contractors/faq
+- https://builder.contractors/pricing
+- https://builder.contractors/us
+- https://builder.contractors/us/about
+- https://builder.contractors/us/how-it-works
+- https://builder.contractors/us/faq
+- https://builder.contractors/us/pricing
+- https://builder.contractors/uk
+- https://builder.contractors/uk/about
+- https://builder.contractors/uk/how-it-works
+- https://builder.contractors/uk/faq
+- https://builder.contractors/uk/pricing
+- https://builder.contractors/au
+- https://builder.contractors/au/about
+- https://builder.contractors/au/how-it-works
+- https://builder.contractors/au/faq
+- https://builder.contractors/au/pricing
 - https://builder.contractors/login
 - https://builder.contractors/register
 - https://builder.contractors/sitemap.xml
 - https://builder.contractors/robots.txt
+
+Geo guidance:
+Marketing pages may be geo-targeted with region-specific prefixes. For example, /au/about is the Australia version of /about and should follow the corresponding regional content for that path. Add new region-prefixed paths here whenever marketing locales are added.
 
 Do Not Use (private/authenticated or restricted paths):
 - /dashboard
@@ -23,4 +45,4 @@ Do Not Use (private/authenticated or restricted paths):
 - /api/*
 
 Update Policy:
-Updated with each marketing release to stay in sync with sitemap.xml and robots.txt.
+Updated with each marketing content release or sitemap refresh to stay in sync with marketing routes, sitemap.xml, and robots.txt.
