@@ -79,7 +79,7 @@ export default function Home() {
                 </span>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-3">
               <CountrySelector className="w-48" />
               <Button variant="ghost" asChild data-testid="button-login">
                 <Link href="/login">Sign In</Link>
@@ -93,36 +93,44 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
-            <div className="text-center">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6">
-                <Globe className="h-4 w-4 text-blue-600 mr-2" />
-                <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
-              </div>
-              <h1
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight whitespace-pre-line"
-                data-testid="text-hero-title"
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6 shadow-sm">
+              <Globe className="h-4 w-4 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
+            </div>
+            <h1
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight whitespace-pre-line"
+              data-testid="text-hero-title"
+            >
+              {localized.welcome.split('. ').join('.\n')}
+            </h1>
+            <p className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto" data-testid="text-hero-subtitle">
+              {localized['share-advice']}
+            </p>
+            <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
+              {localized['connect-contractors']}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                className="text-lg px-8 py-6 shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-0.5"
+                asChild
+                data-testid="button-hero-signup"
               >
-                {localized.welcome.split('. ').join('.\n')}
-              </h1>
-                <p
-                  className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto"
-                  data-testid="text-hero-subtitle"
-                >
-                  {localized['share-advice']}
-                </p>
-                <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
-                  {localized['connect-contractors']}
-                </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8 py-6" asChild data-testid="button-hero-signup">
-                  <Link href="/register">
-                    Start Exchanging Projects
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                <Link href="/register">
+                  Start Exchanging Projects
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild data-testid="button-hero-login">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 py-6 transition-transform duration-300 hover:-translate-y-0.5"
+                asChild
+                data-testid="button-hero-login"
+              >
                 <Link href="/login">Sign In</Link>
               </Button>
             </div>
@@ -131,9 +139,9 @@ export default function Home() {
 
         {/* Decorative background elements */}
         <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob"></div>
+          <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-4000"></div>
         </div>
       </section>
 
@@ -148,9 +156,9 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-2 hover:border-primary transition-colors" data-testid="card-feature-share">
+            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-share">
               <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
                   <Share2 className="h-6 w-6 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">Share Leads</h3>
@@ -160,9 +168,9 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:border-primary transition-colors" data-testid="card-feature-exchange">
+            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-exchange">
               <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
                   <Handshake className="h-6 w-6 text-green-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">Exchange Work</h3>
@@ -172,9 +180,9 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:border-primary transition-colors" data-testid="card-feature-grow">
+            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-grow">
               <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
                   <TrendingUp className="h-6 w-6 text-purple-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">Grow Together</h3>
@@ -228,28 +236,28 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
                 <CardContent className="pt-6">
                   <Users className="h-10 w-10 mb-3 opacity-90" />
                   <div className="text-3xl font-bold mb-1">Global</div>
                   <p className="text-blue-100">Network</p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
                 <CardContent className="pt-6">
                   <Shield className="h-10 w-10 mb-3 opacity-90" />
                   <div className="text-3xl font-bold mb-1">Secure</div>
                   <p className="text-green-100">Platform</p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
                 <CardContent className="pt-6">
                   <Zap className="h-10 w-10 mb-3 opacity-90" />
                   <div className="text-3xl font-bold mb-1">Fast</div>
                   <p className="text-purple-100">Setup</p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+              <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
                 <CardContent className="pt-6">
                   <Hammer className="h-10 w-10 mb-3 opacity-90" />
                   <div className="text-3xl font-bold mb-1">Built</div>
@@ -274,9 +282,9 @@ export default function Home() {
             {publicPageLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <Card key={link.href} className="border-2 hover:border-primary transition-colors">
+                <Card key={link.href} className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl">
                   <CardContent className="pt-6 space-y-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                       <Icon className="h-6 w-6 text-slate-700" />
                     </div>
                     <div className="space-y-2">
@@ -306,7 +314,7 @@ export default function Home() {
           <p className="text-xl mb-8 text-blue-100">
             Join thousands of builders and contractors worldwide who are growing their business together
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6" asChild data-testid="button-cta-signup">
+          <Button size="lg" variant="secondary" className="text-lg px-8 py-6 shadow-lg shadow-blue-900/20 transition-transform duration-300 hover:-translate-y-0.5" asChild data-testid="button-cta-signup">
             <Link href="/register">
               Create Free Account
               <ArrowRight className="ml-2 h-5 w-5" />
