@@ -133,6 +133,11 @@ export default function SalesDashboard() {
   );
 
   const stats = useMemo(() => calculateLeadStats(leads), [leads]);
+  const hasActiveFilters = statusFilter !== 'all' || regionFilter !== 'all';
+  const handleClearFilters = useCallback(() => {
+    setStatusFilter('all');
+    setRegionFilter('all');
+  }, []);
 
   const onSubmit = async (data: LeadFormData) => {
     if (!userData) return;
@@ -371,14 +376,14 @@ export default function SalesDashboard() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Recent Leads</CardTitle>
-                <div className="flex space-x-2">
-                  <RegionFilter
-                    value={regionFilter}
-                    onValueChange={setRegionFilter}
-                    className="w-[160px]"
-                  />
+              <div className="flex space-x-2">
+                <RegionFilter
+                  value={regionFilter}
+                  onValueChange={setRegionFilter}
+                  className="w-[160px]"
+                />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-[140px]" aria-label="Filter leads by status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -389,6 +394,11 @@ export default function SalesDashboard() {
                       <SelectItem value="on_hold">On Hold</SelectItem>
                     </SelectContent>
                   </Select>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                      Clear filters
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" title="More filters">
                     <Globe className="h-4 w-4" />
                   </Button>
@@ -401,7 +411,19 @@ export default function SalesDashboard() {
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                 </div>
               ) : filteredLeads.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">No leads found</p>
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-slate-500">No leads match the selected filters.</p>
+                  <div className="flex justify-center gap-2">
+                    {hasActiveFilters && (
+                      <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                        Clear filters
+                      </Button>
+                    )}
+                    <Button size="sm" onClick={() => setIsAddDialogOpen(true)}>
+                      Add New Lead
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {filteredLeads.map((lead) => (
