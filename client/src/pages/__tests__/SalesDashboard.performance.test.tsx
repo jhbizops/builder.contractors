@@ -147,4 +147,24 @@ describe('SalesDashboard performance paths', () => {
       expect(screen.getByText('Lead Two')).toBeInTheDocument();
     });
   });
+
+  it('clears active filters to restore defaults', async () => {
+    render(<SalesDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('status-select')[0]).toBeInTheDocument();
+    });
+
+    const regionSelect = screen.getAllByTestId('region-filter')[0];
+    const statusSelect = screen.getAllByTestId('status-select')[0];
+
+    fireEvent.change(regionSelect, { target: { value: 'emea' } });
+    fireEvent.change(statusSelect, { target: { value: 'completed' } });
+
+    const clearButton = await screen.findByRole('button', { name: /clear filters/i });
+    fireEvent.click(clearButton);
+
+    expect(regionSelect).toHaveValue('all');
+    expect(statusSelect).toHaveValue('all');
+  });
 });
