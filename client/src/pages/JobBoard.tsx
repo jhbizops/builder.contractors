@@ -17,31 +17,46 @@ import {
   fetchJobs,
   jobsKeyRoot,
   jobsQueryKey,
+  setJobStatus,
   type CreateJobPayload,
 } from "@/api/jobs";
 import { deriveJobFacets, deriveJobInsights, jobPermissions } from "@/lib/jobs";
+import type { Job } from "@shared/schema";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
   { value: "open", label: "Open" },
   { value: "in_progress", label: "In progress" },
   { value: "on_hold", label: "On hold" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 export default function JobBoard() {
   const { userData } = useAuth();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ status: "open", region: "all", trade: "all" });
+  const [filters, setFilters] = useState({ status: "open", region: "all", trade: "all", scope: "all" });
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const permissions = jobPermissions(userData ?? null);
+
+  const scopeFilters = useMemo(() => {
+    if (filters.scope === "owned" && userData?.id) {
+      return { ownerId: userData.id };
+    }
+    if (filters.scope === "assigned" && userData?.id) {
+      return { assigneeId: userData.id };
+    }
+    return {};
+  }, [filters.scope, userData?.id]);
 
   const apiFilters = useMemo(
     () => ({
       status: filters.status === "all" ? undefined : filters.status,
       region: filters.region === "all" ? undefined : filters.region,
       trade: filters.trade === "all" ? undefined : filters.trade,
+      ...scopeFilters,
     }),
-    [filters],
+    [filters, scopeFilters],
   );
 
   const { data: jobs = [], isPending } = useQuery({
@@ -74,6 +89,18 @@ export default function JobBoard() {
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : "Unable to claim job";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Job["status"] }) => setJobStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobsKeyRoot });
+      toast({ title: "Status updated", description: "Job status updated." });
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Unable to update job status";
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
@@ -112,6 +139,14 @@ export default function JobBoard() {
       return;
     }
     await requestCollaborationMutation.mutateAsync(jobId);
+  };
+
+  const handleStatusChange = async (jobId: string, status: Job["status"]) => {
+    if (!permissions.canCollaborate) {
+      toast({ title: "Not allowed", description: permissions.reason ?? "Approval required", variant: "destructive" });
+      return;
+    }
+    await statusMutation.mutateAsync({ id: jobId, status });
   };
 
   const approvalBadge = permissions.isApproved ? (
@@ -211,7 +246,20 @@ export default function JobBoard() {
             <CardHeader>
               <CardTitle>Filters</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Select
+                value={filters.scope}
+                onValueChange={(value) => setFilters((current) => ({ ...current, scope: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Scope" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All jobs</SelectItem>
+                  <SelectItem value="owned">Owned by me</SelectItem>
+                  <SelectItem value="assigned">Assigned to me</SelectItem>
+                </SelectContent>
+              </Select>
               <Select
                 value={filters.trade}
                 onValueChange={(value) => setFilters((current) => ({ ...current, trade: value }))}
@@ -259,11 +307,11 @@ export default function JobBoard() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex items-center gap-2 md:col-span-3">
+              <div className="flex items-center gap-2 md:col-span-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setFilters({ status: "open", region: "all", trade: "all" })}
+                  onClick={() => setFilters({ status: "open", region: "all", trade: "all", scope: "all" })}
                   disabled={!hasActiveFilters}
                 >
                   Reset filters
@@ -285,12 +333,17 @@ export default function JobBoard() {
                 <JobCard
                   key={job.id}
                   job={job}
+                  currentUserId={userData?.id}
                   canClaim={permissions.canClaim}
                   canCollaborate={permissions.canCollaborate}
+                  canManageStatus={permissions.canCollaborate}
                   disabledReason={permissions.reason}
                   isClaiming={claimJobMutation.isPending}
                   isRequesting={requestCollaborationMutation.isPending}
+                  isUpdatingStatus={statusMutation.isPending}
                   onClaim={(selected) => handleClaim(selected.id)}
+                  onStartJob={(selected) => handleStatusChange(selected.id, "in_progress")}
+                  onCompleteJob={(selected) => handleStatusChange(selected.id, "completed")}
                   onRequestCollaboration={(selected) => handleRequestCollaboration(selected.id)}
                 />
               ))

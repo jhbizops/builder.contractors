@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Job } from "@shared/schema";
 import type { User } from "@/types";
-import { deriveJobFacets, deriveJobInsights, deriveJobReadiness, filterJobs, jobPermissions } from "../jobs";
+import {
+  deriveJobFacets,
+  deriveJobInsights,
+  deriveJobNextStep,
+  deriveJobReadiness,
+  filterJobs,
+  jobPermissions,
+} from "../jobs";
 
 const baseJob: Job = {
   id: "job_base",
@@ -64,6 +71,23 @@ describe("jobs helpers", () => {
     expect(insights.open).toBe(2);
     expect(insights.inProgress).toBe(1);
     expect(insights.readyToAllocate).toBe(1);
+  });
+
+  it("describes the next step based on status and ownership", () => {
+    const openUnassigned = deriveJobNextStep(baseJob, "someone-else");
+    expect(openUnassigned.action).toBe("claim");
+
+    const assignedToUser = deriveJobNextStep({ ...baseJob, assigneeId: "builder-1" }, "builder-1");
+    expect(assignedToUser.action).toBe("start");
+
+    const inProgress = deriveJobNextStep(
+      { ...baseJob, status: "in_progress", assigneeId: "builder-1" },
+      "builder-1",
+    );
+    expect(inProgress.action).toBe("complete");
+
+    const completed = deriveJobNextStep({ ...baseJob, status: "completed" }, "builder-1");
+    expect(completed.action).toBeUndefined();
   });
 
   it("computes job permissions for different roles", () => {
