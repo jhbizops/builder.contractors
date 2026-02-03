@@ -4,7 +4,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Ad, AdReview, InsertAd, InsertAdReview, InsertUser, User } from "@shared/schema";
 import { SESSION_COOKIE_NAME } from "../../session";
-import type { IStorage } from "../../storage";
+import type { AdInsightsRow, IStorage } from "../../storage";
 
 const MemoryStore = session.MemoryStore;
 
@@ -12,6 +12,7 @@ vi.mock("../../storageInstance", () => {
   const users = new Map<string, User>();
   const ads = new Map<string, Ad>();
   const reviews = new Map<string, AdReview>();
+  let insightsRows: AdInsightsRow[] = [];
 
   const storage: IStorage = {
     async getUser(id: string) {
@@ -105,6 +106,9 @@ vi.mock("../../storageInstance", () => {
         .filter((review) => review.adId === adId)
         .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
     },
+    async listAdInsights() {
+      return insightsRows;
+    },
     async createLead() {
       throw new Error("Not implemented");
     },
@@ -158,6 +162,10 @@ vi.mock("../../storageInstance", () => {
       users.clear();
       ads.clear();
       reviews.clear();
+      insightsRows = [];
+    },
+    __setInsights: (rows: AdInsightsRow[]) => {
+      insightsRows = rows;
     },
   };
 });
@@ -301,5 +309,29 @@ describe("ads router", () => {
     expect(response.status).toBe(201);
     const updated = await storage.getAd(ad.id);
     expect(updated?.status).toBe("approved");
+  });
+
+  it("returns k-anonymized insights", async () => {
+    const user = await createUser();
+    const agent = request.agent(app);
+    await agent.post("/test/login").send({ userId: user.id }).expect(204);
+
+    const storageModule = (await import("../../storageInstance")) as unknown as {
+      __setInsights: (rows: AdInsightsRow[]) => void;
+    };
+
+    storageModule.__setInsights([
+      { trade: "plumbing", region: "NSW", count: 7 },
+      { trade: "electrical", region: "VIC", count: 3 },
+      { trade: null, region: "QLD", count: 12 },
+    ]);
+
+    const response = await agent.get("/api/ads/insights");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      minimumCount: 5,
+      insights: [{ trade: "plumbing", region: "NSW", count: 7 }],
+    });
   });
 });

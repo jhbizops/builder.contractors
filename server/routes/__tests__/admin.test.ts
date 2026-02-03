@@ -83,6 +83,9 @@ vi.mock("../../storageInstance", () => {
     async listAdReviews() {
       return [];
     },
+    async listAdInsights() {
+      return [];
+    },
     async createLead(lead: InsertLead) {
       const record: Lead = {
         ...lead,

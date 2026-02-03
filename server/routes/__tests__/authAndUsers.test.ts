@@ -89,6 +89,9 @@ vi.mock("../../storageInstance", () => {
     async listAdReviews() {
       return [];
     },
+    async listAdInsights() {
+      return [];
+    },
     async createLead() {
       throw new Error("Not implemented");
     },

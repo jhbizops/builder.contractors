@@ -93,6 +93,24 @@ vi.mock("../storageInstance", () => {
     async listJobActivity(jobId: string) {
       return Array.from(activityLogs.values()).filter((log) => log.jobId === jobId);
     },
+    async createAd() {
+      throw new Error("Not implemented");
+    },
+    async getAd() {
+      return null;
+    },
+    async updateAdStatus() {
+      return null;
+    },
+    async createAdReview() {
+      throw new Error("Not implemented");
+    },
+    async listAdReviews() {
+      return [];
+    },
+    async listAdInsights() {
+      return [];
+    },
     async createLead() {
       throw new Error("Not implemented");
     },
