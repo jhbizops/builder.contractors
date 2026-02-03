@@ -36,6 +36,23 @@ Copy `.env.example` to `.env` and set:
 - Services endpoints: `/api/services` (list/create) and `/api/services/:id` (update).
 - All endpoints are authenticated and validated with Zod; React Query clients optimistically update UI and refetch after mutations.
 
+## Ads & Insights API
+- Ads endpoints: `/api/ads` (create), `/api/ads/:id/status` (status updates), `/api/ads/:id/reviews` (admin review submissions).
+- Insights endpoint: `/api/ads/insights` (GET) returns k-anonymized counts grouped by trade and region (no precise locations or user identifiers).
+- Response shape:
+  ```json
+  {
+    "minimumCount": 5,
+    "insights": [
+      {
+        "trade": "plumbing",
+        "region": "NSW",
+        "count": 12
+      }
+    ]
+  }
+  ```
+
 ## Authentication
 - Login and registration are protected with per-IP and per-email rate limits; repeated failures return generic errors with `Retry-After` guidance and valid credentials reset the failed-attempt counter.
 

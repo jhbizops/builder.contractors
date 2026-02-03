@@ -33,6 +33,19 @@ const reviewSchema = z.object({
   source: adReviewSourceEnum.default("human"),
 });
 
+const insightsResponseSchema = z.object({
+  minimumCount: z.number().int().positive(),
+  insights: z.array(
+    z.object({
+      trade: z.string().min(1),
+      region: z.string().min(1),
+      count: z.number().int().nonnegative(),
+    }),
+  ),
+});
+
+const MIN_K_ANON = 5;
+
 type AuthenticatedUser = {
   id: string;
   email: string;
@@ -65,6 +78,33 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
 }
 
 adsRouter.use(requireAuth);
+
+adsRouter.get("/insights", async (_req, res, next) => {
+  try {
+    const rows = await storage.listAdInsights();
+    const insights = rows
+      .filter((row) => row.trade && row.region)
+      .map((row) => ({
+        trade: row.trade!,
+        region: row.region!,
+        count: row.count,
+      }))
+      .filter((row) => row.count >= MIN_K_ANON);
+
+    const response = insightsResponseSchema.parse({
+      minimumCount: MIN_K_ANON,
+      insights,
+    });
+
+    res.json(response);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(500).json({ message: "Invalid response schema", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
 
 adsRouter.post("/", async (req, res, next) => {
   try {

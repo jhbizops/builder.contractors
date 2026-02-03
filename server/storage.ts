@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import {
   billingPlans,
@@ -70,6 +70,7 @@ export interface IStorage {
   updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null>;
   createAdReview(review: InsertAdReview): Promise<AdReview>;
   listAdReviews(adId: string): Promise<AdReview[]>;
+  listAdInsights(): Promise<AdInsightsRow[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   getLead(id: string, options?: { partnerId?: string }): Promise<Lead | null>;
   listLeads(filters?: {
@@ -114,6 +115,12 @@ export interface UserProfile {
   entitlements: string[];
   quotas: PlanQuota;
 }
+
+export type AdInsightsRow = {
+  trade: string | null;
+  region: string | null;
+  count: number;
+};
 
 export class DatabaseStorage implements IStorage {
   constructor(private readonly db: NodePgDatabase<typeof schema>) {}
@@ -479,6 +486,17 @@ export class DatabaseStorage implements IStorage {
       .from(schema.adReviews)
       .where(eq(schema.adReviews.adId, adId))
       .orderBy(desc(schema.adReviews.createdAt));
+  }
+
+  async listAdInsights(): Promise<AdInsightsRow[]> {
+    return this.db
+      .select({
+        trade: jobs.trade,
+        region: jobs.region,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(jobs)
+      .groupBy(jobs.trade, jobs.region);
   }
 
   async createLead(lead: InsertLead): Promise<Lead> {
