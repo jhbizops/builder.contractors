@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -299,6 +299,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
           <DialogTitle className="text-xl font-semibold">
             {lead.clientName}
           </DialogTitle>
+          <DialogDescription className="text-sm text-slate-500">
+            Manage lead status, files, comments, and activity history.
+          </DialogDescription>
           {lead.location && (
             <p className="text-slate-600">{lead.location}</p>
           )}
