@@ -83,6 +83,13 @@ vi.mock("../../storageInstance", () => {
     async getAd(id: string) {
       return ads.get(id) ?? null;
     },
+    async listAds(filters = {}) {
+      const statuses = filters.status ? (Array.isArray(filters.status) ? filters.status : [filters.status]) : null;
+      return Array.from(ads.values()).filter((ad) => (statuses ? statuses.includes(ad.status) : true));
+    },
+    async listAdCreatives() {
+      return [];
+    },
     async updateAdStatus(id: string, status: Ad["status"], updatedBy: string) {
       const existing = ads.get(id);
       if (!existing) return null;

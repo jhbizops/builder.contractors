@@ -11,6 +11,7 @@ import {
 import { requireAuth } from "../middleware/auth";
 import { storage } from "../storageInstance";
 import { assertPublishAllowed, ModerationBlockedError, recordAiReview } from "../services/adModeration";
+import { selectDeliverableCreatives } from "../services/adDelivery";
 
 const adsRouter = Router();
 
@@ -31,6 +32,32 @@ const reviewSchema = z.object({
   notes: z.string().optional(),
   result: targetingSchema.optional(),
   source: adReviewSourceEnum.default("human"),
+});
+
+const deliveryQuerySchema = z.object({
+  trade: z.preprocess(
+    (value) => (Array.isArray(value) ? value[0] : value),
+    z.string().min(1).optional(),
+  ),
+  region: z.preprocess(
+    (value) => (Array.isArray(value) ? value[0] : value),
+    z.string().min(1).optional(),
+  ),
+});
+
+const deliveryResponseSchema = z.object({
+  creatives: z.array(
+    z.object({
+      id: z.string(),
+      adId: z.string(),
+      format: z.string(),
+      headline: z.string().nullable(),
+      body: z.string().nullable(),
+      assetUrl: z.string(),
+      callToAction: z.string().nullable(),
+      metadata: z.record(z.string(), z.unknown()),
+    }),
+  ),
 });
 
 const insightsResponseSchema = z.object({
@@ -78,6 +105,45 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
 }
 
 adsRouter.use(requireAuth);
+
+adsRouter.get("/delivery", async (req, res, next) => {
+  try {
+    const user = getUser(res);
+    const queryResult = deliveryQuerySchema.safeParse(req.query);
+    if (!queryResult.success) {
+      res.status(400).json({ message: "Invalid request", issues: queryResult.error.issues });
+      return;
+    }
+    const query = queryResult.data;
+    const ads = await storage.listAds({ status: "approved" });
+    const creatives = await storage.listAdCreatives(ads.map((ad) => ad.id));
+    const creativesByAd = creatives.reduce<Record<string, typeof creatives>>((acc, creative) => {
+      if (!acc[creative.adId]) {
+        acc[creative.adId] = [];
+      }
+      acc[creative.adId]!.push(creative);
+      return acc;
+    }, {});
+
+    const eligibleCreatives = selectDeliverableCreatives(
+      ads.map((ad) => ({ ad, creatives: creativesByAd[ad.id] ?? [] })),
+      {
+        role: user.role,
+        trade: query.trade ?? null,
+        region: query.region ?? null,
+      },
+    );
+
+    const response = deliveryResponseSchema.safeParse({ creatives: eligibleCreatives });
+    if (!response.success) {
+      res.status(500).json({ message: "Invalid response schema", issues: response.error.issues });
+      return;
+    }
+    res.json(response.data);
+  } catch (error) {
+    next(error);
+  }
+});
 
 adsRouter.get("/insights", async (_req, res, next) => {
   try {

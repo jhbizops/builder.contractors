@@ -32,8 +32,10 @@ import {
   type InsertLeadComment,
   type Ad,
   type InsertAd,
+  type AdCreative,
   type AdReview,
   type InsertAdReview,
+  adCreatives,
   type Service,
   type InsertService,
 } from "@shared/schema";
@@ -67,6 +69,8 @@ export interface IStorage {
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
   createAd(ad: InsertAd): Promise<Ad>;
   getAd(id: string): Promise<Ad | null>;
+  listAds(filters?: { status?: string | string[] }): Promise<Ad[]>;
+  listAdCreatives(adIds?: string[]): Promise<AdCreative[]>;
   updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null>;
   createAdReview(review: InsertAdReview): Promise<AdReview>;
   listAdReviews(adId: string): Promise<AdReview[]>;
@@ -461,6 +465,31 @@ export class DatabaseStorage implements IStorage {
       where: eq(schema.ads.id, id),
     });
     return ad ?? null;
+  }
+
+  async listAds(filters: { status?: string | string[] } = {}): Promise<Ad[]> {
+    const conditions = [];
+    if (filters.status) {
+      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
+      conditions.push(inArray(schema.ads.status, statuses));
+    }
+    const whereClause = conditions.reduce<SQL<unknown> | undefined>(
+      (acc, condition) => (acc ? and(acc, condition) : condition),
+      undefined,
+    );
+    const baseQuery = this.db.select().from(schema.ads);
+    const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    return filteredQuery.orderBy(desc(schema.ads.updatedAt), desc(schema.ads.createdAt));
+  }
+
+  async listAdCreatives(adIds?: string[]): Promise<AdCreative[]> {
+    const baseQuery = this.db.select().from(adCreatives);
+    if (!adIds?.length) {
+      return baseQuery.orderBy(desc(adCreatives.updatedAt), desc(adCreatives.createdAt));
+    }
+    return baseQuery
+      .where(inArray(adCreatives.adId, adIds))
+      .orderBy(desc(adCreatives.updatedAt), desc(adCreatives.createdAt));
   }
 
   async updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null> {

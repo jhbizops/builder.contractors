@@ -107,6 +107,38 @@ class InMemoryUserStorage implements IStorage {
     return [];
   }
 
+  async createAd() {
+    throw new Error("Not implemented");
+  }
+
+  async getAd() {
+    return null;
+  }
+
+  async listAds() {
+    return [];
+  }
+
+  async listAdCreatives() {
+    return [];
+  }
+
+  async updateAdStatus() {
+    return null;
+  }
+
+  async createAdReview() {
+    throw new Error("Not implemented");
+  }
+
+  async listAdReviews() {
+    return [];
+  }
+
+  async listAdInsights() {
+    return [];
+  }
+
   async createExportJob() {
     throw new Error("Not implemented");
   }
