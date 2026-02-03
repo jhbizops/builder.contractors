@@ -12,6 +12,9 @@ const requiredTables = [
   "services",
   "custom_pricing",
   "activity_logs",
+  "ads",
+  "ad_creatives",
+  "ad_reviews",
   "exports",
   "billing_plans",
   "subscriptions",
@@ -131,6 +134,40 @@ const bootstrapStatements = [
     performed_by text NOT NULL,
     timestamp timestamp DEFAULT now(),
     details jsonb NOT NULL DEFAULT '{}'::jsonb
+  )`,
+  `CREATE TABLE IF NOT EXISTS ads (
+    id text PRIMARY KEY,
+    advertiser_id text NOT NULL,
+    name text NOT NULL,
+    targeting jsonb NOT NULL DEFAULT '{}'::jsonb,
+    status text NOT NULL DEFAULT 'draft',
+    created_by text NOT NULL,
+    updated_by text,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS ad_creatives (
+    id text PRIMARY KEY,
+    ad_id text NOT NULL,
+    format text NOT NULL,
+    headline text,
+    body text,
+    asset_url text NOT NULL,
+    call_to_action text,
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS ad_reviews (
+    id text PRIMARY KEY,
+    ad_id text NOT NULL,
+    reviewer_id text NOT NULL,
+    source text NOT NULL DEFAULT 'human',
+    status text NOT NULL DEFAULT 'pending_review',
+    notes text,
+    result jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamp DEFAULT now(),
+    updated_at timestamp DEFAULT now()
   )`,
   `CREATE TABLE IF NOT EXISTS exports (
     id text PRIMARY KEY,

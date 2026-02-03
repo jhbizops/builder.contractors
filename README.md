@@ -38,6 +38,7 @@ Copy `.env.example` to `.env` and set:
 
 ## Ads & Insights API
 - Ads endpoints: `/api/ads` (create), `/api/ads/:id/status` (status updates), `/api/ads/:id/reviews` (admin review submissions).
+- Delivery endpoint: `/api/ads/delivery` (GET) returns eligible creatives for the authenticated user based on role, trade, region, caps, and approval status.
 - Insights endpoint: `/api/ads/insights` (GET) returns k-anonymized counts grouped by trade and region (no precise locations or user identifiers).
 - Response shape:
   ```json

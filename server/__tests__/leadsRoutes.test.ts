@@ -76,6 +76,12 @@ vi.mock("../storageInstance", () => {
     async getAd() {
       return null;
     },
+    async listAds() {
+      return [];
+    },
+    async listAdCreatives() {
+      return [];
+    },
     async updateAdStatus() {
       return null;
     },
