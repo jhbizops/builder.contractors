@@ -23,6 +23,12 @@ export type JobInsights = {
   regionCoverage: number;
 };
 
+export type JobNextStep = {
+  label: string;
+  description: string;
+  action?: "claim" | "start" | "complete";
+};
+
 const allocationRequirements = [
   { key: "trade", label: "Trade" },
   { key: "region", label: "Region" },
@@ -94,6 +100,55 @@ export function deriveJobInsights(jobs: Job[]): JobInsights {
     readyToAllocate: readyToAllocate.length,
     tradeCoverage: facets.trades.length,
     regionCoverage: facets.regions.length,
+  };
+}
+
+export function deriveJobNextStep(job: Job, currentUserId?: string | null): JobNextStep {
+  const isOwner = Boolean(currentUserId && job.ownerId === currentUserId);
+  const isAssignee = Boolean(currentUserId && job.assigneeId === currentUserId);
+
+  if (job.status === "completed") {
+    return { label: "Complete", description: "Job marked as completed." };
+  }
+
+  if (job.status === "cancelled") {
+    return { label: "Cancelled", description: "Job has been cancelled." };
+  }
+
+  if (job.status === "on_hold") {
+    return { label: "On hold", description: "Job paused until updates are available." };
+  }
+
+  if (job.status === "in_progress") {
+    if (isOwner || isAssignee) {
+      return {
+        label: "Complete job",
+        description: "Mark work complete once the trade scope is done.",
+        action: "complete",
+      };
+    }
+    return { label: "In progress", description: "Work is currently underway." };
+  }
+
+  if (job.assigneeId) {
+    if (isOwner || isAssignee) {
+      return {
+        label: "Start work",
+        description: "Confirm kickoff and move the job into progress.",
+        action: "start",
+      };
+    }
+    return { label: "Assigned", description: "Awaiting owner or assignee to start." };
+  }
+
+  if (isOwner) {
+    return { label: "Awaiting claim", description: "Share the job with trades or invite collaborators." };
+  }
+
+  return {
+    label: "Claim job",
+    description: "Claim to accept and align on timing.",
+    action: "claim",
   };
 }
 
