@@ -2,16 +2,16 @@ import express from "express";
 import session from "express-session";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { InsertLead, InsertUser, Lead, User } from "@shared/schema";
-import type { IStorage, UserProfile } from "../../storage";
+import type { Ad, AdReview, InsertAd, InsertAdReview, InsertUser, User } from "@shared/schema";
 import { SESSION_COOKIE_NAME } from "../../session";
+import type { IStorage } from "../../storage";
 
 const MemoryStore = session.MemoryStore;
 
 vi.mock("../../storageInstance", () => {
   const users = new Map<string, User>();
-  const leads = new Map<string, Lead>();
-  const profiles = new Map<string, UserProfile>();
+  const ads = new Map<string, Ad>();
+  const reviews = new Map<string, AdReview>();
 
   const storage: IStorage = {
     async getUser(id: string) {
@@ -38,8 +38,8 @@ vi.mock("../../storageInstance", () => {
       users.set(id, updated);
       return updated;
     },
-    async getUserProfile(userId: string) {
-      return profiles.get(userId) ?? null;
+    async getUserProfile() {
+      return null;
     },
     async createJob() {
       throw new Error("Not implemented");
@@ -68,36 +68,51 @@ vi.mock("../../storageInstance", () => {
     async listJobActivity() {
       return [];
     },
-    async createAd() {
-      throw new Error("Not implemented");
-    },
-    async getAd() {
-      return null;
-    },
-    async updateAdStatus() {
-      return null;
-    },
-    async createAdReview() {
-      throw new Error("Not implemented");
-    },
-    async listAdReviews() {
-      return [];
-    },
-    async createLead(lead: InsertLead) {
-      const record: Lead = {
-        ...lead,
-        updatedBy: lead.updatedBy ?? null,
-        createdAt: lead.createdAt ?? new Date(),
-        updatedAt: lead.updatedAt ?? new Date(),
+    async createAd(ad: InsertAd) {
+      const record: Ad = {
+        ...ad,
+        targeting: ad.targeting ?? {},
+        updatedBy: ad.updatedBy ?? null,
+        createdAt: ad.createdAt ?? new Date(),
+        updatedAt: ad.updatedAt ?? new Date(),
       };
-      leads.set(record.id, record);
+      ads.set(record.id, record);
       return record;
     },
-    async getLead(id: string) {
-      return leads.get(id) ?? null;
+    async getAd(id: string) {
+      return ads.get(id) ?? null;
+    },
+    async updateAdStatus(id: string, status: Ad["status"], updatedBy: string) {
+      const existing = ads.get(id);
+      if (!existing) return null;
+      const updated: Ad = { ...existing, status, updatedBy, updatedAt: new Date() };
+      ads.set(id, updated);
+      return updated;
+    },
+    async createAdReview(review: InsertAdReview) {
+      const record: AdReview = {
+        ...review,
+        notes: review.notes ?? null,
+        result: review.result ?? {},
+        createdAt: review.createdAt ?? new Date(),
+        updatedAt: review.updatedAt ?? new Date(),
+      };
+      reviews.set(record.id, record);
+      return record;
+    },
+    async listAdReviews(adId: string) {
+      return Array.from(reviews.values())
+        .filter((review) => review.adId === adId)
+        .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+    },
+    async createLead() {
+      throw new Error("Not implemented");
+    },
+    async getLead() {
+      return null;
     },
     async listLeads() {
-      return Array.from(leads.values());
+      return [];
     },
     async updateLead() {
       return null;
@@ -141,14 +156,8 @@ vi.mock("../../storageInstance", () => {
     storage,
     __reset: () => {
       users.clear();
-      leads.clear();
-      profiles.clear();
-    },
-    __setProfile: (userId: string, profile: UserProfile) => {
-      profiles.set(userId, profile);
-    },
-    __setLead: (lead: Lead) => {
-      leads.set(lead.id, lead);
+      ads.clear();
+      reviews.clear();
     },
   };
 });
@@ -182,28 +191,22 @@ const createApp = async () => {
     res.status(204).send();
   });
 
-  const { adminRouter } = await import("../admin");
-  app.use("/api/admin", adminRouter);
+  const { adsRouter } = await import("../ads");
+  app.use("/api/ads", adsRouter);
   return { app, storage: storageModule.storage };
 };
 
-describe("admin router", () => {
+describe("ads router", () => {
   let app: express.Express;
   let storage: IStorage;
   let reset: () => void;
-  let setProfile: (userId: string, profile: UserProfile) => void;
-  let setLead: (lead: Lead) => void;
 
   beforeEach(async () => {
     const storageModule = (await import("../../storageInstance")) as unknown as {
       storage: IStorage;
       __reset: () => void;
-      __setProfile: (userId: string, profile: UserProfile) => void;
-      __setLead: (lead: Lead) => void;
     };
     reset = storageModule.__reset;
-    setProfile = storageModule.__setProfile;
-    setLead = storageModule.__setLead;
     reset();
     const setup = await createApp();
     app = setup.app;
@@ -213,110 +216,90 @@ describe("admin router", () => {
   const createUser = (overrides: Partial<InsertUser> = {}) =>
     storage.createUser({
       id: overrides.id ?? `user_${Math.random().toString(16).slice(2)}`,
-      email: overrides.email ?? "tester@example.com",
-      role: overrides.role ?? "sales",
+      email: overrides.email ?? "builder@example.com",
+      role: overrides.role ?? "builder",
       country: overrides.country ?? null,
       region: overrides.region ?? null,
       locale: overrides.locale ?? null,
       currency: overrides.currency ?? null,
-      languages: overrides.languages ?? [],
+      languages: overrides.languages ?? ["en"],
       approved: overrides.approved ?? true,
       passwordHash: overrides.passwordHash ?? "hash",
       passwordSalt: overrides.passwordSalt ?? "salt",
       createdAt: overrides.createdAt ?? new Date(),
     });
 
-  it("requires authentication", async () => {
-    await request(app).get("/api/admin/metrics").expect(401);
-  });
-
-  it("forbids non-admin users", async () => {
-    const user = await createUser({ role: "sales" });
+  it("creates ads for approved users", async () => {
+    const user = await createUser();
     const agent = request.agent(app);
     await agent.post("/test/login").send({ userId: user.id }).expect(204);
-    await agent.get("/api/admin/metrics").expect(403);
+
+    const response = await agent.post("/api/ads").send({
+      name: "Launch Ad",
+      targeting: { region: "APAC" },
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.ad.status).toBe("draft");
+    expect(response.body.ad.advertiserId).toBe(user.id);
   });
 
-  it("allows admins to fetch metrics", async () => {
-    const admin = await createUser({ role: "admin", email: "admin@example.com" });
-    const member = await createUser({ role: "builder", email: "builder@example.com", approved: false });
+  it("rejects ad creation for unapproved users", async () => {
+    const user = await createUser({ approved: false });
+    const agent = request.agent(app);
+    await agent.post("/test/login").send({ userId: user.id }).expect(204);
 
-    const plan = {
-      id: "pro",
-      name: "Pro",
-      description: null,
-      interval: "month",
-      priceCents: 12000,
-      currency: "usd",
-      entitlements: [],
-      quotas: { leads: 10, seats: 1, storageGb: 1, workspaces: 1 },
-      isDefault: false,
-      providerPriceId: null,
-    };
+    const response = await agent.post("/api/ads").send({ name: "Blocked Ad" });
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe("Approval required to create ads");
+  });
 
-    setProfile(admin.id, {
-      user: admin,
-      subscription: {
-        id: "sub_admin",
-        userId: admin.id,
-        planId: plan.id,
-        status: "active",
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        provider: "stripe",
-        providerCustomerId: null,
-        providerSubscriptionId: null,
-        metadata: {},
-      },
-      plan,
-      entitlements: [],
-      quotas: plan.quotas,
+  it("blocks publishing without an approved review", async () => {
+    const user = await createUser({ role: "admin" });
+    const agent = request.agent(app);
+    await agent.post("/test/login").send({ userId: user.id }).expect(204);
+
+    const ad = await storage.createAd({
+      id: "ad_1",
+      advertiserId: user.id,
+      name: "Needs Review",
+      targeting: {},
+      status: "pending_review",
+      createdBy: user.email,
+      updatedBy: user.email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    setProfile(member.id, {
-      user: member,
-      subscription: {
-        id: "sub_member",
-        userId: member.id,
-        planId: plan.id,
-        status: "canceled",
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        provider: "stripe",
-        providerCustomerId: null,
-        providerSubscriptionId: null,
-        metadata: {},
-      },
-      plan,
-      entitlements: [],
-      quotas: plan.quotas,
-    });
+    const response = await agent.patch(`/api/ads/${ad.id}/status`).send({ status: "approved" });
+    expect(response.status).toBe(409);
+    expect(response.body.message).toBe("Ad requires approval before publishing");
+  });
 
-    setLead({
-      id: "lead_active",
-      partnerId: admin.id,
-      clientName: "Active Lead",
-      status: "in_progress",
-      location: null,
-      country: null,
-      region: null,
-      notes: [],
-      files: [],
+  it("submits reviews and updates status", async () => {
+    const admin = await createUser({ role: "admin" });
+    const agent = request.agent(app);
+    await agent.post("/test/login").send({ userId: admin.id }).expect(204);
+
+    const ad = await storage.createAd({
+      id: "ad_2",
+      advertiserId: admin.id,
+      name: "Review Me",
+      targeting: {},
+      status: "pending_review",
       createdBy: admin.email,
       updatedBy: admin.email,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const agent = request.agent(app);
-    await agent.post("/test/login").send({ userId: admin.id }).expect(204);
-    const res = await agent.get("/api/admin/metrics").expect(200);
-
-    expect(res.body.metrics).toEqual({
-      totalUsers: 2,
-      activeLeads: 1,
-      pendingApprovals: 1,
-      monthlyRevenue: 120,
+    const response = await agent.post(`/api/ads/${ad.id}/reviews`).send({
+      status: "approved",
+      notes: "Looks good",
     });
+
+    expect(response.status).toBe(201);
+    const updated = await storage.getAd(ad.id);
+    expect(updated?.status).toBe("approved");
   });
 });

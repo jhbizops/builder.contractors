@@ -30,6 +30,10 @@ import {
   type InsertLead,
   type LeadComment,
   type InsertLeadComment,
+  type Ad,
+  type InsertAd,
+  type AdReview,
+  type InsertAdReview,
   type Service,
   type InsertService,
 } from "@shared/schema";
@@ -61,6 +65,11 @@ export interface IStorage {
   claimJob(id: string, assigneeId: string): Promise<Job | null>;
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
+  createAd(ad: InsertAd): Promise<Ad>;
+  getAd(id: string): Promise<Ad | null>;
+  updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null>;
+  createAdReview(review: InsertAdReview): Promise<AdReview>;
+  listAdReviews(adId: string): Promise<AdReview[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   getLead(id: string, options?: { partnerId?: string }): Promise<Lead | null>;
   listLeads(filters?: {
@@ -430,6 +439,46 @@ export class DatabaseStorage implements IStorage {
       .from(activityLogs)
       .where(eq(activityLogs.jobId, jobId))
       .orderBy(desc(activityLogs.timestamp));
+  }
+
+  async createAd(ad: InsertAd): Promise<Ad> {
+    const [record] = await this.db.insert(schema.ads).values(ad).returning();
+    if (!record) {
+      throw new Error("Failed to insert ad");
+    }
+    return record;
+  }
+
+  async getAd(id: string): Promise<Ad | null> {
+    const ad = await this.db.query.ads.findFirst({
+      where: eq(schema.ads.id, id),
+    });
+    return ad ?? null;
+  }
+
+  async updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null> {
+    const [record] = await this.db
+      .update(schema.ads)
+      .set({ status, updatedBy, updatedAt: new Date() })
+      .where(eq(schema.ads.id, id))
+      .returning();
+    return record ?? null;
+  }
+
+  async createAdReview(review: InsertAdReview): Promise<AdReview> {
+    const [record] = await this.db.insert(schema.adReviews).values(review).returning();
+    if (!record) {
+      throw new Error("Failed to insert ad review");
+    }
+    return record;
+  }
+
+  async listAdReviews(adId: string): Promise<AdReview[]> {
+    return this.db
+      .select()
+      .from(schema.adReviews)
+      .where(eq(schema.adReviews.adId, adId))
+      .orderBy(desc(schema.adReviews.createdAt));
   }
 
   async createLead(lead: InsertLead): Promise<Lead> {

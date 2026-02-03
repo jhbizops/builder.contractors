@@ -121,6 +121,52 @@ export const jobs = pgTable("jobs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+const adStatusValues = ["draft", "pending_review", "approved", "rejected"] as const;
+export const adStatusEnum = z.enum(adStatusValues);
+
+const adReviewStatusValues = ["pending_review", "approved", "rejected"] as const;
+export const adReviewStatusEnum = z.enum(adReviewStatusValues);
+
+const adReviewSourceValues = ["human", "ai"] as const;
+export const adReviewSourceEnum = z.enum(adReviewSourceValues);
+
+export const ads = pgTable("ads", {
+  id: text("id").primaryKey(),
+  advertiserId: text("advertiser_id").notNull(),
+  name: text("name").notNull(),
+  targeting: jsonb("targeting").$type<Record<string, unknown>>().default({}).notNull(),
+  status: text("status").notNull().default("draft"),
+  createdBy: text("created_by").notNull(),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const adCreatives = pgTable("ad_creatives", {
+  id: text("id").primaryKey(),
+  adId: text("ad_id").notNull(),
+  format: text("format").notNull(),
+  headline: text("headline"),
+  body: text("body"),
+  assetUrl: text("asset_url").notNull(),
+  callToAction: text("call_to_action"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const adReviews = pgTable("ad_reviews", {
+  id: text("id").primaryKey(),
+  adId: text("ad_id").notNull(),
+  reviewerId: text("reviewer_id").notNull(),
+  source: text("source").notNull().default("human"),
+  status: text("status").notNull().default("pending_review"),
+  notes: text("notes"),
+  result: jsonb("result").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 const exportStatusValues = ["queued", "processing", "completed", "failed"] as const;
 export const exportStatusEnum = z.enum(exportStatusValues);
 
@@ -204,6 +250,28 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   updatedAt: true,
 });
 
+const adBaseInsertSchema = createInsertSchema(ads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAdSchema = adBaseInsertSchema;
+export const updateAdSchema = adBaseInsertSchema
+  .omit({ advertiserId: true, createdBy: true })
+  .partial();
+
+const adReviewBaseInsertSchema = createInsertSchema(adReviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAdReviewSchema = adReviewBaseInsertSchema;
+export const updateAdReviewSchema = adReviewBaseInsertSchema
+  .omit({ adId: true, reviewerId: true })
+  .partial();
+
 export const insertExportSchema = createInsertSchema(exportsTable).omit({
   createdAt: true,
   updatedAt: true,
@@ -228,6 +296,12 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = typeof activityLogs.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = typeof jobs.$inferInsert;
+export type Ad = typeof ads.$inferSelect;
+export type InsertAd = typeof ads.$inferInsert;
+export type AdCreative = typeof adCreatives.$inferSelect;
+export type InsertAdCreative = typeof adCreatives.$inferInsert;
+export type AdReview = typeof adReviews.$inferSelect;
+export type InsertAdReview = typeof adReviews.$inferInsert;
 export type ExportJob = typeof exportsTable.$inferSelect;
 export type InsertExportJob = typeof exportsTable.$inferInsert;
 export type Country = typeof countries.$inferSelect;
