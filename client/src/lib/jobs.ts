@@ -7,6 +7,28 @@ export type JobFilterState = {
   trade?: string;
 };
 
+export type JobReadiness = {
+  missing: string[];
+  isReady: boolean;
+  score: number;
+};
+
+export type JobInsights = {
+  total: number;
+  open: number;
+  unassigned: number;
+  inProgress: number;
+  readyToAllocate: number;
+  tradeCoverage: number;
+  regionCoverage: number;
+};
+
+const allocationRequirements = [
+  { key: "trade", label: "Trade" },
+  { key: "region", label: "Region" },
+  { key: "description", label: "Scope details" },
+] as const;
+
 export function filterJobs(jobs: Job[], filters: JobFilterState): Job[] {
   const normalizedStatus = filters.status && filters.status !== "all" ? filters.status : undefined;
   const normalizedRegion = filters.region && filters.region !== "all" ? filters.region : undefined;
@@ -32,6 +54,46 @@ export function deriveJobFacets(jobs: Job[]): { trades: string[]; regions: strin
   return {
     trades: Array.from(trades).sort(),
     regions: Array.from(regions).sort(),
+  };
+}
+
+export function deriveJobReadiness(job: Job): JobReadiness {
+  const missing = allocationRequirements.reduce<string[]>((acc, requirement) => {
+    const value = job[requirement.key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return acc;
+    }
+    if (value) {
+      return acc;
+    }
+    acc.push(requirement.label);
+    return acc;
+  }, []);
+
+  const score = Math.round(((allocationRequirements.length - missing.length) / allocationRequirements.length) * 100);
+
+  return {
+    missing,
+    isReady: missing.length === 0,
+    score,
+  };
+}
+
+export function deriveJobInsights(jobs: Job[]): JobInsights {
+  const open = jobs.filter((job) => job.status === "open");
+  const inProgress = jobs.filter((job) => job.status === "in_progress");
+  const unassigned = jobs.filter((job) => job.assigneeId === null);
+  const readyToAllocate = open.filter((job) => deriveJobReadiness(job).isReady);
+  const facets = deriveJobFacets(jobs);
+
+  return {
+    total: jobs.length,
+    open: open.length,
+    unassigned: unassigned.length,
+    inProgress: inProgress.length,
+    readyToAllocate: readyToAllocate.length,
+    tradeCoverage: facets.trades.length,
+    regionCoverage: facets.regions.length,
   };
 }
 

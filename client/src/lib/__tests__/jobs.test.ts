@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Job } from "@shared/schema";
 import type { User } from "@/types";
-import { deriveJobFacets, filterJobs, jobPermissions } from "../jobs";
+import { deriveJobFacets, deriveJobInsights, deriveJobReadiness, filterJobs, jobPermissions } from "../jobs";
 
 const baseJob: Job = {
   id: "job_base",
@@ -39,6 +39,31 @@ describe("jobs helpers", () => {
     const facets = deriveJobFacets(jobs);
     expect(facets.trades).toEqual(["carpentry", "roofing"]);
     expect(facets.regions).toEqual(["apac", "emea"]);
+  });
+
+  it("scores allocation readiness based on required details", () => {
+    const readiness = deriveJobReadiness(baseJob);
+    expect(readiness.isReady).toBe(false);
+    expect(readiness.missing).toContain("Scope details");
+
+    const readyJob = { ...baseJob, description: "Fit out and materials provided." };
+    const readyState = deriveJobReadiness(readyJob);
+    expect(readyState.isReady).toBe(true);
+    expect(readyState.score).toBe(100);
+  });
+
+  it("summarises allocation insights across jobs", () => {
+    const jobs: Job[] = [
+      baseJob,
+      { ...baseJob, id: "job_assigned", status: "in_progress", assigneeId: "builder-1" },
+      { ...baseJob, id: "job_ready", description: "Install frames", status: "open" },
+    ];
+
+    const insights = deriveJobInsights(jobs);
+    expect(insights.total).toBe(3);
+    expect(insights.open).toBe(2);
+    expect(insights.inProgress).toBe(1);
+    expect(insights.readyToAllocate).toBe(1);
   });
 
   it("computes job permissions for different roles", () => {
