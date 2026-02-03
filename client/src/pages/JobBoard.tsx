@@ -19,7 +19,7 @@ import {
   jobsQueryKey,
   type CreateJobPayload,
 } from "@/api/jobs";
-import { deriveJobFacets, jobPermissions } from "@/lib/jobs";
+import { deriveJobFacets, deriveJobInsights, jobPermissions } from "@/lib/jobs";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -50,6 +50,8 @@ export default function JobBoard() {
   });
 
   const facets = useMemo(() => deriveJobFacets(jobs), [jobs]);
+  const insights = useMemo(() => deriveJobInsights(jobs), [jobs]);
+  const hasActiveFilters = Object.values(filters).some((value) => value !== "all");
 
   const createJobMutation = useMutation({
     mutationFn: createJob,
@@ -127,7 +129,7 @@ export default function JobBoard() {
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Job Board</h2>
               <p className="text-slate-600">
-                Browse and claim open work. Only approved builders can post or accept jobs.
+                Trade-only workspace for posting, allocating, and collaborating on live jobs.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -136,6 +138,73 @@ export default function JobBoard() {
                 Post a job
               </Button>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">Open jobs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-semibold text-slate-900">{insights.open}</p>
+                <p className="text-xs text-slate-500">Ready to allocate: {insights.readyToAllocate}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">Unassigned</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-semibold text-slate-900">{insights.unassigned}</p>
+                <p className="text-xs text-slate-500">Awaiting trade pickup</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">Active allocations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-semibold text-slate-900">{insights.inProgress}</p>
+                <p className="text-xs text-slate-500">In progress</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">Coverage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-semibold text-slate-900">{insights.tradeCoverage}</p>
+                <p className="text-xs text-slate-500">{insights.regionCoverage} regions live</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Allocation workflow</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-600">
+                <ol className="list-decimal pl-4 space-y-2">
+                  <li>Post trade-specific jobs with clear scope, region, and timing.</li>
+                  <li>Trades claim or request collaboration to join the allocation.</li>
+                  <li>Owners confirm assignments and move work into progress.</li>
+                </ol>
+                <p className="text-xs text-slate-500">
+                  Only verified builders can allocate. Collaboration requests notify owners instantly.
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Trade standards</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-slate-600">
+                <p>Keep allocations trade-only, with no consumer-facing data.</p>
+                <p>Use collaboration requests for multi-trade scopes.</p>
+                <p>Confirm assignments before work starts.</p>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
@@ -190,6 +259,19 @@ export default function JobBoard() {
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2 md:col-span-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setFilters({ status: "open", region: "all", trade: "all" })}
+                  disabled={!hasActiveFilters}
+                >
+                  Reset filters
+                </Button>
+                {hasActiveFilters && (
+                  <span className="text-xs text-slate-500">Showing filtered trade allocations.</span>
+                )}
+              </div>
             </CardContent>
           </Card>
 

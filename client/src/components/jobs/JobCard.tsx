@@ -3,6 +3,7 @@ import type { Job } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { deriveJobReadiness } from "@/lib/jobs";
 
 const statusStyles: Record<string, string> = {
   open: "bg-emerald-100 text-emerald-700",
@@ -33,6 +34,7 @@ export function JobCard({
   isClaiming,
   isRequesting,
 }: JobCardProps) {
+  const readiness = deriveJobReadiness(job);
   return (
     <Card className="h-full border border-slate-200">
       <CardHeader className="pb-2">
@@ -51,9 +53,19 @@ export function JobCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {job.description && <p className="text-sm text-slate-700">{job.description}</p>}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          <span className="font-medium text-slate-700">Allocation readiness</span>
+          <Badge className={readiness.isReady ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
+            {readiness.isReady ? "Ready to allocate" : `Needs ${readiness.missing.length} detail`}
+          </Badge>
+          <span>{readiness.score}% complete</span>
+        </div>
+        {!readiness.isReady && (
+          <p className="text-xs text-slate-500">Add: {readiness.missing.join(", ")}.</p>
+        )}
         <div className="flex items-center justify-between text-xs text-slate-600">
           <span>Owner: {job.ownerId}</span>
-          <span>Assignee: {job.assigneeId ?? "Unassigned"}</span>
+          <span>{job.assigneeId ? `Assigned to ${job.assigneeId}` : "Open allocation"}</span>
         </div>
         {disabledReason && (
           <p className="text-xs text-amber-700" role="status">
