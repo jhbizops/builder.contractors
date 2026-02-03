@@ -15,6 +15,7 @@ const authRouter = Router();
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  role: z.enum(["dual", "admin"]).optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   locale: z.string().optional(),
@@ -61,7 +62,15 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const role = "dual";
+    const requestedRole = payload.role ?? "dual";
+    if (requestedRole === "admin") {
+      const users = await storage.listUsers();
+      const hasAdmin = users.some((user) => user.role === "admin" || user.role === "super_admin");
+      if (hasAdmin) {
+        res.status(403).json({ message: "Admin role is already assigned." });
+        return;
+      }
+    }
 
     const salt = generateSalt();
     const passwordHash = await hashPassword(payload.password, salt);
@@ -69,7 +78,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
     const user = await storage.createUser({
       id: `user_${randomUUID()}`,
       email: payload.email,
-      role,
+      role: requestedRole,
       country: payload.country ?? null,
       region: payload.region ?? null,
       locale: payload.locale ?? null,

@@ -194,15 +194,12 @@ const createApp = () => {
 describe("auth and users routes", () => {
   let app: express.Express;
   let resetStorage: () => void;
-  let setUserRole: (id: string, role: User["role"]) => void;
 
   beforeEach(async () => {
     const storageModule = (await import("../../storageInstance")) as unknown as {
       __resetMockStorage: () => void;
-      __setUserRole: (id: string, role: User["role"]) => void;
     };
     resetStorage = storageModule.__resetMockStorage;
-    setUserRole = storageModule.__setUserRole;
     resetStorage();
     app = createApp();
     const { authRouter } = await import("../../auth/routes");
@@ -247,7 +244,6 @@ describe("auth and users routes", () => {
       .post("/api/auth/register")
       .send({ email: "admin@example.com", password: "AdminPass123!", role: "admin" })
       .expect(201);
-    setUserRole(adminRes.body.user.id, "admin");
     const storageModule = (await import("../../storageInstance")) as unknown as { storage: IStorage };
     const adminRecord = await storageModule.storage.getUser(adminRes.body.user.id);
     expect(adminRecord?.role).toBe("admin");
@@ -281,5 +277,18 @@ describe("auth and users routes", () => {
     expect(approvalRes.body.user).not.toHaveProperty("passwordSalt");
 
     await userAgent.get("/api/users").expect(403);
+  });
+
+  it("blocks additional admin registration once an admin exists", async () => {
+    const adminAgent = request.agent(app);
+    await adminAgent
+      .post("/api/auth/register")
+      .send({ email: "admin@example.com", password: "AdminPass123!", role: "admin" })
+      .expect(201);
+
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "admin2@example.com", password: "AdminPass123!", role: "admin" })
+      .expect(403);
   });
 });
