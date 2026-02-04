@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
   const [comment, setComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<LeadFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userData } = useAuth();
@@ -107,20 +110,41 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
     },
   });
 
+  const isAddingComment = addCommentMutation.isPending;
+  const isLoggingActivity = addActivityMutation.isPending;
+
+  useEffect(() => {
+    setStatus(lead?.status || 'new');
+  }, [lead?.id, lead?.status]);
+
   const handleStatusChange = async (newStatus: string) => {
     if (!lead || !userData) return;
-    
+    if (newStatus === status) return;
+
+    const previousStatus = status;
     setStatus(newStatus as 'new' | 'in_progress' | 'completed' | 'on_hold');
-    
-    // Log the status change
-    await addActivityMutation.mutateAsync({
-      leadId: lead.id,
-      action: `Status changed from "${lead.status}" to "${newStatus}"`,
-    });
+    setIsUpdatingStatus(true);
+
+    try {
+      await addActivityMutation.mutateAsync({
+        leadId: lead.id,
+        action: `Status changed from "${lead.status}" to "${newStatus}"`,
+      });
+    } catch (error: any) {
+      setStatus(previousStatus);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update status',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleFiles = async (fileList: FileList | File[]) => {
     if (!lead) return;
+    if (uploading) return;
 
     const incomingFiles = Array.from(fileList);
     if (!incomingFiles.length) return;
@@ -205,10 +229,16 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
 
   const handleDeleteFile = async (file: LeadFile) => {
     if (!lead) return;
+    if (deletingFileId) return;
 
+    setDeletingFileId(file.id);
     try {
       const updatedFiles = lead.files.filter((existingFile) => existingFile.id !== file.id);
       await onSave({ files: updatedFiles, updatedAt: new Date(), updatedBy: userData?.email || 'Unknown' });
+
+      if (previewFile?.id === file.id) {
+        setPreviewFile(null);
+      }
 
       await addActivityMutation.mutateAsync({
         leadId: lead.id,
@@ -225,6 +255,8 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
         description: error.message || 'Failed to delete file',
         variant: 'destructive',
       });
+    } finally {
+      setDeletingFileId(null);
     }
   };
 
@@ -250,7 +282,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
 
   const handleSave = async () => {
     if (!lead) return;
+    if (isSaving) return;
 
+    setIsSaving(true);
     try {
       await onSave({
         status,
@@ -264,6 +298,8 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
         description: error.message || 'Failed to update lead',
         variant: 'destructive',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -313,8 +349,8 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
             <Label htmlFor="status" className="text-sm font-medium text-slate-700 mb-2 block">
               Status
             </Label>
-            <Select value={status} onValueChange={handleStatusChange}>
-              <SelectTrigger>
+            <Select value={status} onValueChange={handleStatusChange} disabled={isUpdatingStatus || isSaving}>
+              <SelectTrigger aria-busy={isUpdatingStatus || isLoggingActivity}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -330,10 +366,14 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">Files</Label>
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                isDraggingFile ? 'border-primary bg-primary/5' : 'border-slate-300 hover:border-primary'
-              }`}
-              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                uploading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+              } ${isDraggingFile ? 'border-primary bg-primary/5' : 'border-slate-300 hover:border-primary'}`}
+              onClick={() => {
+                if (!uploading) {
+                  fileInputRef.current?.click();
+                }
+              }}
               onDrop={handleFileDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -401,7 +441,9 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteFile(file)}
+                        disabled={deletingFileId === file.id}
                         className="text-slate-400 hover:text-red-500 p-1"
+                        aria-busy={deletingFileId === file.id}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -463,9 +505,10 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
                 placeholder="Add a comment..."
                 rows={3}
                 className="mb-2"
+                disabled={isAddingComment || isSaving}
               />
               <div className="flex justify-end">
-                <Button onClick={handleAddComment} disabled={!comment.trim()}>
+                <Button onClick={handleAddComment} disabled={!comment.trim() || isAddingComment || isSaving}>
                   Post Comment
                 </Button>
               </div>
@@ -528,10 +571,10 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, isOpen, onClose, onSave }) 
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={isSaving || uploading || isUpdatingStatus}>
             Save Changes
           </Button>
         </div>
