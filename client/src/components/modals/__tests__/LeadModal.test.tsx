@@ -38,7 +38,7 @@ vi.mock('@tanstack/react-query', async () => {
   return {
     ...actual,
     useQuery: () => ({ data: [] }),
-    useMutation: () => ({ mutateAsync: mutateAsyncMock }),
+    useMutation: () => ({ mutateAsync: mutateAsyncMock, isPending: false }),
     useQueryClient: () => ({
       cancelQueries: vi.fn(),
       getQueryData: vi.fn(),
@@ -152,5 +152,24 @@ describe('LeadModal file management', () => {
 
     expect(screen.getByTestId('file-preview')).toBeInTheDocument();
     expect(screen.getByAltText('Preview of site-plan.png')).toBeInTheDocument();
+  });
+
+  it('syncs the status value when the lead changes', () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(<LeadModal lead={lead} isOpen onClose={() => undefined} onSave={onSave} />);
+
+    const statusTrigger = screen.getByRole('combobox');
+    expect(statusTrigger).toHaveTextContent('New');
+
+    rerender(
+      <LeadModal
+        lead={{ ...lead, status: 'completed' }}
+        isOpen
+        onClose={() => undefined}
+        onSave={onSave}
+      />
+    );
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Completed');
   });
 });
