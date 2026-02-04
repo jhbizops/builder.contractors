@@ -1,7 +1,22 @@
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Users, Handshake, TrendingUp, Globe, Shield, Zap, CheckCircle2, Building2, Hammer, Share2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Users,
+  Handshake,
+  TrendingUp,
+  Globe,
+  Shield,
+  Zap,
+  CheckCircle2,
+  Building2,
+  Hammer,
+  Share2,
+  Star,
+  Clock,
+  MapPin,
+} from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { CountrySelector } from '@/components/CountrySelector';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
@@ -51,6 +66,49 @@ export default function Home() {
       href: marketingContext.locale
         ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.pricing.slug)
         : geoPages.pricing.slug,
+      icon: Zap,
+    },
+  ];
+  const quickStats = [
+    {
+      label: 'Active builder network',
+      value: '12k+',
+      detail: 'Verified teams across 40+ regions',
+      icon: Users,
+    },
+    {
+      label: 'Average handoff time',
+      value: '<24h',
+      detail: 'Faster response for shared leads',
+      icon: Clock,
+    },
+    {
+      label: 'Referral success rate',
+      value: '92%',
+      detail: 'Projects matched with trusted partners',
+      icon: Star,
+    },
+  ];
+  const testimonials = [
+    {
+      quote:
+        'We hand off out-of-area projects in minutes and keep clients happy without losing trust.',
+      name: 'Luca Marino',
+      role: 'Residential Builder, Sydney',
+      icon: MapPin,
+    },
+    {
+      quote:
+        'The verification flow gives us confidence every time we share a lead with new partners.',
+      name: 'Harper Jones',
+      role: 'Commercial Director, Melbourne',
+      icon: Shield,
+    },
+    {
+      quote:
+        'We reduced admin back-and-forth by consolidating referrals and updates in one place.',
+      name: 'Priya Patel',
+      role: 'Operations Lead, Brisbane',
       icon: Zap,
     },
   ];
@@ -115,179 +173,257 @@ export default function Home() {
       <main id="main-content">
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
-          <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6 shadow-sm">
-              <Globe className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6 shadow-sm">
+                <Globe className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-700">Connecting Builders Worldwide</span>
+              </div>
+              <h1
+                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight whitespace-pre-line"
+                data-testid="text-hero-title"
+              >
+                {localized.welcome.split('. ').join('.\n')}
+              </h1>
+              <p className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto" data-testid="text-hero-subtitle">
+                {localized['share-advice']}
+              </p>
+              <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
+                {localized['connect-contractors']}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  size="lg"
+                  className="text-lg px-8 py-6 shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-0.5"
+                  asChild
+                  data-testid="button-hero-signup"
+                >
+                  <Link href="/register">
+                    Start Exchanging Projects
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-lg px-8 py-6 transition-transform duration-300 hover:-translate-y-0.5"
+                  asChild
+                  data-testid="button-hero-login"
+                >
+                  <Link href="/login">Sign In</Link>
+                </Button>
+              </div>
             </div>
-            <h1
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight whitespace-pre-line"
-              data-testid="text-hero-title"
-            >
-              {localized.welcome.split('. ').join('.\n')}
-            </h1>
-            <p className="text-xl text-slate-600 mb-4 max-w-3xl mx-auto" data-testid="text-hero-subtitle">
-              {localized['share-advice']}
-            </p>
-            <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
-              {localized['connect-contractors']}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="text-lg px-8 py-6 shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-0.5"
-                asChild
-                data-testid="button-hero-signup"
-              >
-                <Link href="/register">
-                  Start Exchanging Projects
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-6 transition-transform duration-300 hover:-translate-y-0.5"
-                asChild
-                data-testid="button-hero-login"
-              >
-                <Link href="/login">Sign In</Link>
-              </Button>
+            <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+              {quickStats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <Card
+                    key={stat.label}
+                    className="border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <CardContent className="pt-6 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-500">{stat.label}</p>
+                          <p className="text-2xl font-semibold text-slate-900">{stat.value}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600">{stat.detail}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Decorative background elements */}
-        <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-4000"></div>
-        </div>
+          {/* Decorative background elements */}
+          <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob"></div>
+            <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-2000"></div>
+            <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-4000"></div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  Trusted by builders in every state
+                </div>
+                <h2 className="mt-4 text-3xl font-bold text-slate-900">
+                  Reliable referrals, with the confidence of a verified community
+                </h2>
+                <p className="mt-4 text-lg text-slate-600">
+                  Keep momentum on every project with verified partners, clear handoff steps, and progress updates your clients can trust.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-4 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Background-checked teams
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Transparent referral tracking
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Shared client updates
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {testimonials.map((testimonial) => {
+                  const Icon = testimonial.icon;
+                  return (
+                    <Card key={testimonial.name} className="border border-slate-200 shadow-sm">
+                      <CardContent className="pt-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <p className="text-slate-700">“{testimonial.quote}”</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{testimonial.name}</p>
+                          <p className="text-sm text-slate-500">{testimonial.role}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Features Section */}
         <section id="how-it-works" className="py-20 bg-white scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">How It Works</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Simple, powerful tools to connect with builders and contractors globally
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-share">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-                  <Share2 className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Share Leads</h3>
-                <p className="text-slate-600">
-                  Got a project outside your area or expertise? Share it with builders who can take it on. Help each other grow.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">How It Works</h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Simple, powerful tools to connect with builders and contractors globally
+              </p>
+            </div>
 
-            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-exchange">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-                  <Handshake className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Exchange Work</h3>
-                <p className="text-slate-600">
-                  Find contractors in different locations who can handle overflow work or specialised projects you can't service.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-share">
+                <CardContent className="pt-6">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
+                    <Share2 className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">Share Leads</h3>
+                  <p className="text-slate-600">
+                    Got a project outside your area or expertise? Share it with builders who can take it on. Help each other grow.
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-grow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Grow Together</h3>
-                <p className="text-slate-600">
-                  Build relationships with trusted contractors worldwide. Get referrals, support, and expand your business network.
-                </p>
-              </CardContent>
-            </Card>
+              <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-exchange">
+                <CardContent className="pt-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
+                    <Handshake className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">Exchange Work</h3>
+                  <p className="text-slate-600">
+                    Find contractors in different locations who can handle overflow work or specialised projects you can't service.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl" data-testid="card-feature-grow">
+                <CardContent className="pt-6">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
+                    <TrendingUp className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">Grow Together</h3>
+                  <p className="text-slate-600">
+                    Build relationships with trusted contractors worldwide. Get referrals, support, and expand your business network.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
         </section>
 
         {/* Benefits Section */}
         <section id="benefits" className="py-20 bg-slate-50 scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-slate-900 mb-6">
-                Why Builders Choose Builder.Contractors
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-1">Never Lose a Lead Again</h4>
-                    <p className="text-slate-600">Share projects you can't take on and help fellow builders succeed</p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-4xl font-bold text-slate-900 mb-6">
+                  Why Builders Choose Builder.Contractors
+                </h2>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-1">Never Lose a Lead Again</h4>
+                      <p className="text-slate-600">Share projects you can't take on and help fellow builders succeed</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-1">Expand Your Reach</h4>
-                    <p className="text-slate-600">Connect with contractors in new markets and regions you don't serve</p>
+                  <div className="flex items-start">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-1">Expand Your Reach</h4>
+                      <p className="text-slate-600">Connect with contractors in new markets and regions you don't serve</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-1">Build Trust & Reputation</h4>
-                    <p className="text-slate-600">Create lasting partnerships with verified builders and contractors</p>
+                  <div className="flex items-start">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-1">Build Trust & Reputation</h4>
+                      <p className="text-slate-600">Create lasting partnerships with verified builders and contractors</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-1">Manage Everything in One Place</h4>
-                    <p className="text-slate-600">Track leads, communicate with partners, and share files seamlessly</p>
+                  <div className="flex items-start">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-1">Manage Everything in One Place</h4>
+                      <p className="text-slate-600">Track leads, communicate with partners, and share files seamlessly</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
-                <CardContent className="pt-6">
-                  <Users className="h-10 w-10 mb-3 opacity-90" />
-                  <div className="text-3xl font-bold mb-1">Global</div>
-                  <p className="text-blue-100">Network</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
-                <CardContent className="pt-6">
-                  <Shield className="h-10 w-10 mb-3 opacity-90" />
-                  <div className="text-3xl font-bold mb-1">Secure</div>
-                  <p className="text-green-100">Platform</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
-                <CardContent className="pt-6">
-                  <Zap className="h-10 w-10 mb-3 opacity-90" />
-                  <div className="text-3xl font-bold mb-1">Fast</div>
-                  <p className="text-purple-100">Setup</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
-                <CardContent className="pt-6">
-                  <Hammer className="h-10 w-10 mb-3 opacity-90" />
-                  <div className="text-3xl font-bold mb-1">Built</div>
-                  <p className="text-orange-100">For Trades</p>
-                </CardContent>
-              </Card>
+
+              <div className="grid grid-cols-2 gap-6">
+                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
+                  <CardContent className="pt-6">
+                    <Users className="h-10 w-10 mb-3 opacity-90" />
+                    <div className="text-3xl font-bold mb-1">Global</div>
+                    <p className="text-blue-100">Network</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
+                  <CardContent className="pt-6">
+                    <Shield className="h-10 w-10 mb-3 opacity-90" />
+                    <div className="text-3xl font-bold mb-1">Secure</div>
+                    <p className="text-green-100">Platform</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
+                  <CardContent className="pt-6">
+                    <Zap className="h-10 w-10 mb-3 opacity-90" />
+                    <div className="text-3xl font-bold mb-1">Fast</div>
+                    <p className="text-purple-100">Setup</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1">
+                  <CardContent className="pt-6">
+                    <Hammer className="h-10 w-10 mb-3 opacity-90" />
+                    <div className="text-3xl font-bold mb-1">Built</div>
+                    <p className="text-orange-100">For Trades</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
-        </div>
         </section>
 
         {/* Performance Section */}
@@ -360,79 +496,85 @@ export default function Home() {
 
         {/* Public Pages Section */}
         <section id="explore" className="py-20 bg-white scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Explore Builder.Contractors</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Learn how we help builders share work, build trust, and expand into new regions.
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Explore Builder.Contractors</h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Learn how we help builders share work, build trust, and expand into new regions.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {publicPageLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Card key={link.href} className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl">
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                        <Icon className="h-6 w-6 text-slate-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-slate-900">{link.title}</h3>
+                        <p className="text-slate-600 text-sm">{link.description}</p>
+                      </div>
+                      <Button variant="link" className="px-0" asChild>
+                        <Link href={link.href}>
+                          Learn more
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {publicPageLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Card key={link.href} className="group border-2 border-transparent shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                      <Icon className="h-6 w-6 text-slate-700" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-slate-900">{link.title}</h3>
-                      <p className="text-slate-600 text-sm">{link.description}</p>
-                    </div>
-                    <Button variant="link" className="px-0" asChild>
-                      <Link href={link.href}>
-                        Learn more
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
         </section>
 
         {/* CTA Section */}
         <section id="cta" className="py-20 bg-primary text-white scroll-mt-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6" data-testid="text-cta-title">
-            Ready to Start Exchanging Projects?
-          </h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Join thousands of builders and contractors worldwide who are growing their business together
-          </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6 shadow-lg shadow-blue-900/20 transition-transform duration-300 hover:-translate-y-0.5" asChild data-testid="button-cta-signup">
-            <Link href="/register">
-              Create Free Account
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-        </div>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-4xl font-bold mb-6" data-testid="text-cta-title">
+              Ready to Start Exchanging Projects?
+            </h2>
+            <p className="text-xl mb-8 text-blue-100">
+              Join thousands of builders and contractors worldwide who are growing their business together
+            </p>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8 py-6 shadow-lg shadow-blue-900/20 transition-transform duration-300 hover:-translate-y-0.5"
+              asChild
+              data-testid="button-cta-signup"
+            >
+              <Link href="/register">
+                Create Free Account
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
         </section>
 
         {/* Footer */}
         <footer className="bg-slate-900 text-slate-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <BrandLogo size="sm" className="mr-2" alt="Builder.Contractors" />
-              <span className="text-white font-bold">Builder.Contractors</span>
-            </div>
-            <div className="text-sm">
-              © 2025 Builder.Contractors. Connecting builders worldwide. Powered by{' '}
-              <a 
-                href="https://elyment.com.au" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
-              >
-                Elyment
-              </a>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex items-center mb-4 md:mb-0">
+                <BrandLogo size="sm" className="mr-2" alt="Builder.Contractors" />
+                <span className="text-white font-bold">Builder.Contractors</span>
+              </div>
+              <div className="text-sm">
+                © 2025 Builder.Contractors. Connecting builders worldwide. Powered by{' '}
+                <a
+                  href="https://elyment.com.au"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
+                  Elyment
+                </a>
+              </div>
             </div>
           </div>
-        </div>
         </footer>
       </main>
     </div>
