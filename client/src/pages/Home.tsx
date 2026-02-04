@@ -56,7 +56,13 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white scroll-smooth" dir={isRtl ? 'rtl' : 'ltr'}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-slate-900 focus:shadow"
+      >
+        Skip to content
+      </a>
       <HeadManager
         title={seo.title}
         description={seo.summary}
@@ -79,6 +85,20 @@ export default function Home() {
                 </span>
               </Link>
             </div>
+            <div className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
+              <a href="#how-it-works" className="hover:text-slate-900 transition-colors">
+                How it works
+              </a>
+              <a href="#benefits" className="hover:text-slate-900 transition-colors">
+                Benefits
+              </a>
+              <a href="#explore" className="hover:text-slate-900 transition-colors">
+                Explore
+              </a>
+              <a href="#cta" className="hover:text-slate-900 transition-colors">
+                Get started
+              </a>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <CountrySelector className="w-48" />
               <Button variant="ghost" asChild data-testid="button-login">
@@ -92,8 +112,9 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-white">
+      <main id="main-content">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
           <div className="text-center">
             <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full mb-6 shadow-sm">
@@ -143,10 +164,10 @@ export default function Home() {
           <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-2000"></div>
           <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 motion-safe:animate-blob animation-delay-4000"></div>
         </div>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white">
+        {/* Features Section */}
+        <section id="how-it-works" className="py-20 bg-white scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">How It Works</h2>
@@ -193,10 +214,10 @@ export default function Home() {
             </Card>
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 bg-slate-50">
+        {/* Benefits Section */}
+        <section id="benefits" className="py-20 bg-slate-50 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -267,10 +288,78 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* Public Pages Section */}
-      <section className="py-20 bg-white">
+        {/* Performance Section */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              <div className="space-y-4">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium">
+                  Built for speed
+                </div>
+                <h2 className="text-4xl font-bold text-slate-900">Move faster from lead to handoff</h2>
+                <p className="text-lg text-slate-600">
+                  Reduce time spent on coordination with clear intake steps, trusted partner profiles, and fast handoffs.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Card className="border border-slate-200 shadow-sm">
+                    <CardContent className="pt-6 space-y-2">
+                      <Zap className="h-6 w-6 text-blue-600" />
+                      <p className="text-sm font-semibold text-slate-900">Rapid matching</p>
+                      <p className="text-xs text-slate-600">Find the right trade partner in minutes.</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-slate-200 shadow-sm">
+                    <CardContent className="pt-6 space-y-2">
+                      <Shield className="h-6 w-6 text-emerald-600" />
+                      <p className="text-sm font-semibold text-slate-900">Verified trust</p>
+                      <p className="text-xs text-slate-600">Work with builders that meet your standards.</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-slate-200 shadow-sm">
+                    <CardContent className="pt-6 space-y-2">
+                      <Users className="h-6 w-6 text-purple-600" />
+                      <p className="text-sm font-semibold text-slate-900">Active community</p>
+                      <p className="text-xs text-slate-600">Grow referrals with a global network.</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              <Card className="border border-slate-200 shadow-lg">
+                <CardContent className="pt-6 space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900">Quick start checklist</h3>
+                    <p className="text-slate-600">Get live in under a day with a simple guided setup.</p>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      'Create your builder profile and service regions.',
+                      'Add trusted contractors or discover new partners.',
+                      'Share a lead and track the handoff outcome.',
+                    ].map((step) => (
+                      <div key={step} className="flex items-start gap-3">
+                        <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                        <p className="text-slate-700">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button asChild className="w-full" data-testid="button-quick-start">
+                    <Link href="/register">
+                      Start setup
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Public Pages Section */}
+        <section id="explore" className="py-20 bg-white scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Explore Builder.Contractors</h2>
@@ -303,10 +392,10 @@ export default function Home() {
             })}
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-primary text-white">
+        {/* CTA Section */}
+        <section id="cta" className="py-20 bg-primary text-white scroll-mt-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-6" data-testid="text-cta-title">
             Ready to Start Exchanging Projects?
@@ -321,10 +410,10 @@ export default function Home() {
             </Link>
           </Button>
         </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-12">
+        {/* Footer */}
+        <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
@@ -344,7 +433,8 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </footer>
+        </footer>
+      </main>
     </div>
   );
 }
