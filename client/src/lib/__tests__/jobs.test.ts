@@ -14,6 +14,7 @@ const baseJob: Job = {
   id: "job_base",
   title: "Base",
   description: null,
+  privateDetails: null,
   status: "open",
   ownerId: "owner-1",
   assigneeId: null,
