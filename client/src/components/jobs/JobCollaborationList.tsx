@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { JobActivityPanel } from "./JobActivityPanel";
+import { buildJobShareUrl } from "@/lib/jobShare";
+import { useToast } from "@/hooks/use-toast";
 
 const statusLabels: Record<string, string> = {
   open: "Open",
@@ -35,6 +37,7 @@ export function JobCollaborationList({
   onAssignToMe,
   canAssign,
 }: JobCollaborationListProps) {
+  const { toast } = useToast();
   if (isLoading) {
     return <p className="text-sm text-slate-500">Loading jobs...</p>;
   }
@@ -48,6 +51,34 @@ export function JobCollaborationList({
       {jobs.map((job) => {
         const isAssignedToUser = job.assigneeId === currentUserId;
         const allowAssignment = canAssign ? canAssign(job) : canManage;
+        const shareUrl = buildJobShareUrl(job.id);
+        const handleShare = async () => {
+          try {
+            if (navigator.share) {
+              await navigator.share({
+                title: job.title,
+                text: `Job opportunity: ${job.title}`,
+                url: shareUrl,
+              });
+              toast({ title: "Job shared", description: "The share sheet opened successfully." });
+              return;
+            }
+
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(shareUrl);
+              toast({ title: "Link copied", description: "Share this job link with your trades network." });
+              return;
+            }
+
+            toast({
+              title: "Share unavailable",
+              description: "Copy the job URL from your browser to share it.",
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Unable to share the job link";
+            toast({ title: "Share failed", description: message });
+          }
+        };
         return (
           <AccordionItem key={job.id} value={job.id} className="border border-slate-200 rounded-lg px-3">
             <AccordionTrigger className="hover:no-underline">
@@ -79,6 +110,9 @@ export function JobCollaborationList({
                     ))}
                   </SelectContent>
                 </Select>
+                <Button size="sm" variant="outline" onClick={handleShare}>
+                  Share link
+                </Button>
                 <Button
                   variant={isAssignedToUser ? "outline" : "default"}
                   size="sm"

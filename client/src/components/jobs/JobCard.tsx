@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { deriveJobNextStep, deriveJobReadiness } from "@/lib/jobs";
+import { buildJobShareUrl } from "@/lib/jobShare";
+import { useToast } from "@/hooks/use-toast";
 
 const statusStyles: Record<string, string> = {
   open: "bg-emerald-100 text-emerald-700",
@@ -44,6 +46,7 @@ export function JobCard({
   isRequesting,
   isUpdatingStatus,
 }: JobCardProps) {
+  const { toast } = useToast();
   const readiness = deriveJobReadiness(job);
   const nextStep = deriveJobNextStep(job, currentUserId);
   const isOwner = Boolean(currentUserId && job.ownerId === currentUserId);
@@ -53,6 +56,36 @@ export function JobCard({
   const canUpdateStatus = Boolean(canManageStatus && (isOwner || isAssignee));
   const showStartAction = canUpdateStatus && job.status === "open" && Boolean(job.assigneeId);
   const showCompleteAction = canUpdateStatus && job.status === "in_progress";
+  const shareUrl = buildJobShareUrl(job.id);
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: job.title,
+          text: `Job opportunity: ${job.title}`,
+          url: shareUrl,
+        });
+        toast({ title: "Job shared", description: "The share sheet opened successfully." });
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Link copied", description: "Share this job link with your trades network." });
+        return;
+      }
+
+      toast({
+        title: "Share unavailable",
+        description: "Copy the job URL from your browser to share it.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to share the job link";
+      toast({ title: "Share failed", description: message });
+    }
+  };
+
   return (
     <Card className="h-full border border-slate-200">
       <CardHeader className="pb-2">
@@ -95,6 +128,9 @@ export function JobCard({
           </p>
         )}
         <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleShare}>
+            Share link
+          </Button>
           {showStartAction && (
             <Button size="sm" onClick={() => onStartJob?.(job)} disabled={isUpdatingStatus}>
               {isUpdatingStatus ? "Starting..." : "Start job"}
