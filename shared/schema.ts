@@ -111,6 +111,7 @@ export const jobs = pgTable("jobs", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
+  privateDetails: text("private_details"),
   status: text("status").notNull().default("open"),
   ownerId: text("owner_id").notNull(),
   assigneeId: text("assignee_id"),

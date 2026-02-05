@@ -15,6 +15,7 @@ const jobFormSchema = z.object({
   region: z.string().optional(),
   country: z.string().optional(),
   description: z.string().optional(),
+  privateDetails: z.string().optional(),
 });
 
 type JobFormValues = z.infer<typeof jobFormSchema>;
@@ -49,6 +50,7 @@ export function JobFormDialog({
       region: "",
       country: "",
       description: "",
+      privateDetails: "",
     },
   });
 
@@ -59,6 +61,7 @@ export function JobFormDialog({
       region: values.region?.trim() || undefined,
       country: values.country?.trim() || undefined,
       description: values.description?.trim() || undefined,
+      privateDetails: values.privateDetails?.trim() || undefined,
     });
     reset();
   };
@@ -94,8 +97,16 @@ export function JobFormDialog({
             </div>
           </div>
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Public summary</Label>
             <Textarea id="description" rows={3} {...register("description")} />
+            <p className="text-xs text-slate-500 mt-1">Visible to all trades on the board.</p>
+          </div>
+          <div>
+            <Label htmlFor="privateDetails">Private details</Label>
+            <Textarea id="privateDetails" rows={3} {...register("privateDetails")} />
+            <p className="text-xs text-slate-500 mt-1">
+              Only visible to you and assigned collaborators. Keep sensitive access info here.
+            </p>
           </div>
           <div className="flex justify-end space-x-2">
             <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>

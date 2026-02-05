@@ -11,6 +11,7 @@ const jobSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
+  privateDetails: z.string().nullable(),
   status: z.string(),
   ownerId: z.string(),
   assigneeId: z.string().nullable(),
@@ -49,6 +50,7 @@ export interface CreateJobActivityPayload {
 export interface CreateJobPayload {
   title: string;
   description?: string;
+  privateDetails?: string;
   region?: string;
   country?: string;
   trade: string;

@@ -373,7 +373,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateJob(
     id: string,
-    updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
+    updates: Partial<Pick<Job, "title" | "description" | "privateDetails" | "region" | "country" | "trade" | "updatedAt">>,
   ): Promise<Job | null> {
     const [record] = await this.db
       .update(jobs)

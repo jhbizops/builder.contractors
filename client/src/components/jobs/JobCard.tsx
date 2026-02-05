@@ -104,6 +104,12 @@ export function JobCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {job.description && <p className="text-sm text-slate-700">{job.description}</p>}
+        {job.privateDetails && (
+          <div className="rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-700">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Private details</p>
+            <p className="mt-1 whitespace-pre-line">{job.privateDetails}</p>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
           <span className="font-medium text-slate-700">Allocation readiness</span>
           <Badge className={readiness.isReady ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>

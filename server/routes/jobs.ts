@@ -1,7 +1,7 @@
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { jobStatusEnum } from "@shared/schema";
+import { jobStatusEnum, type Job } from "@shared/schema";
 import { requireAuth } from "../middleware/auth";
 import { storage } from "../storageInstance";
 
@@ -10,6 +10,7 @@ const jobsRouter = Router();
 const createJobSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
+  privateDetails: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
   trade: z.string().min(1, "Trade is required"),
@@ -18,6 +19,7 @@ const createJobSchema = z.object({
 const updateJobSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
+  privateDetails: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
   trade: z.string().min(1).optional(),
@@ -78,7 +80,7 @@ function parseListFilters(query: unknown) {
     status: statuses,
     region: parseList(raw.region),
     country: parseList(raw.country),
-  trade: parseList(raw.trade),
+    trade: parseList(raw.trade),
   };
 }
 
@@ -109,13 +111,26 @@ function isApprovedBuilder(user: AuthenticatedUser): boolean {
   return user.approved && isBuilder(user.role);
 }
 
+function canViewPrivateDetails(job: Job, user: AuthenticatedUser): boolean {
+  return isAdmin(user.role) || job.ownerId === user.id || job.assigneeId === user.id;
+}
+
+function sanitizeJob(job: Job, user: AuthenticatedUser): Job {
+  if (canViewPrivateDetails(job, user)) {
+    return job;
+  }
+
+  return { ...job, privateDetails: null };
+}
+
 jobsRouter.use(requireAuth);
 
 jobsRouter.get("/", async (req, res, next) => {
   try {
     const filters = parseListFilters(req.query);
+    const user = getUser(res);
     const jobs = await storage.listJobs(filters);
-    res.json({ jobs });
+    res.json({ jobs: jobs.map((job) => sanitizeJob(job, user)) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -139,6 +154,7 @@ jobsRouter.post("/", async (req, res, next) => {
       id: `job_${randomUUID()}`,
       title: payload.title,
       description: payload.description ?? null,
+      privateDetails: payload.privateDetails ?? null,
       region: payload.region ?? null,
       country: payload.country ?? null,
       trade: payload.trade ?? null,
@@ -158,7 +174,7 @@ jobsRouter.post("/", async (req, res, next) => {
       details: { title: job.title },
     });
 
-    res.status(201).json({ job });
+    res.status(201).json({ job: sanitizeJob(job, user) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -199,7 +215,7 @@ jobsRouter.patch("/:id", async (req, res, next) => {
     }
 
     const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() });
-    res.json({ job: updated });
+    res.json({ job: updated ? sanitizeJob(updated, user) : updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -239,7 +255,7 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
       details: { from: job.status, to: payload.status },
     });
 
-    res.json({ job: updated });
+    res.json({ job: updated ? sanitizeJob(updated, user) : updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -291,7 +307,7 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
       details: { previousAssigneeId: job.assigneeId, assigneeId: payload.assigneeId },
     });
 
-    res.json({ job: updated });
+    res.json({ job: updated ? sanitizeJob(updated, user) : updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ message: "Invalid request", issues: error.issues });
@@ -337,7 +353,7 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
       details: { assigneeId: user.id },
     });
 
-    res.json({ job: claimed });
+    res.json({ job: claimed ? sanitizeJob(claimed, user) : claimed });
   } catch (error) {
     next(error);
   }

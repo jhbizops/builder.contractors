@@ -50,6 +50,7 @@ vi.mock("../../storageInstance", () => {
       const record: Job = {
         ...job,
         trade: job.trade ?? null,
+        privateDetails: job.privateDetails ?? null,
         createdAt: job.createdAt ?? new Date(),
         updatedAt: job.updatedAt ?? new Date(),
       };
@@ -371,6 +372,37 @@ describe("jobs router", () => {
     const res = await agent.get("/api/jobs").query({ trade: "framing" }).expect(200);
     expect(res.body.jobs).toHaveLength(1);
     expect(res.body.jobs[0]?.trade).toBe("framing");
+  });
+
+  it("redacts private details for non-collaborators", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const viewer = await createUser({ email: "viewer@example.com" });
+    const job = await storage.createJob({
+      id: "job_private",
+      title: "Secure job",
+      description: "Public scope",
+      privateDetails: "Lockbox code 1234",
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "apac",
+      country: "AU",
+      trade: "electrical",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const ownerAgent = request.agent(app);
+    await loginAgent(ownerAgent, owner.id);
+    const ownerRes = await ownerAgent.get("/api/jobs").expect(200);
+    expect(ownerRes.body.jobs.find((record: Job) => record.id === job.id)?.privateDetails).toBe(
+      "Lockbox code 1234",
+    );
+
+    const viewerAgent = request.agent(app);
+    await loginAgent(viewerAgent, viewer.id);
+    const viewerRes = await viewerAgent.get("/api/jobs").expect(200);
+    expect(viewerRes.body.jobs.find((record: Job) => record.id === job.id)?.privateDetails).toBeNull();
   });
 
   it("allows owners to update details but blocks others", async () => {

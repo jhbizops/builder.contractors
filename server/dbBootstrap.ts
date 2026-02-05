@@ -41,6 +41,7 @@ const bootstrapStatements = [
     id text PRIMARY KEY,
     title text NOT NULL,
     description text,
+    private_details text,
     status text NOT NULL DEFAULT 'open',
     owner_id text NOT NULL,
     assignee_id text,
@@ -185,6 +186,7 @@ const postBootstrapStatements = [
   `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS job_id text`,
   `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb`,
   `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS trade text`,
+  `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS private_details text`,
 ];
 
 async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> {
