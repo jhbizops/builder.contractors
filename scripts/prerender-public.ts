@@ -1,6 +1,5 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { geoPages } from "../client/src/content/geoPages";
 
 type SeoPage = {
@@ -10,7 +9,7 @@ type SeoPage = {
   keywords: string[];
 };
 
-const rootDir = path.dirname(fileURLToPath(new URL("..", import.meta.url)));
+const rootDir = process.cwd();
 const distPublicDir = path.join(rootDir, "dist", "public");
 const baseUrl = process.env.PUBLIC_SITE_URL ?? "https://www.builder.contractors";
 
