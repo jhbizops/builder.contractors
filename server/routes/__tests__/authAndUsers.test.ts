@@ -221,6 +221,7 @@ describe("auth and users routes", () => {
       .expect(201);
 
     expect(registerRes.body.user.email).toBe("tester@example.com");
+    expect(registerRes.body.user.approved).toBe(true);
 
     await agent.get("/api/auth/me").expect(200);
 

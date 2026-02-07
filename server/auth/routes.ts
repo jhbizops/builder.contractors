@@ -84,7 +84,7 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       locale: payload.locale ?? null,
       currency: payload.currency ?? null,
       languages: payload.languages ?? [],
-      approved: false,
+      approved: true,
       passwordHash,
       passwordSalt: salt,
     });
