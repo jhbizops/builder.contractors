@@ -299,6 +299,34 @@ describe("jobs router", () => {
     expect(activity.body.activity[0]?.action).toBe("job_created");
   });
 
+  it("rejects whitespace-only fields when creating a job", async () => {
+    const owner = await createUser();
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    await agent
+      .post("/api/jobs")
+      .send({ title: "   ", region: "  ", trade: "   " })
+      .expect(400);
+
+    const res = await agent
+      .post("/api/jobs")
+      .send({
+        title: "New job",
+        trade: "carpentry",
+        region: "   ",
+        country: "  ",
+        description: "  Scope details  ",
+        privateDetails: "  Private access  ",
+      })
+      .expect(201);
+
+    expect(res.body.job.region).toBeNull();
+    expect(res.body.job.country).toBeNull();
+    expect(res.body.job.description).toBe("Scope details");
+    expect(res.body.job.privateDetails).toBe("Private access");
+  });
+
   it("filters jobs by owner and status", async () => {
     const owner = await createUser();
     const other = await createUser({ email: "other@example.com" });
