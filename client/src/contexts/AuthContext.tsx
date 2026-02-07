@@ -25,7 +25,7 @@ interface AuthContextType {
   currentUser: AuthenticatedUser | null;
   userData: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (
     email: string,
     password: string,
@@ -76,9 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, rememberMe = false) => {
       try {
-        const user = await loginMutation.mutateAsync({ email, password });
+        const user = await loginMutation.mutateAsync({ email, password, rememberMe });
         queryClient.setQueryData(SESSION_QUERY_KEY, user);
         toast({
           title: "Success",

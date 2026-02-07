@@ -34,7 +34,7 @@ describe('Login page', () => {
     await user.click(screen.getByTestId('button-signin'));
 
     await waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith('tester@example.com', 'password123');
+      expect(loginMock).toHaveBeenCalledWith('tester@example.com', 'password123', false);
     });
   });
 
@@ -50,5 +50,21 @@ describe('Login page', () => {
     expect(await screen.findByText(/enter a valid email address/i)).toBeInTheDocument();
     expect(await screen.findByText(/password must be at least 6 characters/i)).toBeInTheDocument();
     expect(loginMock).not.toHaveBeenCalled();
+  });
+
+  it('submits remember me preference', async () => {
+    loginMock.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    render(<Login />);
+
+    await user.type(screen.getByLabelText(/email/i), 'tester@example.com');
+    await user.type(screen.getByLabelText(/^password$/i), 'password123');
+    await user.click(screen.getByLabelText(/keep me signed in/i));
+    await user.click(screen.getByTestId('button-signin'));
+
+    await waitFor(() => {
+      expect(loginMock).toHaveBeenCalledWith('tester@example.com', 'password123', true);
+    });
   });
 });

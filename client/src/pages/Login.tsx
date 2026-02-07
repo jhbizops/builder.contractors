@@ -48,7 +48,7 @@ export default function Login() {
     setIsLoading(true);
     setAuthError(null);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, data.rememberMe ?? false);
     } catch (error) {
       setAuthError('Unable to sign in. Please check your credentials and try again.');
     } finally {
@@ -125,9 +125,9 @@ export default function Login() {
                       onBlur={onBlur}
                       data-testid="checkbox-remember"
                     />
-                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
-                      Keep me signed in on this device
-                    </Label>
+                  <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
+                      Keep me signed in for 30 days on this device
+                  </Label>
                   </div>
                 )}
               />

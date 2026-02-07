@@ -5,7 +5,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { geoDetectionMiddleware } from "./middleware/geoDetection";
 import { pool } from "./db";
-import { SESSION_COOKIE_NAME } from "./session";
+import { DEFAULT_SESSION_MAX_AGE, SESSION_COOKIE_NAME } from "./session";
 
 const PgStore = connectPgSimple(session);
 
@@ -32,7 +32,7 @@ app.use(
       secure: app.get("env") === "production",
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24,
+      maxAge: DEFAULT_SESSION_MAX_AGE,
     },
     unset: "destroy",
   }),

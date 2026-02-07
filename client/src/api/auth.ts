@@ -16,6 +16,7 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export async function registerUser(payload: RegisterPayload): Promise<User> {
