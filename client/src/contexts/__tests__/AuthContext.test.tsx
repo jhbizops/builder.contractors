@@ -113,13 +113,14 @@ describe("AuthContext", () => {
     });
 
     await act(async () => {
-      await result.current.login("tester@example.com", "password123");
+      await result.current.login("tester@example.com", "password123", true);
     });
 
     const loginArgs = mockLogin.mock.calls[0]?.[0];
     expect(loginArgs).toEqual({
       email: "tester@example.com",
       password: "password123",
+      rememberMe: true,
     });
     await waitFor(() => {
       expect(result.current.currentUser?.email).toBe("tester@example.com");

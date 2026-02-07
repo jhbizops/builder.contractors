@@ -2,7 +2,11 @@ import express from "express";
 import session from "express-session";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SESSION_COOKIE_NAME } from "../../session";
+import {
+  DEFAULT_SESSION_MAX_AGE,
+  REMEMBER_ME_SESSION_MAX_AGE,
+  SESSION_COOKIE_NAME,
+} from "../../session";
 import type { User } from "@shared/schema";
 import type { IStorage } from "../../storage";
 import { defaultBillingPlans } from "@shared/billingPlans";
@@ -185,10 +189,49 @@ const createApp = () => {
       saveUninitialized: false,
       store: new MemoryStore(),
       name: SESSION_COOKIE_NAME,
+      cookie: {
+        maxAge: DEFAULT_SESSION_MAX_AGE,
+      },
     }),
   );
   app.use(express.json());
   return app;
+};
+
+const parseMaxAge = (setCookieHeader: string[] | string | undefined) => {
+  if (!setCookieHeader) {
+    return null;
+  }
+  const entries = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+  if (entries.length === 0) {
+    return null;
+  }
+  const cookie = entries.find((entry) => entry.startsWith(`${SESSION_COOKIE_NAME}=`));
+  if (!cookie) {
+    return null;
+  }
+  const match = cookie.match(/Max-Age=(\d+)/i);
+  return match ? Number(match[1]) : null;
+};
+
+const parseExpiryDeltaSeconds = (setCookieHeader: string[] | string | undefined) => {
+  if (!setCookieHeader) {
+    return null;
+  }
+  const entries = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+  const cookie = entries.find((entry) => entry.startsWith(`${SESSION_COOKIE_NAME}=`));
+  if (!cookie) {
+    return null;
+  }
+  const match = cookie.match(/Expires=([^;]+)/i);
+  if (!match) {
+    return null;
+  }
+  const expiresAt = Date.parse(match[1]);
+  if (Number.isNaN(expiresAt)) {
+    return null;
+  }
+  return Math.round((expiresAt - Date.now()) / 1000);
 };
 
 describe("auth and users routes", () => {
@@ -237,6 +280,37 @@ describe("auth and users routes", () => {
       .post("/api/auth/login")
       .send({ email: "tester@example.com", password: "WrongPassword" })
       .expect(401);
+  });
+
+  it("extends session duration when remember me is enabled", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "fast@login.com", password: "Password123!" })
+      .expect(201);
+
+    const rememberRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "fast@login.com", password: "Password123!", rememberMe: true })
+      .expect(200);
+
+    const rememberMaxAge =
+      parseMaxAge(rememberRes.headers["set-cookie"]) ??
+      parseExpiryDeltaSeconds(rememberRes.headers["set-cookie"]);
+    expect(rememberMaxAge).not.toBeNull();
+    expect(rememberMaxAge).toBeGreaterThanOrEqual(REMEMBER_ME_SESSION_MAX_AGE / 1000 - 5);
+    expect(rememberMaxAge).toBeLessThanOrEqual(REMEMBER_ME_SESSION_MAX_AGE / 1000 + 5);
+
+    const defaultRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "fast@login.com", password: "Password123!", rememberMe: false })
+      .expect(200);
+
+    const defaultMaxAge =
+      parseMaxAge(defaultRes.headers["set-cookie"]) ??
+      parseExpiryDeltaSeconds(defaultRes.headers["set-cookie"]);
+    expect(defaultMaxAge).not.toBeNull();
+    expect(defaultMaxAge).toBeGreaterThanOrEqual(DEFAULT_SESSION_MAX_AGE / 1000 - 5);
+    expect(defaultMaxAge).toBeLessThanOrEqual(DEFAULT_SESSION_MAX_AGE / 1000 + 5);
   });
 
   it("allows admins to list and approve users", async () => {

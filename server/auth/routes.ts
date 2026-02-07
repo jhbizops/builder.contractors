@@ -5,7 +5,7 @@ import { storage } from "../storageInstance";
 import { generateSalt, hashPassword, verifyPassword } from "./authCrypto";
 import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
-import { SESSION_COOKIE_NAME } from "../session";
+import { DEFAULT_SESSION_MAX_AGE, REMEMBER_ME_SESSION_MAX_AGE, SESSION_COOKIE_NAME } from "../session";
 import { toPublicUser } from "../users/serializers";
 import { getBillingService } from "../billing/instance";
 import { authLoginRateLimit, authRegisterRateLimit } from "../middleware/authRateLimit";
@@ -26,6 +26,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional(),
 });
 
 function ensureSessionRegenerated(req: Request): Promise<void> {
@@ -130,6 +131,12 @@ const loginHandler: RequestHandler = async (req, res, next) => {
     }
 
     await ensureSessionRegenerated(req);
+    const sessionMaxAge = payload.rememberMe
+      ? REMEMBER_ME_SESSION_MAX_AGE
+      : DEFAULT_SESSION_MAX_AGE;
+    req.session.cookie.maxAge = sessionMaxAge;
+    req.session.cookie.expires = new Date(Date.now() + sessionMaxAge);
+    req.session.cookie.originalMaxAge = sessionMaxAge;
     req.session.userId = user.id;
     req.session.userRole = user.role;
     await saveSession(req);
