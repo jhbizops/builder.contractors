@@ -9,13 +9,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { CreateJobPayload } from "@/api/jobs";
 
+const optionalTrimmedString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}, z.string().optional());
+
 const jobFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  trade: z.string().min(1, "Trade is required"),
-  region: z.string().optional(),
-  country: z.string().optional(),
-  description: z.string().optional(),
-  privateDetails: z.string().optional(),
+  title: z.string().trim().min(1, "Title is required"),
+  trade: z.string().trim().min(1, "Trade is required"),
+  region: optionalTrimmedString,
+  country: optionalTrimmedString,
+  description: optionalTrimmedString,
+  privateDetails: optionalTrimmedString,
 });
 
 type JobFormValues = z.infer<typeof jobFormSchema>;

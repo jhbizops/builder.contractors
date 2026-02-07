@@ -7,22 +7,31 @@ import { storage } from "../storageInstance";
 
 const jobsRouter = Router();
 
+const requiredTrimmedString = (message: string) => z.string().trim().min(1, message);
+const optionalTrimmedString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}, z.string().optional());
+
 const createJobSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  privateDetails: z.string().optional(),
-  region: z.string().optional(),
-  country: z.string().optional(),
-  trade: z.string().min(1, "Trade is required"),
+  title: requiredTrimmedString("Title is required"),
+  description: optionalTrimmedString,
+  privateDetails: optionalTrimmedString,
+  region: optionalTrimmedString,
+  country: optionalTrimmedString,
+  trade: requiredTrimmedString("Trade is required"),
 });
 
 const updateJobSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  privateDetails: z.string().optional(),
-  region: z.string().optional(),
-  country: z.string().optional(),
-  trade: z.string().min(1).optional(),
+  title: z.string().trim().min(1).optional(),
+  description: optionalTrimmedString,
+  privateDetails: optionalTrimmedString,
+  region: optionalTrimmedString,
+  country: optionalTrimmedString,
+  trade: z.string().trim().min(1).optional(),
 });
 
 const statusSchema = z.object({
