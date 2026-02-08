@@ -42,6 +42,11 @@ const assignSchema = z.object({
   assigneeId: z.string().nullable(),
 });
 
+const inviteSchema = z.object({
+  emails: z.array(z.string().email()).min(1, "At least one email is required").max(10),
+  message: optionalTrimmedString,
+});
+
 const filterSchema = z.object({
   ownerId: z.string().optional(),
   assigneeId: z.string().optional(),
@@ -364,6 +369,59 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
 
     res.json({ job: claimed ? sanitizeJob(claimed, user) : claimed });
   } catch (error) {
+    next(error);
+  }
+});
+
+jobsRouter.post("/:id/invite", async (req, res, next) => {
+  try {
+    const payload = inviteSchema.parse(req.body);
+    const job = await storage.getJob(req.params.id);
+    const user = getUser(res);
+
+    if (!job) {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    if (!isApprovedBuilder(user) && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Approval required to invite collaborators" });
+      return;
+    }
+
+    if (job.ownerId !== user.id && !isAdmin(user.role)) {
+      res.status(403).json({ message: "Only job owners can invite collaborators" });
+      return;
+    }
+
+    const normalizedEmails = Array.from(
+      new Set(payload.emails.map((email) => email.trim().toLowerCase())),
+    );
+
+    await storage.addActivityLog({
+      id: `log_${randomUUID()}`,
+      jobId: job.id,
+      leadId: null,
+      action: "job_invite_sent",
+      performedBy: user.id,
+      details: {
+        invited: normalizedEmails,
+        message: payload.message ?? null,
+      },
+    });
+
+    res.status(201).json({
+      invite: {
+        jobId: job.id,
+        invited: normalizedEmails,
+        message: payload.message ?? null,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
     next(error);
   }
 });

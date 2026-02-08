@@ -56,6 +56,17 @@ export interface CreateJobPayload {
   trade: string;
 }
 
+export interface JobInvitePayload {
+  emails: string[];
+  message?: string;
+}
+
+const jobInviteSchema = z.object({
+  jobId: z.string(),
+  invited: z.array(z.string().email()),
+  message: z.string().nullable(),
+});
+
 export const jobsKeyRoot = ["jobs"] as const;
 export const jobsQueryKey = (filters: JobFilters = {}) => [...jobsKeyRoot, filters] as const;
 
@@ -121,6 +132,13 @@ export async function claimJob(id: string): Promise<Job> {
   const json = await res.json();
   const parsed = z.object({ job: jobSchema }).parse(json);
   return mapJob(parsed.job);
+}
+
+export async function inviteToJob(id: string, payload: JobInvitePayload) {
+  const res = await apiRequest("POST", `/api/jobs/${id}/invite`, payload);
+  const json = await res.json();
+  const parsed = z.object({ invite: jobInviteSchema }).parse(json);
+  return parsed.invite;
 }
 
 export async function fetchJobActivity(id: string): Promise<ActivityLog[]> {

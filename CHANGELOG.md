@@ -15,6 +15,7 @@
 - Added a Job Board page with trade/region/status filters, claim and collaboration actions, and a shared job creation modal.
 - Extended the builder dashboard with job tabs (My jobs/Shared with me), assignment/status controls, comment/file threads, and trade-aware job metadata with approval checks.
 - Refined the Job Board with allocation readiness signals, trade-focused workflow guidance, and operational summary cards for builders.
+- Added job invite workflow for owners, including invite logging in job activity and dashboard UI controls.
 - Added ads, ad creatives, and ad reviews data models plus moderated ad management routes with AI review capture.
 - Added an ads delivery endpoint with targeting/cap filtering and a client AdSlot that renders only when creatives are returned.
 - Enabled remember-me login sessions (30-day cookie) and clarified the sign-in UX for faster access.

@@ -576,6 +576,62 @@ describe("jobs router", () => {
     expect(res.body.job.assigneeId).toBe(assignee.id);
   });
 
+  it("allows job owners to invite collaborators and records activity", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const job = await storage.createJob({
+      id: "job_invite",
+      title: "Invite needed",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "apac",
+      country: "AU",
+      trade: "painting",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    const response = await agent
+      .post(`/api/jobs/${job.id}/invite`)
+      .send({ emails: ["Invitee@Example.com", "second@example.com"], message: "Join this job" })
+      .expect(201);
+
+    expect(response.body.invite.invited).toEqual(["invitee@example.com", "second@example.com"]);
+
+    const activity = await agent.get(`/api/jobs/${job.id}/activity`).expect(200);
+    expect(activity.body.activity.find((log: ActivityLog) => log.action === "job_invite_sent")).toBeDefined();
+  });
+
+  it("blocks non-owners from inviting collaborators", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const other = await createUser({ email: "other@example.com" });
+    const job = await storage.createJob({
+      id: "job_invite_guard",
+      title: "Invite guard",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      assigneeId: null,
+      region: "na",
+      country: "US",
+      trade: "roofing",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, other.id);
+
+    await agent
+      .post(`/api/jobs/${job.id}/invite`)
+      .send({ emails: ["partner@example.com"] })
+      .expect(403);
+  });
+
   it("allows collaborators to request access and stores activity", async () => {
     const owner = await createUser({ email: "owner@example.com" });
     const collaborator = await createUser({ email: "collab@example.com" });
