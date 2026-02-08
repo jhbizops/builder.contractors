@@ -71,6 +71,13 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
   
   const selectedCountry = countries.find(c => c.code === selected);
   
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setSearchValue('');
+    }
+  };
+
   const handleSelect = (countryCode: string) => {
     const country = countries.find(c => c.code === countryCode);
     if (country) {
@@ -85,7 +92,7 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -116,7 +123,10 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[350px] p-0" align="start">
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] min-w-[240px] p-0"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search countries..."
