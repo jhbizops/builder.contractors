@@ -118,6 +118,7 @@ export interface UserProfile {
   subscription: Subscription | null;
   entitlements: string[];
   quotas: PlanQuota;
+  hasEntitlementsRecord?: boolean;
 }
 
 export type AdInsightsRow = {
@@ -305,7 +306,14 @@ export class DatabaseStorage implements IStorage {
     const entitlements = userEntitlementRecord?.features ?? plan.entitlements;
     const quotas = userEntitlementRecord?.quotas ?? plan.quotas;
 
-    return { user, subscription, plan, entitlements, quotas };
+    return {
+      user,
+      subscription,
+      plan,
+      entitlements,
+      quotas,
+      hasEntitlementsRecord: Boolean(userEntitlementRecord),
+    };
   }
 
   async createJob(job: InsertJob): Promise<Job> {

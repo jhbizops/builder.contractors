@@ -47,6 +47,7 @@ export class BillingService {
     }
 
     let hydratedProfile = profile;
+    let hasEntitlementsRecord = profile.hasEntitlementsRecord ?? false;
 
     if (!profile.subscription) {
       await this.db.upsertSubscription({
@@ -63,13 +64,16 @@ export class BillingService {
       });
 
       hydratedProfile = (await this.db.getUserProfile(userId)) ?? profile;
+      hasEntitlementsRecord = hydratedProfile.hasEntitlementsRecord ?? hasEntitlementsRecord;
     }
 
-    await this.db.upsertUserEntitlements({
-      userId: hydratedProfile.user.id,
-      features: hydratedProfile.entitlements,
-      quotas: hydratedProfile.quotas,
-    });
+    if (!hasEntitlementsRecord) {
+      await this.db.upsertUserEntitlements({
+        userId: hydratedProfile.user.id,
+        features: hydratedProfile.entitlements,
+        quotas: hydratedProfile.quotas,
+      });
+    }
 
     return hydratedProfile;
   }
