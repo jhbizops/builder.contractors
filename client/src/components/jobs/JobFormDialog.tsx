@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import type { CreateJobPayload } from "@/api/jobs";
 
 const optionalTrimmedString = z.preprocess((value) => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   if (typeof value !== "string") {
     return value;
   }

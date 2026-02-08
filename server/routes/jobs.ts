@@ -9,6 +9,9 @@ const jobsRouter = Router();
 
 const requiredTrimmedString = (message: string) => z.string().trim().min(1, message);
 const optionalTrimmedString = z.preprocess((value) => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   if (typeof value !== "string") {
     return value;
   }

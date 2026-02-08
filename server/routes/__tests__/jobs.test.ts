@@ -327,6 +327,29 @@ describe("jobs router", () => {
     expect(res.body.job.privateDetails).toBe("Private access");
   });
 
+  it("accepts null optional fields when creating a job", async () => {
+    const owner = await createUser();
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    const res = await agent
+      .post("/api/jobs")
+      .send({
+        title: "Null safe job",
+        trade: "carpentry",
+        region: null,
+        country: null,
+        description: null,
+        privateDetails: null,
+      })
+      .expect(201);
+
+    expect(res.body.job.region).toBeNull();
+    expect(res.body.job.country).toBeNull();
+    expect(res.body.job.description).toBeNull();
+    expect(res.body.job.privateDetails).toBeNull();
+  });
+
   it("filters jobs by owner and status", async () => {
     const owner = await createUser();
     const other = await createUser({ email: "other@example.com" });
