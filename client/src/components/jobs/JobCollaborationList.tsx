@@ -25,6 +25,7 @@ interface JobCollaborationListProps {
   onStatusChange: (jobId: string, status: Job["status"]) => Promise<void>;
   onAssignToMe: (job: Job, assigneeId: string | null) => Promise<void>;
   canAssign?: (job: Job) => boolean;
+  canInvite?: (job: Job) => boolean;
 }
 
 export function JobCollaborationList({
@@ -36,6 +37,7 @@ export function JobCollaborationList({
   onStatusChange,
   onAssignToMe,
   canAssign,
+  canInvite,
 }: JobCollaborationListProps) {
   const { toast } = useToast();
   if (isLoading) {
@@ -51,6 +53,7 @@ export function JobCollaborationList({
       {jobs.map((job) => {
         const isAssignedToUser = job.assigneeId === currentUserId;
         const allowAssignment = canAssign ? canAssign(job) : canManage;
+        const allowInvite = canInvite ? canInvite(job) : canManage;
         const shareUrl = buildJobShareUrl(job.id);
         const handleShare = async () => {
           try {
@@ -125,7 +128,12 @@ export function JobCollaborationList({
                   <p className="text-xs text-amber-700">{permissionReason}</p>
                 )}
               </div>
-              <JobActivityPanel jobId={job.id} canCollaborate={canManage} disabledReason={permissionReason} />
+              <JobActivityPanel
+                jobId={job.id}
+                canCollaborate={canManage}
+                canInvite={allowInvite}
+                disabledReason={permissionReason}
+              />
             </AccordionContent>
           </AccordionItem>
         );

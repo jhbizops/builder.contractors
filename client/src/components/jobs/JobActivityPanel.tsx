@@ -1,7 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { fetchJobActivity, createJobActivity, type CreateJobActivityPayload } from "@/api/jobs";
+import {
+  fetchJobActivity,
+  createJobActivity,
+  inviteToJob,
+  type CreateJobActivityPayload,
+} from "@/api/jobs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +19,7 @@ import type { ActivityLog, JobAttachment } from "@/types";
 interface JobActivityPanelProps {
   jobId: string;
   canCollaborate: boolean;
+  canInvite: boolean;
   disabledReason?: string | null;
 }
 
@@ -22,11 +28,13 @@ function buildAttachment(name?: string, url?: string): JobAttachment | undefined
   return { name, url: url || undefined };
 }
 
-export function JobActivityPanel({ jobId, canCollaborate, disabledReason }: JobActivityPanelProps) {
+export function JobActivityPanel({ jobId, canCollaborate, canInvite, disabledReason }: JobActivityPanelProps) {
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
   const [attachmentName, setAttachmentName] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [inviteEmails, setInviteEmails] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
 
   const { data: activity = [], isPending } = useQuery({
     queryKey: ["job-activity", jobId],
@@ -49,7 +57,31 @@ export function JobActivityPanel({ jobId, canCollaborate, disabledReason }: JobA
     },
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: ({ emails, message }: { emails: string[]; message?: string }) =>
+      inviteToJob(jobId, { emails, message }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["job-activity", jobId] });
+      setInviteEmails("");
+      setInviteMessage("");
+      toast({ title: "Invites sent", description: "Your collaborators were invited." });
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Failed to send invites";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
   const hasAttachment = useMemo(() => attachmentName.trim().length > 0, [attachmentName]);
+  const parsedInviteEmails = useMemo(
+    () =>
+      inviteEmails
+        .split(/[,\\s]+/)
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    [inviteEmails],
+  );
+  const canSubmitInvites = canInvite && parsedInviteEmails.length > 0 && !inviteMutation.isPending;
 
   const submitUpdate = (kind: CreateJobActivityPayload["kind"]) => {
     if (!note.trim() || !canCollaborate) return;
@@ -61,9 +93,46 @@ export function JobActivityPanel({ jobId, canCollaborate, disabledReason }: JobA
     });
   };
 
+  const submitInvites = () => {
+    if (!canSubmitInvites) return;
+    inviteMutation.mutate({
+      emails: parsedInviteEmails,
+      message: inviteMessage.trim() ? inviteMessage.trim() : undefined,
+    });
+  };
+
   return (
     <Card className="border border-slate-200">
       <CardContent className="space-y-4 pt-4">
+        <div className="space-y-2">
+          <Label htmlFor={`invite-emails-${jobId}`}>Invite collaborators</Label>
+          {!canInvite && disabledReason && (
+            <p className="text-xs text-amber-600" role="status">
+              {disabledReason}
+            </p>
+          )}
+          <Input
+            id={`invite-emails-${jobId}`}
+            placeholder="Add emails separated by commas or spaces"
+            value={inviteEmails}
+            onChange={(event) => setInviteEmails(event.target.value)}
+            disabled={!canInvite}
+          />
+          <Textarea
+            id={`invite-message-${jobId}`}
+            placeholder="Optional message"
+            value={inviteMessage}
+            onChange={(event) => setInviteMessage(event.target.value)}
+            rows={2}
+            disabled={!canInvite}
+          />
+          <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+            <span>{parsedInviteEmails.length} email(s) ready</span>
+            <Button size="sm" onClick={submitInvites} disabled={!canSubmitInvites}>
+              {inviteMutation.isPending ? "Sending..." : "Send invites"}
+            </Button>
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor={`note-${jobId}`}>Comments & files</Label>
           {!canCollaborate && disabledReason && (

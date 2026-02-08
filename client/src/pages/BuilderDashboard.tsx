@@ -119,6 +119,7 @@ export default function BuilderDashboard() {
   };
 
   const canAssignJob = (job: Job) => jobAccess.canCollaborate && (isAdmin || job.ownerId === userData?.id);
+  const canInviteJob = (job: Job) => jobAccess.canCollaborate && (isAdmin || job.ownerId === userData?.id);
 
   return (
     <ProtectedRoute requiredRole={['builder', 'dual']}>
@@ -316,6 +317,7 @@ export default function BuilderDashboard() {
                     onStatusChange={handleStatusChange}
                     onAssignToMe={(job, assigneeId) => handleAssign(job, assigneeId)}
                     canAssign={canAssignJob}
+                    canInvite={canInviteJob}
                   />
                 </TabsContent>
                 <TabsContent value="shared">
@@ -328,6 +330,7 @@ export default function BuilderDashboard() {
                     onStatusChange={handleStatusChange}
                     onAssignToMe={(job, assigneeId) => handleAssign(job, assigneeId)}
                     canAssign={canAssignJob}
+                    canInvite={canInviteJob}
                   />
                 </TabsContent>
               </Tabs>
