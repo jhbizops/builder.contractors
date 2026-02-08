@@ -12,6 +12,7 @@ class InMemoryStorage {
   private users = new Map<string, schema.User>();
   private subs = new Map<string, schema.Subscription>();
   private entitlements = new Map<string, schema.UserEntitlement>();
+  upsertEntitlementsCalls = 0;
 
   async getUser(id: string) {
     return this.users.get(id);
@@ -92,6 +93,7 @@ class InMemoryStorage {
       updatedAt: new Date(),
     } as schema.UserEntitlement;
     this.entitlements.set(data.userId, record);
+    this.upsertEntitlementsCalls += 1;
     return record;
   }
 
@@ -102,10 +104,18 @@ class InMemoryStorage {
     const plan = this.plans.find((plan) => plan.id === (subscription?.planId ?? "free"));
     if (!plan) return null;
 
-    const entitlements = this.entitlements.get(userId)?.features ?? plan.entitlements;
-    const quotas = this.entitlements.get(userId)?.quotas ?? plan.quotas;
+    const entitlementRecord = this.entitlements.get(userId);
+    const entitlements = entitlementRecord?.features ?? plan.entitlements;
+    const quotas = entitlementRecord?.quotas ?? plan.quotas;
 
-    return { user, subscription, plan, entitlements, quotas } as UserProfile;
+    return {
+      user,
+      subscription,
+      plan,
+      entitlements,
+      quotas,
+      hasEntitlementsRecord: Boolean(entitlementRecord),
+    } as UserProfile;
   }
 }
 
@@ -144,5 +154,46 @@ describe("BillingService", () => {
     expect(profile?.plan.id).toBe("free");
     expect(profile?.entitlements).toContain("dashboard.basic");
     expect(profile?.quotas.leads).toBeGreaterThan(0);
+  });
+
+  it("avoids rewriting entitlements when already hydrated", async () => {
+    const user = await storage.createUser({
+      id: "user_2",
+      email: "fast@example.com",
+      role: "sales",
+      country: null,
+      region: null,
+      locale: null,
+      currency: null,
+      languages: [],
+      approved: true,
+      passwordHash: "hash",
+      passwordSalt: "salt",
+    });
+
+    await storage.upsertSubscription({
+      id: "sub_user_2",
+      userId: user.id,
+      planId: "free",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      provider: "stripe",
+      providerCustomerId: null,
+      providerSubscriptionId: null,
+      metadata: {},
+    });
+
+    await storage.upsertUserEntitlements({
+      userId: user.id,
+      features: ["dashboard.basic"],
+      quotas: { leads: 50, seats: 1, storageGb: 1, workspaces: 1 },
+    });
+
+    storage.upsertEntitlementsCalls = 0;
+    const profile = await service.getUserBilling(user.id);
+
+    expect(profile?.entitlements).toContain("dashboard.basic");
+    expect(storage.upsertEntitlementsCalls).toBe(0);
   });
 });
