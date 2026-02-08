@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         queryClient.setQueryData(SESSION_QUERY_KEY, user);
         toast({
           title: "Success",
-          description: "Account created successfully. Waiting for admin approval.",
+          description: "Account created successfully.",
         });
       } catch (error) {
         const message = extractErrorMessage(error);

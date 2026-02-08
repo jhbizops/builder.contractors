@@ -76,7 +76,7 @@ export function JobActivityPanel({ jobId, canCollaborate, canInvite, disabledRea
   const parsedInviteEmails = useMemo(
     () =>
       inviteEmails
-        .split(/[,\\s]+/)
+        .split(/[,\s]+/)
         .map((value) => value.trim())
         .filter((value) => value.length > 0),
     [inviteEmails],
