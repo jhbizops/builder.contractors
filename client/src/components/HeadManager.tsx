@@ -17,6 +17,7 @@ type HeadManagerProps = {
 const DEFAULT_SITE_NAME = "Builder.Contractors";
 const DEFAULT_IMAGE_URL = "https://www.builder.contractors/og-image.jpg";
 const DEFAULT_TWITTER_IMAGE_URL = "https://www.builder.contractors/twitter-image.jpg";
+const DEFAULT_ROBOTS_CONTENT = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
 const ensureMetaTag = (selector: string, attributes: Record<string, string>) => {
   const existing = document.head.querySelector<HTMLMetaElement>(selector);
@@ -67,6 +68,16 @@ export function HeadManager({
 
     ensureMetaTag('meta[name="title"]', { name: "title" }).setAttribute("content", title);
     ensureMetaTag('meta[name="description"]', { name: "description" }).setAttribute("content", description);
+    ensureMetaTag('meta[name="robots"]', { name: "robots" }).setAttribute("content", DEFAULT_ROBOTS_CONTENT);
+    ensureMetaTag('meta[name="googlebot"]', { name: "googlebot" }).setAttribute(
+      "content",
+      DEFAULT_ROBOTS_CONTENT,
+    );
+    ensureMetaTag('meta[name="bingbot"]', { name: "bingbot" }).setAttribute("content", DEFAULT_ROBOTS_CONTENT);
+    ensureMetaTag('meta[property="article:publisher"]', { property: "article:publisher" }).setAttribute(
+      "content",
+      siteName,
+    );
     if (keywordContent) {
       ensureMetaTag('meta[name="keywords"]', { name: "keywords" }).setAttribute("content", keywordContent);
     }
@@ -106,6 +117,12 @@ export function HeadManager({
     );
 
     ensureLinkTag('link[rel="canonical"]', { rel: "canonical" }).setAttribute("href", canonicalUrl);
+    ensureLinkTag('link[rel="author"]', { rel: "author" }).setAttribute("href", `${baseUrl}/about`);
+    ensureLinkTag('link[rel="help"]', { rel: "help" }).setAttribute("href", `${baseUrl}/faq`);
+    ensureLinkTag('link[rel="alternate"][type="text/plain"]', {
+      rel: "alternate",
+      type: "text/plain",
+    }).setAttribute("href", `${baseUrl}/llms.txt`);
 
     const managedAlternates = document.head.querySelectorAll<HTMLLinkElement>(
       'link[rel="alternate"][data-managed="head-manager"]',

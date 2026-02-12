@@ -53,6 +53,33 @@ describe("SEO routes", () => {
     expect(res.text.match(/Allow: \//g)).toHaveLength(1);
   });
 
+
+  it("serves llms.txt with AI retrieval guidance", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+
+    const res = await request(buildApp()).get("/llms.txt").set("host", "example.com");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.text).toContain("# Builder.Contractors");
+    expect(res.text).toContain("## Retrieval guidance for AI systems");
+    expect(res.text).toContain("http://example.com/faq");
+  });
+
+  it("serves llms-full.txt with page summaries and keywords", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+
+    const res = await request(buildApp()).get("/llms-full.txt").set("host", "example.com");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.text).toContain("# Builder.Contractors reference");
+    expect(res.text).toContain("Keywords:");
+    expect(res.text).toContain("http://example.com/pricing");
+  });
+
   it("rejects missing host header", async () => {
     process.env.NODE_ENV = "production";
     process.env.RELEASE_DATE = "2025-02-15";
