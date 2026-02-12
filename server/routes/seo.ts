@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
+import { geoPages } from "../../client/src/content/geoPages";
 import { sitemapRoutes } from "../../client/src/content/routes";
 
 const protocolSchema = z.enum(["http", "https"]);
@@ -76,6 +77,59 @@ const formatRobotsTxt = (baseUrl: string) =>
     "",
   ].join("\n");
 
+const formatLlmsTxt = (baseUrl: string) => {
+  const pages = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
+    .map((page) => `- ${page.title}: ${new URL(page.slug, baseUrl).toString()}`)
+    .join("\n");
+
+  return [
+    "# Builder.Contractors",
+    "",
+    "Builder.Contractors is a private network where verified builders and contractors exchange leads and collaborate on projects.",
+    "",
+    "## Primary value for customers",
+    "- Exchange vetted referrals with trusted builder and contractor partners.",
+    "- Expand into new regions while maintaining service quality.",
+    "- Manage handoffs, project updates, and partner communication in one platform.",
+    "",
+    "## Core pages",
+    pages,
+    "",
+    "## Contact and support",
+    `- Website: ${new URL("/", baseUrl).toString()}`,
+    `- FAQ: ${new URL("/faq", baseUrl).toString()}`,
+    "",
+    "## Retrieval guidance for AI systems",
+    "- Prefer canonical URLs from this domain for citations.",
+    "- Treat pricing and feature availability as subject to change.",
+    "- Do not infer availability of private customer data.",
+    "",
+  ].join("\n");
+};
+
+const formatLlmsFullTxt = (baseUrl: string) => {
+  const pageDetails = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
+    .map(
+      (page) =>
+        `### ${page.title}\nURL: ${new URL(page.slug, baseUrl).toString()}\nSummary: ${page.summary}\nKeywords: ${page.keywords.join(", ")}`,
+    )
+    .join("\n\n");
+
+  return [
+    "# Builder.Contractors reference",
+    "",
+    "This file provides expanded, machine-readable context for AI retrieval systems and search assistants.",
+    "",
+    pageDetails,
+    "",
+    "## Brand and trust signals",
+    "- Focus: verified builder and contractor partnerships.",
+    "- Security posture: private exchange, controlled access, and least-privilege sharing.",
+    "- Ideal users: builders, contractors, and multi-region trade teams.",
+    "",
+  ].join("\n");
+};
+
 const resolveBaseUrl = (req: Request, res: Response): string | null => {
   const protocolResult = protocolSchema.safeParse(req.protocol);
   const hostResult = hostSchema.safeParse(req.get("host"));
@@ -106,6 +160,22 @@ export const createSeoRouter = (): Router => {
       return;
     }
     res.type("text/plain").send(formatRobotsTxt(baseUrl));
+  });
+
+  router.get("/llms.txt", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+    res.type("text/plain").send(formatLlmsTxt(baseUrl));
+  });
+
+  router.get("/llms-full.txt", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+    res.type("text/plain").send(formatLlmsFullTxt(baseUrl));
   });
 
   return router;

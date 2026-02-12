@@ -48,6 +48,7 @@ export const buildOrganizationWebsiteStructuredData = (
       logo: `${url}/og-image.jpg`,
       description,
       sameAs: [],
+      areaServed: "Global",
     },
     {
       "@type": "WebSite",
@@ -55,6 +56,11 @@ export const buildOrganizationWebsiteStructuredData = (
       url: `${url}/`,
       name: "Builder.Contractors",
       description,
+      inLanguage: "en",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${url}/faq`,
+      },
     },
     {
       "@type": "WebPage",
@@ -65,6 +71,24 @@ export const buildOrganizationWebsiteStructuredData = (
       isPartOf: {
         "@id": `${url}/#website`,
       },
+      about: {
+        "@id": `${url}/#organization`,
+      },
+    },
+    {
+      "@type": "Service",
+      "@id": `${url}/#service`,
+      name: "Builder and contractor lead exchange network",
+      serviceType: "Lead exchange and contractor collaboration",
+      provider: {
+        "@id": `${url}/#organization`,
+      },
+      areaServed: "Global",
+      audience: {
+        "@type": "BusinessAudience",
+        audienceType: "Builders and contractors",
+      },
+      description,
     },
   ],
 });

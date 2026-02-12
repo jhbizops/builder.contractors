@@ -19,6 +19,12 @@ Copy `.env.example` to `.env` and set:
 - `RELEASE_DATE` (YYYY-MM-DD) for sitemap lastmod generation
 - Stripe billing keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ENTERPRISE`, `STRIPE_WEBHOOK_SECRET`
 
+
+## SEO and GEO
+- Public crawler endpoints: `/sitemap.xml`, `/robots.txt`, `/llms.txt`, and `/llms-full.txt`.
+- Marketing pages inject canonical, hreflang alternates, social metadata, and crawler directives (`robots`, `googlebot`, `bingbot`) via `HeadManager`.
+- Home page publishes expanded JSON-LD for `Organization`, `WebSite`, `WebPage`, and `Service` entities to improve search and AI retrieval context.
+
 ## Billing flows
 - Plans and quotas are stored in `shared/schema.ts` and seeded on server start.
 - Server endpoints: `/api/billing/plans`, `/api/billing/subscription`, `/api/billing/checkout`, `/api/billing/cancel`, `/api/billing/webhook`.

@@ -31,9 +31,11 @@ describe("structured data helpers", () => {
     const data = buildOrganizationWebsiteStructuredData(geoPages.home.title, geoPages.home.summary);
     const graph = data["@graph"] as Array<Record<string, unknown>>;
 
-    expect(graph).toHaveLength(3);
+    expect(graph).toHaveLength(4);
     expect(graph[0]?.["@type"]).toBe("Organization");
     expect(graph[1]?.["@type"]).toBe("WebSite");
     expect(graph[2]?.["@type"]).toBe("WebPage");
+    expect(graph[3]?.["@type"]).toBe("Service");
+    expect((graph[1]?.potentialAction as Record<string, unknown>)?.["@type"]).toBe("SearchAction");
   });
 });

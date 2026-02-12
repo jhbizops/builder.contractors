@@ -33,6 +33,9 @@ describe('HeadManager', () => {
     const canonicalUrl = `${window.location.origin}/about`;
 
     expect(getMeta('meta[name="description"]')?.content).toBe('About page description.');
+    expect(getMeta('meta[name="robots"]')?.content).toContain('index,follow');
+    expect(getMeta('meta[name="googlebot"]')?.content).toContain('max-image-preview:large');
+    expect(getMeta('meta[name="bingbot"]')?.content).toContain('max-snippet:-1');
     expect(getMeta('meta[name="keywords"]')?.content).toBe('builders, contractors');
     expect(getMeta('meta[property="og:title"]')?.content).toBe('About Builder.Contractors');
     expect(getMeta('meta[property="og:description"]')?.content).toBe('About page description.');
@@ -42,6 +45,9 @@ describe('HeadManager', () => {
     expect(getMeta('meta[property="twitter:url"]')?.content).toBe(canonicalUrl);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       canonicalUrl,
+    );
+    expect(document.head.querySelector('link[rel="alternate"][type="text/plain"]')?.getAttribute('href')).toBe(
+      `${window.location.origin}/llms.txt`,
     );
     expect(document.head.querySelector('link[rel="alternate"][hreflang="x-default"]')?.getAttribute('href')).toBe(
       canonicalUrl,
