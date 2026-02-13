@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,15 @@ const jobFormSchema = z.object({
 
 type JobFormValues = z.infer<typeof jobFormSchema>;
 
+const defaultValues: JobFormValues = {
+  title: "",
+  trade: "",
+  region: "",
+  country: "",
+  description: "",
+  privateDetails: "",
+};
+
 interface JobFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,16 +64,24 @@ export function JobFormDialog({
     formState: { errors },
   } = useForm<JobFormValues>({
     resolver: zodResolver(jobFormSchema),
-    defaultValues: {
-      title: "",
-      trade: "",
-      region: "",
-      country: "",
-      description: "",
-      privateDetails: "",
-    },
+    defaultValues,
   });
 
+
+  const wasOpenRef = useRef(open);
+
+  useEffect(() => {
+    if (!wasOpenRef.current && open) {
+      reset(defaultValues);
+    }
+    wasOpenRef.current = open;
+  }, [open, reset]);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      reset(defaultValues);
+    }
+    onOpenChange(nextOpen);
+  };
   const onFormSubmit = async (values: JobFormValues) => {
     await onSubmit({
       title: values.title.trim(),
@@ -74,14 +91,17 @@ export function JobFormDialog({
       description: values.description?.trim() || undefined,
       privateDetails: values.privateDetails?.trim() || undefined,
     });
-    reset();
+    reset(defaultValues);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Post a job</DialogTitle>
+          <DialogDescription>
+            Create a job card with trade, location, and collaboration details for your team.
+          </DialogDescription>
           {disableReason && (
             <p className="text-sm text-amber-600 mt-2">{disableReason}</p>
           )}
@@ -120,7 +140,7 @@ export function JobFormDialog({
             </p>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+            <Button variant="ghost" type="button" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={disableSubmit || isSubmitting}>
