@@ -57,6 +57,10 @@ billingRouter.post("/checkout", requireAuth, async (req, res, next) => {
     const session = await billingService.createCheckoutSession(user.id, req.body);
     res.json(session);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
     next(error);
   }
 });
@@ -74,6 +78,10 @@ billingRouter.post("/cancel", requireAuth, async (req, res, next) => {
     const subscription = await billingService.cancelSubscription(user.id);
     res.json({ subscription });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
     next(error);
   }
 });
