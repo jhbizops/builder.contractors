@@ -79,11 +79,12 @@ export class BillingService {
   }
 
   async createCheckoutSession(userId: string, input: unknown): Promise<{ url: string }> {
+    const payload = checkoutSchema.parse(input);
+
     if (!this.stripeClient) {
       throw new Error("Stripe is not configured");
     }
 
-    const payload = checkoutSchema.parse(input);
     const plan = await this.db.getPlan(payload.planId);
     const user = await this.db.getUser(userId);
 

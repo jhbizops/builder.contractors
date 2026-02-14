@@ -6,6 +6,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { geoDetectionMiddleware } from "./middleware/geoDetection";
 import { pool } from "./db";
 import { DEFAULT_SESSION_MAX_AGE, SESSION_COOKIE_NAME } from "./session";
+import { buildApiLogLine, shouldSkipBodyParsers } from "./http/requestRouting";
 
 const PgStore = connectPgSimple(session);
 
@@ -42,7 +43,7 @@ const jsonParser = express.json();
 const urlEncodedParser = express.urlencoded({ extended: false });
 
 app.use((req, res, next) => {
-  if (req.originalUrl === "/api/billing/webhook") {
+  if (shouldSkipBodyParsers(req.originalUrl)) {
     next();
     return;
   }
@@ -50,7 +51,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (req.originalUrl === "/api/billing/webhook") {
+  if (shouldSkipBodyParsers(req.originalUrl)) {
     next();
     return;
   }
@@ -70,27 +71,18 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      log(
+        buildApiLogLine({
+          method: req.method,
+          path,
+          statusCode: res.statusCode,
+          durationMs: duration,
+        }),
+      );
     }
   });
 

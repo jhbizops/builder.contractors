@@ -3,6 +3,7 @@ import * as schema from "@shared/schema";
 import { defaultBillingPlans } from "@shared/billingPlans";
 import { BillingService } from "../billing/service";
 import type { UserProfile } from "../storage";
+import { ZodError } from "zod";
 
 class InMemoryStorage {
   private plans: schema.BillingPlan[] = defaultBillingPlans.map((plan) => ({
@@ -195,5 +196,15 @@ describe("BillingService", () => {
 
     expect(profile?.entitlements).toContain("dashboard.basic");
     expect(storage.upsertEntitlementsCalls).toBe(0);
+  });
+
+  it("validates checkout payloads before Stripe configuration checks", async () => {
+    await expect(
+      service.createCheckoutSession("user_1", {
+        planId: "invalid",
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      }),
+    ).rejects.toBeInstanceOf(ZodError);
   });
 });
