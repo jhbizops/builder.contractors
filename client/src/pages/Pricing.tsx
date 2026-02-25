@@ -1,13 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { CheckCircle2 } from "lucide-react";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
-import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
-import { buildProductStructuredData } from "@/lib/structuredData";
+import { buildProductStructuredData, buildServicePageStructuredData } from "@/lib/structuredData";
 
 export default function Pricing() {
   const [location] = useLocation();
@@ -26,11 +25,40 @@ export default function Pricing() {
       }}
     >
       {content.tiers ? (
-        <StructuredData
-          id="pricing-structured-data"
-          data={buildProductStructuredData(content.tiers, content.title, content.summary)}
-        />
+        <>
+          <StructuredData
+            id="pricing-structured-data"
+            data={buildProductStructuredData(content.tiers, content.title, content.summary)}
+          />
+          <StructuredData
+            id="pricing-service-structured-data"
+            data={buildServicePageStructuredData(content, content.slug)}
+          />
+        </>
       ) : null}
+
+      <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-900">Direct answer</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What does it cost?</h3>
+            <p className="text-slate-600">Starter is free, Growth starts at AUD 99 per month, and Enterprise uses scoped pricing.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What is included?</h3>
+            <p className="text-slate-600">Verified profiles, lead routing, partner collaboration workflows, and support aligned to your plan.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">Where is it available?</h3>
+            <p className="text-slate-600">NSW-focused operations with Australia-wide and global partner collaboration options.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">Who is it for?</h3>
+            <p className="text-slate-600">Builders and contractors who need governed, machine-readable referral handoff workflows.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="grid gap-6 lg:grid-cols-3 mb-12">
         {content.tiers?.map((tier) => (
           <Card key={tier.name} className="border border-slate-200">
@@ -54,14 +82,6 @@ export default function Pricing() {
             </CardContent>
           </Card>
         ))}
-      </section>
-
-      <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
-        <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
-        <p className="text-slate-600 mb-6">
-          Pricing pages should reinforce the same search intent as our geo-targeted marketing content.
-        </p>
-        <KeywordPills keywords={content.keywords} />
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">

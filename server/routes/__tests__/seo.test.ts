@@ -17,7 +17,7 @@ beforeEach(() => {
 });
 
 describe("SEO routes", () => {
-  it("serves sitemap with release date lastmod", async () => {
+  it("serves sitemap index with service and ai sitemap entries", async () => {
     process.env.NODE_ENV = "production";
     process.env.RELEASE_DATE = "2025-02-15";
 
@@ -25,21 +25,22 @@ describe("SEO routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/xml");
-    expect(res.text).toContain("<lastmod>2025-02-15</lastmod>");
-    expect(res.text).toContain("<loc>http://example.com/</loc>");
+    expect(res.text).toContain("<loc>http://example.com/sitemap-core.xml</loc>");
+    expect(res.text).toContain("<loc>http://example.com/sitemap-services.xml</loc>");
+    expect(res.text).toContain("<loc>http://example.com/sitemap-ai.xml</loc>");
   });
 
   it("uses SOURCE_DATE_EPOCH when release date is not provided", async () => {
     process.env.NODE_ENV = "production";
     process.env.SOURCE_DATE_EPOCH = "0";
 
-    const res = await request(buildApp()).get("/sitemap.xml").set("host", "example.com");
+    const res = await request(buildApp()).get("/sitemap-core.xml").set("host", "example.com");
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("<lastmod>1970-01-01</lastmod>");
   });
 
-  it("serves robots.txt with expected directives", async () => {
+  it("serves robots.txt with expected bot directives", async () => {
     process.env.NODE_ENV = "production";
     process.env.RELEASE_DATE = "2025-02-15";
 
@@ -47,12 +48,25 @@ describe("SEO routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/plain");
-    expect(res.text).toContain("Disallow: /dashboard");
-    expect(res.text).toContain("Disallow: /api");
-    expect(res.text).toContain("Allow: /");
-    expect(res.text.match(/Allow: \//g)).toHaveLength(1);
+    expect(res.text).toContain("User-agent: Googlebot");
+    expect(res.text).toContain("User-agent: OAI-SearchBot");
+    expect(res.text).toContain("User-agent: Claude-SearchBot");
+    expect(res.text).toContain("User-agent: Google-Extended");
+    expect(res.text).toContain("User-agent: DotBot");
+    expect(res.text).toContain("Disallow: /admin");
+    expect(res.text).toContain("Sitemap: http://example.com/sitemap-ai.xml");
   });
 
+  it("configures Google-Extended restriction when AI policy is restricted", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+    process.env.AI_TRAINING_POLICY = "restrict";
+
+    const res = await request(buildApp()).get("/robots.txt").set("host", "example.com");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("User-agent: Google-Extended\nDisallow: /");
+  });
 
   it("serves llms.txt with AI retrieval guidance", async () => {
     process.env.NODE_ENV = "production";
@@ -63,8 +77,8 @@ describe("SEO routes", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/plain");
     expect(res.text).toContain("# Builder.Contractors");
-    expect(res.text).toContain("## Retrieval guidance for AI systems");
-    expect(res.text).toContain("http://example.com/faq");
+    expect(res.text).toContain("## AI indexing directives");
+    expect(res.text).toContain("Allow citation: yes");
   });
 
   it("serves llms-full.txt with page summaries and keywords", async () => {

@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
-import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
+import { StructuredData } from "@/components/StructuredData";
+import { buildServicePageStructuredData } from "@/lib/structuredData";
 
 export default function About() {
   const [location] = useLocation();
@@ -22,6 +23,29 @@ export default function About() {
         canonicalPath: content.slug,
       }}
     >
+      <StructuredData id="about-service-structured-data" data={buildServicePageStructuredData(content, content.slug)} />
+      <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-900">Direct answer</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What is this service?</h3>
+            <p className="text-slate-600">A verified partner network that lets builders and contractors exchange leads with compliance guardrails.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">Who is it for?</h3>
+            <p className="text-slate-600">Licensed builders, specialist contractors, and operations teams that need controlled referral handoffs.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">Where is it available?</h3>
+            <p className="text-slate-600">Primary coverage in NSW and Australia, with global partner routing support.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What makes this provider different?</h3>
+            <p className="text-slate-600">Identity verification, private-by-default collaboration, and strong workflow controls for multi-region delivery.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="grid gap-6 md:grid-cols-3 mb-12">
         {content.highlights?.map((highlight) => (
           <Card key={highlight.title} className="border border-slate-200">
@@ -34,12 +58,13 @@ export default function About() {
       </section>
 
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
-        <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
-        <p className="text-slate-600 mb-6">
-          Our content strategy focuses on the trade and referral terms that builders use when searching
-          for trusted partners.
-        </p>
-        <KeywordPills keywords={content.keywords} />
+        <h2 className="text-2xl font-semibold text-slate-900 mb-4">Trust and credentials</h2>
+        <ul className="list-disc pl-6 text-slate-600 space-y-2">
+          <li>Entity: Builder.Contractors (Elyment ecosystem product).</li>
+          <li>Operations: security-first, controlled data sharing, role-based access controls.</li>
+          <li>Experience signal: designed for established trade teams and project delivery managers.</li>
+          <li>Support channel: managed onboarding and policy-led partner verification.</li>
+        </ul>
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 mb-12">
