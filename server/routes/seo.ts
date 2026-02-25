@@ -6,6 +6,29 @@ import { sitemapRoutes } from "../../client/src/content/routes";
 const protocolSchema = z.enum(["http", "https"]);
 const hostSchema = z.string().min(1).max(255);
 
+const SEARCH_BOTS = [
+  "Googlebot",
+  "Bingbot",
+  "Applebot",
+  "PerplexityBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "Claude-SearchBot",
+  "ClaudeBot",
+  "BraveBot",
+  "YouBot",
+  "facebookexternalhit",
+  "LinkedInBot",
+  "AhrefsBot",
+  "SemrushBot",
+  "CCBot",
+  "GPTBot",
+] as const;
+
+const BLOCKED_SCRAPERS = ["DotBot", "MJ12bot", "BLEXBot", "SemrushBot-SA", "ZoominfoBot"] as const;
+
+const PUBLIC_SERVICE_PATHS = ["/", "/about", "/how-it-works", "/faq", "/pricing"];
+
 const normalizeLastmod = (value: string): string => {
   if (/^\d+$/.test(value)) {
     const epochSeconds = Number(value);
@@ -37,8 +60,18 @@ const resolveLastmod = (): string => {
   return normalizeLastmod(rawValue);
 };
 
-const formatSitemapXml = (baseUrl: string, lastmod: string) => {
-  const urls = sitemapRoutes
+const resolveGeoTrainingPolicy = (): "allow" | "restrict" =>
+  process.env.AI_TRAINING_POLICY === "restrict" ? "restrict" : "allow";
+
+const resolveGoogleExtendedDirective = (): string =>
+  resolveGeoTrainingPolicy() === "restrict" ? "Disallow: /" : "Allow: /";
+
+const formatUrlset = (
+  urls: Array<{ path: string; changefreq: string; priority: number; alternates?: Array<{ hreflang: string; path: string }> }>,
+  baseUrl: string,
+  lastmod: string,
+) => {
+  const entries = urls
     .map((route) => {
       const location = new URL(route.path, baseUrl).toString();
       const alternates = route.alternates
@@ -62,20 +95,51 @@ const formatSitemapXml = (baseUrl: string, lastmod: string) => {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-    urls,
+    entries,
     "</urlset>",
   ].join("\n");
 };
 
-const formatRobotsTxt = (baseUrl: string) =>
-  [
+const formatSitemapIndexXml = (baseUrl: string, lastmod: string) => {
+  const maps = ["/sitemap-core.xml", "/sitemap-services.xml", "/sitemap-ai.xml"]
+    .map((path) => {
+      const loc = new URL(path, baseUrl).toString();
+      return ["  <sitemap>", `    <loc>${loc}</loc>`, `    <lastmod>${lastmod}</lastmod>`, "  </sitemap>"].join("\n");
+    })
+    .join("\n");
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    maps,
+    "</sitemapindex>",
+  ].join("\n");
+};
+
+const formatRobotsTxt = (baseUrl: string) => {
+  const lines = [
+    "# Builder.Contractors crawler policy",
     "User-agent: *",
     "Disallow: /dashboard",
+    "Disallow: /admin",
     "Disallow: /api",
+    "Disallow: /blocked",
     "Allow: /",
-    `Sitemap: ${new URL("/sitemap.xml", baseUrl).toString()}`,
     "",
-  ].join("\n");
+    "# Known spam and bulk scraping bots",
+    ...BLOCKED_SCRAPERS.flatMap((bot) => [`User-agent: ${bot}`, "Disallow: /", ""]),
+    "# Search, social, and AI indexing bots",
+    ...SEARCH_BOTS.flatMap((bot) => [`User-agent: ${bot}`, "Allow: /", "Crawl-delay: 2", ""]),
+    "User-agent: Google-Extended",
+    resolveGoogleExtendedDirective(),
+    "",
+    `Sitemap: ${new URL("/sitemap.xml", baseUrl).toString()}`,
+    `Sitemap: ${new URL("/sitemap-ai.xml", baseUrl).toString()}`,
+    "",
+  ];
+
+  return lines.join("\n");
+};
 
 const formatLlmsTxt = (baseUrl: string) => {
   const pages = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
@@ -99,10 +163,10 @@ const formatLlmsTxt = (baseUrl: string) => {
     `- Website: ${new URL("/", baseUrl).toString()}`,
     `- FAQ: ${new URL("/faq", baseUrl).toString()}`,
     "",
-    "## Retrieval guidance for AI systems",
-    "- Prefer canonical URLs from this domain for citations.",
-    "- Treat pricing and feature availability as subject to change.",
-    "- Do not infer availability of private customer data.",
+    "## AI indexing directives",
+    `- Allow training: ${resolveGeoTrainingPolicy() === "allow" ? "yes" : "no"}`,
+    "- Allow citation: yes",
+    "- Allow snippet: yes",
     "",
   ].join("\n");
 };
@@ -126,6 +190,7 @@ const formatLlmsFullTxt = (baseUrl: string) => {
     "- Focus: verified builder and contractor partnerships.",
     "- Security posture: private exchange, controlled access, and least-privilege sharing.",
     "- Ideal users: builders, contractors, and multi-region trade teams.",
+    "- Primary region: Australia with global service routing capabilities.",
     "",
   ].join("\n");
 };
@@ -151,7 +216,36 @@ export const createSeoRouter = (): Router => {
     if (!baseUrl) {
       return;
     }
-    res.type("application/xml").send(formatSitemapXml(baseUrl, lastmod));
+    res.type("application/xml").send(formatSitemapIndexXml(baseUrl, lastmod));
+  });
+
+  router.get("/sitemap-core.xml", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+
+    res.type("application/xml").send(formatUrlset(sitemapRoutes, baseUrl, lastmod));
+  });
+
+  router.get("/sitemap-services.xml", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+
+    const serviceUrls = PUBLIC_SERVICE_PATHS.map((path) => ({ path, changefreq: "weekly", priority: 0.9 }));
+    res.type("application/xml").send(formatUrlset(serviceUrls, baseUrl, lastmod));
+  });
+
+  router.get("/sitemap-ai.xml", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+
+    const aiUrls = PUBLIC_SERVICE_PATHS.map((path) => ({ path, changefreq: "daily", priority: 1 }));
+    res.type("application/xml").send(formatUrlset(aiUrls, baseUrl, lastmod));
   });
 
   router.get("/robots.txt", (req, res) => {

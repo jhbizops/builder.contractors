@@ -60,6 +60,15 @@ app.use((req, res, next) => {
 
 app.use(geoDetectionMiddleware);
 
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  res.setHeader("X-Robots-Tag", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+  next();
+});
+
 // Cache static assets for 1 year in production
 app.use((req, res, next) => {
   if (req.path.startsWith('/assets/')) {

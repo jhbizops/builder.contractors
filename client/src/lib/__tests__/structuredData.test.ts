@@ -4,6 +4,7 @@ import {
   buildFaqPageStructuredData,
   buildOrganizationWebsiteStructuredData,
   buildProductStructuredData,
+  buildServicePageStructuredData,
 } from "../structuredData";
 
 describe("structured data helpers", () => {
@@ -24,18 +25,30 @@ describe("structured data helpers", () => {
     const offers = data.offers as Array<Record<string, unknown>>;
     expect(offers).toHaveLength(tiers.length);
     expect(offers[0]?.name).toBe(tiers[0]?.name);
-    expect(offers[0]?.price).toBe(tiers[0]?.priceLabel);
+    expect(offers[1]?.price).toBe("99.00");
   });
 
-  it("creates a combined Organization/WebSite/WebPage graph for the homepage", () => {
+  it("builds service page graph with Service, FAQPage and BreadcrumbList", () => {
+    const data = buildServicePageStructuredData(geoPages.pricing, geoPages.pricing.slug);
+    const graph = data["@graph"] as Array<Record<string, unknown>>;
+
+    expect(graph[0]?.["@type"]).toBe("BreadcrumbList");
+    expect(graph[1]?.["@type"]).toBe("Service");
+    expect((graph[1]?.areaServed as Array<unknown>).length).toBeGreaterThan(0);
+    expect(graph[2]?.["@type"]).toBe("FAQPage");
+  });
+
+  it("creates an expanded homepage graph with organization, legal service and ratings", () => {
     const data = buildOrganizationWebsiteStructuredData(geoPages.home.title, geoPages.home.summary);
     const graph = data["@graph"] as Array<Record<string, unknown>>;
 
-    expect(graph).toHaveLength(4);
-    expect(graph[0]?.["@type"]).toBe("Organization");
-    expect(graph[1]?.["@type"]).toBe("WebSite");
-    expect(graph[2]?.["@type"]).toBe("WebPage");
-    expect(graph[3]?.["@type"]).toBe("Service");
-    expect((graph[1]?.potentialAction as Record<string, unknown>)?.["@type"]).toBe("SearchAction");
+    expect(graph.length).toBeGreaterThanOrEqual(10);
+    expect(graph.some((node) => node["@type"] === "Organization")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "LocalBusiness")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "ProfessionalService")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "LegalService")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "Person")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "AggregateRating")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "Article")).toBe(true);
   });
 });

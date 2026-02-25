@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { PublicPageLayout } from "@/components/PublicPageLayout";
-import { KeywordPills } from "@/components/KeywordPills";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getGeoPageContent, geoPages } from "@/content/geoPages";
+import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
+import { StructuredData } from "@/components/StructuredData";
+import { buildServicePageStructuredData } from "@/lib/structuredData";
 
 export default function HowItWorks() {
   const [location] = useLocation();
@@ -23,6 +24,29 @@ export default function HowItWorks() {
         canonicalPath: content.slug,
       }}
     >
+      <StructuredData id="how-it-works-service-structured-data" data={buildServicePageStructuredData(content, content.slug)} />
+      <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-900">Service definition</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What is this service?</h3>
+            <p className="text-slate-600">A managed workflow that verifies trade partners and routes project opportunities to suitable teams.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What is included?</h3>
+            <p className="text-slate-600">Profile verification, scoped lead sharing, role-based collaboration, and referral status tracking.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">Where is it available?</h3>
+            <p className="text-slate-600">NSW and Australia service operators with optional global expansion support.</p>
+          </article>
+          <article>
+            <h3 className="text-lg font-semibold text-slate-900">What does it cost?</h3>
+            <p className="text-slate-600">A free entry tier is available, with paid plans for regional routing and enterprise governance.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="grid gap-6 md:grid-cols-3 mb-12">
         {content.steps?.map((step, index) => (
           <Card key={step.title} className="border border-slate-200">
@@ -35,14 +59,6 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
         ))}
-      </section>
-
-      <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
-        <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
-        <p className="text-slate-600 mb-6">
-          Use these search-focused phrases consistently across marketing pages for stronger organic reach.
-        </p>
-        <KeywordPills keywords={content.keywords} />
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 mb-12">
