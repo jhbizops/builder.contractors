@@ -50,10 +50,14 @@ describe("SEO routes", () => {
     expect(res.headers["content-type"]).toContain("text/plain");
     expect(res.text).toContain("User-agent: Googlebot");
     expect(res.text).toContain("User-agent: OAI-SearchBot");
+    expect(res.text).toContain("User-agent: ChatGPT-Search");
+    expect(res.text).toContain("User-agent: DuckAssistBot");
     expect(res.text).toContain("User-agent: Claude-SearchBot");
     expect(res.text).toContain("User-agent: Google-Extended");
     expect(res.text).toContain("User-agent: DotBot");
     expect(res.text).toContain("Disallow: /admin");
+    expect(res.text).toContain("AI-Policy: allow");
+    expect(res.text).toContain("LLM-Content: http://example.com/llms.txt");
     expect(res.text).toContain("Sitemap: http://example.com/sitemap-ai.xml");
   });
 
@@ -76,6 +80,7 @@ describe("SEO routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.headers["x-robots-tag"]).toContain("max-image-preview:large");
     expect(res.text).toContain("# Builder.Contractors");
     expect(res.text).toContain("## AI indexing directives");
     expect(res.text).toContain("Allow citation: yes");
@@ -89,9 +94,21 @@ describe("SEO routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.headers["x-robots-tag"]).toContain("max-snippet:-1");
     expect(res.text).toContain("# Builder.Contractors reference");
     expect(res.text).toContain("Keywords:");
     expect(res.text).toContain("http://example.com/pricing");
+  });
+
+  it("serves ai.txt as an alias to llms guidance", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+
+    const res = await request(buildApp()).get("/ai.txt").set("host", "example.com");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.text).toContain("## AI indexing directives");
   });
 
   it("rejects missing host header", async () => {
