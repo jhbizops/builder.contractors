@@ -49,6 +49,15 @@ describe('HeadManager', () => {
     expect(document.head.querySelector('link[rel="alternate"][type="text/plain"]')?.getAttribute('href')).toBe(
       `${window.location.origin}/llms.txt`,
     );
+    expect(document.head.querySelector('link[rel="alternate"][type="text/markdown"]')?.getAttribute('href')).toBe(
+      `${window.location.origin}/llms-full.txt`,
+    );
+    expect(document.head.querySelector('link[rel="sitemap"][title="Primary sitemap"]')?.getAttribute('href')).toBe(
+      `${window.location.origin}/sitemap.xml`,
+    );
+    expect(document.head.querySelector('link[rel="sitemap"][data-variant="ai"]')?.getAttribute('href')).toBe(
+      `${window.location.origin}/sitemap-ai.xml`,
+    );
     expect(document.head.querySelector('link[rel="alternate"][hreflang="x-default"]')?.getAttribute('href')).toBe(
       canonicalUrl,
     );

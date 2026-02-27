@@ -123,6 +123,21 @@ export function HeadManager({
       rel: "alternate",
       type: "text/plain",
     }).setAttribute("href", `${baseUrl}/llms.txt`);
+    ensureLinkTag('link[rel="alternate"][type="text/markdown"]', {
+      rel: "alternate",
+      type: "text/markdown",
+    }).setAttribute("href", `${baseUrl}/llms-full.txt`);
+    ensureLinkTag('link[rel="sitemap"][type="application/xml"]', {
+      rel: "sitemap",
+      type: "application/xml",
+      title: "Primary sitemap",
+    }).setAttribute("href", `${baseUrl}/sitemap.xml`);
+    ensureLinkTag('link[rel="sitemap"][data-variant="ai"]', {
+      rel: "sitemap",
+      type: "application/xml",
+      title: "AI sitemap",
+      "data-variant": "ai",
+    }).setAttribute("href", `${baseUrl}/sitemap-ai.xml`);
 
     const managedAlternates = document.head.querySelectorAll<HTMLLinkElement>(
       'link[rel="alternate"][data-managed="head-manager"]',

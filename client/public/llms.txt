@@ -34,6 +34,9 @@ Key Public URLs (aligned with sitemap.xml and robots.txt):
 - https://builder.contractors/register
 - https://builder.contractors/sitemap.xml
 - https://builder.contractors/robots.txt
+- https://builder.contractors/llms.txt
+- https://builder.contractors/llms-full.txt
+- https://builder.contractors/ai.txt
 
 Geo guidance:
 Marketing pages may be geo-targeted with region-specific prefixes. For example, /au/about is the Australia version of /about and should follow the corresponding regional content for that path. Add new region-prefixed paths here whenever marketing locales are added.
@@ -46,3 +49,7 @@ Do Not Use (private/authenticated or restricted paths):
 
 Update Policy:
 Updated with each marketing content release or sitemap refresh to stay in sync with marketing routes, sitemap.xml, and robots.txt.
+
+AI consumption aliases:
+- /ai.txt mirrors /llms.txt for assistants that probe ai.txt first.
+- /llms-full.txt provides expanded retrieval context and summaries.

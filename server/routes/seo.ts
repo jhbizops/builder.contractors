@@ -10,12 +10,18 @@ const SEARCH_BOTS = [
   "Googlebot",
   "Bingbot",
   "Applebot",
+  "GoogleOther",
+  "GoogleOther-Image",
+  "GoogleOther-Video",
   "PerplexityBot",
   "OAI-SearchBot",
+  "Bytespider",
   "ChatGPT-User",
+  "ChatGPT-Search",
   "Claude-SearchBot",
   "ClaudeBot",
   "BraveBot",
+  "DuckAssistBot",
   "YouBot",
   "facebookexternalhit",
   "LinkedInBot",
@@ -132,6 +138,10 @@ const formatRobotsTxt = (baseUrl: string) => {
     ...SEARCH_BOTS.flatMap((bot) => [`User-agent: ${bot}`, "Allow: /", "Crawl-delay: 2", ""]),
     "User-agent: Google-Extended",
     resolveGoogleExtendedDirective(),
+    "",
+    `AI-Policy: ${resolveGeoTrainingPolicy()}`,
+    `LLM-Content: ${new URL("/llms.txt", baseUrl).toString()}`,
+    `LLM-Content-Full: ${new URL("/llms-full.txt", baseUrl).toString()}`,
     "",
     `Sitemap: ${new URL("/sitemap.xml", baseUrl).toString()}`,
     `Sitemap: ${new URL("/sitemap-ai.xml", baseUrl).toString()}`,
@@ -261,6 +271,7 @@ export const createSeoRouter = (): Router => {
     if (!baseUrl) {
       return;
     }
+    res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
     res.type("text/plain").send(formatLlmsTxt(baseUrl));
   });
 
@@ -269,7 +280,17 @@ export const createSeoRouter = (): Router => {
     if (!baseUrl) {
       return;
     }
+    res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
     res.type("text/plain").send(formatLlmsFullTxt(baseUrl));
+  });
+
+  router.get("/ai.txt", (req, res) => {
+    const baseUrl = resolveBaseUrl(req, res);
+    if (!baseUrl) {
+      return;
+    }
+    res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
+    res.type("text/plain").send(formatLlmsTxt(baseUrl));
   });
 
   return router;
