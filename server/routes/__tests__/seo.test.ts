@@ -56,6 +56,8 @@ describe("SEO routes", () => {
     expect(res.text).toContain("User-agent: Google-Extended");
     expect(res.text).toContain("User-agent: DotBot");
     expect(res.text).toContain("Disallow: /admin");
+    expect(res.text).toContain("Disallow: /login");
+    expect(res.text).toContain("Disallow: /register");
     expect(res.text).toContain("AI-Policy: allow");
     expect(res.text).toContain("LLM-Content: http://example.com/llms.txt");
     expect(res.text).toContain("Sitemap: http://example.com/sitemap-ai.xml");
@@ -118,5 +120,16 @@ describe("SEO routes", () => {
     const res = await request(buildApp()).get("/sitemap.xml").set("host", "");
 
     expect(res.status).toBe(400);
+  });
+
+  it("uses PUBLIC_SITE_URL when set", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+    process.env.PUBLIC_SITE_URL = "https://www.builder.contractors";
+
+    const res = await request(buildApp()).get("/sitemap.xml").set("host", "example.com");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<loc>https://www.builder.contractors/sitemap-core.xml</loc>");
   });
 });

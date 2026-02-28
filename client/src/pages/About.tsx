@@ -6,6 +6,7 @@ import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
 import { buildServicePageStructuredData } from "@/lib/structuredData";
+import { AISummaryBlock } from "@/components/AISummaryBlock";
 
 export default function About() {
   const [location] = useLocation();
@@ -24,6 +25,14 @@ export default function About() {
       }}
     >
       <StructuredData id="about-service-structured-data" data={buildServicePageStructuredData(content, content.slug)} />
+      <AISummaryBlock
+        items={[
+          { label: "Entity", value: "Builder.Contractors by Elyment" },
+          { label: "Audience", value: "Licensed builders, contractors, and operations teams" },
+          { label: "Primary offering", value: "Verified lead handoff and partner collaboration" },
+          { label: "Coverage", value: "NSW first, Australia-wide, and global partner routing" },
+        ]}
+      />
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
         <h2 className="text-2xl font-semibold text-slate-900">Direct answer</h2>
         <div className="grid gap-4 md:grid-cols-2">

@@ -72,12 +72,20 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
 
       <footer className="bg-slate-900 text-slate-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
+          <div className="flex flex-col gap-6 md:flex-row md:justify-between md:items-start">
+            <div className="flex items-center">
               <BrandLogo size="sm" className="mr-2" alt="Builder.Contractors" />
               <span className="text-white font-bold">Builder.Contractors</span>
             </div>
-            <div className="text-sm">
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-3 text-sm">
+              <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              <Link href="/how-it-works" className="hover:text-white transition-colors">How it works</Link>
+              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+              <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
+              <a href="/llms.txt" className="hover:text-white transition-colors">AI summary</a>
+              <a href="/sitemap.xml" className="hover:text-white transition-colors">Sitemap</a>
+            </nav>
+            <div className="text-sm md:text-right">
               © 2025 Builder.Contractors. Connecting builders worldwide. Powered by{" "}
               <a
                 href="https://elyment.com.au"

@@ -53,14 +53,4 @@ const marketingRoutes = marketingPageSlugs.flatMap((slug) => {
 
 export const sitemapRoutes: SitemapRoute[] = [
   ...marketingRoutes,
-  {
-    path: "/login",
-    changefreq: "monthly",
-    priority: 0.4,
-  },
-  {
-    path: "/register",
-    changefreq: "monthly",
-    priority: 0.4,
-  },
 ];
