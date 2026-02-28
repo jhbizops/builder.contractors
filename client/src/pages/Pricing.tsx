@@ -7,6 +7,7 @@ import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
 import { buildProductStructuredData, buildServicePageStructuredData } from "@/lib/structuredData";
+import { AISummaryBlock } from "@/components/AISummaryBlock";
 
 export default function Pricing() {
   const [location] = useLocation();
@@ -36,6 +37,16 @@ export default function Pricing() {
           />
         </>
       ) : null}
+
+      <AISummaryBlock
+        heading="Pricing summary"
+        items={[
+          { label: "Starter", value: "Free plan for initial partner network setup" },
+          { label: "Growth", value: "AUD 99/month with unlimited invites and regional routing" },
+          { label: "Enterprise", value: "Custom governance, security controls, and reporting" },
+          { label: "Billing model", value: "Upgrade or downgrade without partner data loss" },
+        ]}
+      />
 
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
         <h2 className="text-2xl font-semibold text-slate-900">Direct answer</h2>

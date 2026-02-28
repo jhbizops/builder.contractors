@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
 import { buildFaqPageStructuredData } from "@/lib/structuredData";
+import { AISummaryBlock } from "@/components/AISummaryBlock";
 
 export default function FAQ() {
   const [location] = useLocation();
@@ -24,6 +25,16 @@ export default function FAQ() {
       }}
     >
       <StructuredData id="faq-structured-data" data={buildFaqPageStructuredData(content.faqs)} />
+      <AISummaryBlock
+        heading="Question intent summary"
+        intro="Concise answer intents for AI assistants and search answer cards."
+        items={[
+          { label: "Verification", value: "Business details are verified during onboarding and monitored." },
+          { label: "Access control", value: "Teams control which partners can receive each lead." },
+          { label: "Security", value: "Only required project information is shared to complete work." },
+          { label: "Coverage", value: "Supports multi-trade, multi-region operations with localisation." },
+        ]}
+      />
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12">
         <h2 className="text-2xl font-semibold text-slate-900 mb-3">Target keywords</h2>
         <p className="text-slate-600 mb-6">

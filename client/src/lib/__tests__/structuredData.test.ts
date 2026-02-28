@@ -33,9 +33,10 @@ describe("structured data helpers", () => {
     const graph = data["@graph"] as Array<Record<string, unknown>>;
 
     expect(graph[0]?.["@type"]).toBe("BreadcrumbList");
-    expect(graph[1]?.["@type"]).toBe("Service");
-    expect((graph[1]?.areaServed as Array<unknown>).length).toBeGreaterThan(0);
-    expect(graph[2]?.["@type"]).toBe("FAQPage");
+    expect(graph[1]?.["@type"]).toBe("WebPage");
+    expect(graph[2]?.["@type"]).toBe("Service");
+    expect((graph[2]?.areaServed as Array<unknown>).length).toBeGreaterThan(0);
+    expect(graph[3]?.["@type"]).toBe("FAQPage");
   });
 
   it("creates an expanded homepage graph with organization, legal service and ratings", () => {
@@ -46,9 +47,9 @@ describe("structured data helpers", () => {
     expect(graph.some((node) => node["@type"] === "Organization")).toBe(true);
     expect(graph.some((node) => node["@type"] === "LocalBusiness")).toBe(true);
     expect(graph.some((node) => node["@type"] === "ProfessionalService")).toBe(true);
-    expect(graph.some((node) => node["@type"] === "LegalService")).toBe(true);
     expect(graph.some((node) => node["@type"] === "Person")).toBe(true);
     expect(graph.some((node) => node["@type"] === "AggregateRating")).toBe(true);
     expect(graph.some((node) => node["@type"] === "Article")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "SoftwareApplication")).toBe(true);
   });
 });

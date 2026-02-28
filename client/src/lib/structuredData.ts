@@ -8,7 +8,7 @@ const SCHEMA_CONTEXT = "https://schema.org";
 const BASE_URL = "https://www.builder.contractors";
 
 const ORGANIZATION_ID = `${BASE_URL}/#organization`;
-const PERSON_ID = `${BASE_URL}/#principal`;
+const WEBSITE_ID = `${BASE_URL}/#website`;
 
 const parsePrice = (priceLabel: string): string | undefined => {
   const match = priceLabel.match(/\$([\d,.]+)/);
@@ -43,6 +43,8 @@ export const buildFaqPageStructuredData = (faqs: GeoPageFaq[]): JsonLdValue => (
 
 export const buildServicePageStructuredData = (page: GeoPageContent, path: string): JsonLdValue => {
   const offers = (page.tiers ?? []).map(defaultOfferForTier);
+  const pageId = `${BASE_URL}${path}#webpage`;
+  const serviceId = `${BASE_URL}${path}#service`;
   return {
     "@context": SCHEMA_CONTEXT,
     "@graph": [
@@ -54,8 +56,17 @@ export const buildServicePageStructuredData = (page: GeoPageContent, path: strin
         ],
       },
       {
+        "@type": "WebPage",
+        "@id": pageId,
+        url: `${BASE_URL}${path}`,
+        name: page.title,
+        description: page.summary,
+        isPartOf: { "@id": WEBSITE_ID },
+        about: { "@id": ORGANIZATION_ID },
+      },
+      {
         "@type": "Service",
-        "@id": `${BASE_URL}${path}#service`,
+        "@id": serviceId,
         name: page.title,
         description: page.summary,
         provider: { "@id": ORGANIZATION_ID },
@@ -69,6 +80,7 @@ export const buildServicePageStructuredData = (page: GeoPageContent, path: strin
           serviceUrl: `${BASE_URL}${path}`,
           availableLanguage: ["en-AU", "en-US", "en-GB"],
         },
+        mainEntityOfPage: { "@id": pageId },
         ...(offers.length > 0
           ? {
               offers,
@@ -83,10 +95,12 @@ export const buildServicePageStructuredData = (page: GeoPageContent, path: strin
       },
       ...(page.faqs.length > 0
         ? [
-            {
-              "@type": "FAQPage",
-              mainEntity: page.faqs.map((faq) => ({
-                "@type": "Question",
+          {
+            "@type": "FAQPage",
+            "@id": `${BASE_URL}${path}#faq`,
+            mainEntityOfPage: { "@id": pageId },
+            mainEntity: page.faqs.map((faq) => ({
+              "@type": "Question",
                 name: faq.question,
                 acceptedAnswer: {
                   "@type": "Answer",
@@ -112,12 +126,17 @@ export const buildOrganizationWebsiteStructuredData = (
   title: string,
   description: string,
   url: string = BASE_URL,
-): JsonLdValue => ({
-  "@context": SCHEMA_CONTEXT,
-  "@graph": [
+): JsonLdValue => {
+  const organizationId = `${url}/#organization`;
+  const personId = `${url}/#principal`;
+  const websiteId = `${url}/#website`;
+
+  return {
+    "@context": SCHEMA_CONTEXT,
+    "@graph": [
     {
       "@type": "Organization",
-      "@id": `${url}/#organization`,
+      "@id": organizationId,
       name: "Builder.Contractors",
       url: `${url}/`,
       logo: `${url}/og-image.jpg`,
@@ -133,10 +152,10 @@ export const buildOrganizationWebsiteStructuredData = (
     },
     {
       "@type": "Person",
-      "@id": `${url}/#principal`,
+      "@id": personId,
       name: "Principal Solicitor, Builder.Contractors",
       jobTitle: "Principal Legal & Compliance Lead",
-      worksFor: { "@id": `${url}/#organization` },
+      worksFor: { "@id": organizationId },
       knowsAbout: ["Conveyancing", "Construction compliance", "Contract risk management"],
     },
     {
@@ -159,29 +178,7 @@ export const buildOrganizationWebsiteStructuredData = (
       name: "Builder.Contractors Professional Services",
       serviceType: "Builder and contractor partner coordination",
       areaServed: ["NSW", "Australia", "Global"],
-      provider: { "@id": `${url}/#organization` },
-    },
-    {
-      "@type": "LegalService",
-      "@id": `${url}/#conveyancing`,
-      name: "Conveyancing Partner Enablement Service",
-      serviceType: "Conveyancing workflow support for building projects",
-      provider: { "@id": `${url}/#organization` },
-      areaServed: ["NSW", "Australia"],
-      availableChannel: {
-        "@type": "ServiceChannel",
-        serviceUrl: `${url}/how-it-works`,
-      },
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "AUD",
-        priceSpecification: {
-          "@type": "PriceSpecification",
-          minPrice: "250.00",
-          priceCurrency: "AUD",
-          description: "Minimum charge depends on service scope",
-        },
-      },
+      provider: { "@id": organizationId },
     },
     {
       "@type": "Review",
@@ -209,7 +206,7 @@ export const buildOrganizationWebsiteStructuredData = (
     },
     {
       "@type": "WebSite",
-      "@id": `${url}/#website`,
+      "@id": websiteId,
       url: `${url}/`,
       name: "Builder.Contractors",
       description,
@@ -226,10 +223,10 @@ export const buildOrganizationWebsiteStructuredData = (
       name: title,
       description,
       isPartOf: {
-        "@id": `${url}/#website`,
+        "@id": websiteId,
       },
       about: {
-        "@id": `${url}/#organization`,
+        "@id": organizationId,
       },
     },
     {
@@ -238,7 +235,7 @@ export const buildOrganizationWebsiteStructuredData = (
       name: "Builder and contractor lead exchange network",
       serviceType: "Lead exchange and contractor collaboration",
       provider: {
-        "@id": `${url}/#organization`,
+        "@id": organizationId,
       },
       areaServed: ["NSW", "Australia", "Global"],
       audience: {
@@ -263,9 +260,29 @@ export const buildOrganizationWebsiteStructuredData = (
       "@id": `${url}/#article-home`,
       headline: title,
       description,
-      author: { "@id": `${url}/#principal` },
-      publisher: { "@id": `${url}/#organization` },
+      author: { "@id": personId },
+      publisher: { "@id": organizationId },
       mainEntityOfPage: { "@id": `${url}/#webpage` },
     },
-  ],
-});
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${url}/#application`,
+      name: "Builder.Contractors Platform",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "AUD",
+        price: "0",
+      },
+      publisher: { "@id": organizationId },
+      featureList: [
+        "Verified partner onboarding",
+        "Lead handoff workflow",
+        "Role-based collaboration",
+        "Regional routing and reporting",
+      ],
+    },
+    ],
+  };
+};

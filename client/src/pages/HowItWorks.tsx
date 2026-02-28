@@ -7,6 +7,7 @@ import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
 import { buildServicePageStructuredData } from "@/lib/structuredData";
+import { AISummaryBlock } from "@/components/AISummaryBlock";
 
 export default function HowItWorks() {
   const [location] = useLocation();
@@ -25,6 +26,15 @@ export default function HowItWorks() {
       }}
     >
       <StructuredData id="how-it-works-service-structured-data" data={buildServicePageStructuredData(content, content.slug)} />
+      <AISummaryBlock
+        heading="Workflow summary"
+        items={[
+          { label: "Input", value: "Verified profile with trade capability and service area" },
+          { label: "Process", value: "Scoped lead routing, partner matching, and status updates" },
+          { label: "Output", value: "Faster handoffs with transparent collaboration history" },
+          { label: "Governance", value: "Role-based access control and policy-led sharing" },
+        ]}
+      />
       <section className="bg-white rounded-2xl border border-slate-200 p-8 mb-12 space-y-6">
         <h2 className="text-2xl font-semibold text-slate-900">Service definition</h2>
         <div className="grid gap-4 md:grid-cols-2">

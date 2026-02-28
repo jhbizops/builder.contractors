@@ -129,6 +129,8 @@ const formatRobotsTxt = (baseUrl: string) => {
     "Disallow: /dashboard",
     "Disallow: /admin",
     "Disallow: /api",
+    "Disallow: /login",
+    "Disallow: /register",
     "Disallow: /blocked",
     "Allow: /",
     "",
@@ -145,6 +147,7 @@ const formatRobotsTxt = (baseUrl: string) => {
     "",
     `Sitemap: ${new URL("/sitemap.xml", baseUrl).toString()}`,
     `Sitemap: ${new URL("/sitemap-ai.xml", baseUrl).toString()}`,
+    `Host: ${new URL(baseUrl).host}`,
     "",
   ];
 
@@ -206,6 +209,17 @@ const formatLlmsFullTxt = (baseUrl: string) => {
 };
 
 const resolveBaseUrl = (req: Request, res: Response): string | null => {
+  const configuredUrl = process.env.PUBLIC_SITE_URL;
+  if (configuredUrl) {
+    try {
+      const parsed = new URL(configuredUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      res.status(500).send("Invalid PUBLIC_SITE_URL");
+      return null;
+    }
+  }
+
   const protocolResult = protocolSchema.safeParse(req.protocol);
   const hostResult = hostSchema.safeParse(req.get("host"));
 

@@ -40,9 +40,9 @@ describe('HeadManager', () => {
     expect(getMeta('meta[property="og:title"]')?.content).toBe('About Builder.Contractors');
     expect(getMeta('meta[property="og:description"]')?.content).toBe('About page description.');
     expect(getMeta('meta[property="og:url"]')?.content).toBe(canonicalUrl);
-    expect(getMeta('meta[property="twitter:title"]')?.content).toBe('About Builder.Contractors');
-    expect(getMeta('meta[property="twitter:description"]')?.content).toBe('About page description.');
-    expect(getMeta('meta[property="twitter:url"]')?.content).toBe(canonicalUrl);
+    expect(getMeta('meta[name="twitter:title"]')?.content).toBe('About Builder.Contractors');
+    expect(getMeta('meta[name="twitter:description"]')?.content).toBe('About page description.');
+    expect(getMeta('meta[name="twitter:url"]')?.content).toBe(canonicalUrl);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       canonicalUrl,
     );
@@ -74,5 +74,16 @@ describe('HeadManager', () => {
     });
 
     expect(getMeta('meta[name="keywords"]')).toBeNull();
+  });
+
+  it('supports noindex pages via robotsContent override', async () => {
+    render(<HeadManager title="Login" description="Sign in" robotsContent="noindex,nofollow" />);
+
+    await waitFor(() => {
+      expect(document.title).toBe('Login');
+    });
+
+    expect(getMeta('meta[name="robots"]')?.content).toBe('noindex,nofollow');
+    expect(getMeta('meta[name="googlebot"]')?.content).toBe('noindex,nofollow');
   });
 });

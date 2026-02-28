@@ -61,11 +61,21 @@ app.use((req, res, next) => {
 app.use(geoDetectionMiddleware);
 
 app.use((_req, res, next) => {
+  const crawlSafeTag = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+  const noIndexTag = "noindex, nofollow, noarchive, nosnippet";
+  const path = _req.path;
+  const shouldNoIndex =
+    path.startsWith("/api") ||
+    path.startsWith("/dashboard") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/login") ||
+    path.startsWith("/register");
+
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-  res.setHeader("X-Robots-Tag", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+  res.setHeader("X-Robots-Tag", shouldNoIndex ? noIndexTag : crawlSafeTag);
   next();
 });
 

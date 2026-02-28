@@ -12,6 +12,7 @@ type HeadManagerProps = {
   siteName?: string;
   imageUrl?: string;
   twitterImageUrl?: string;
+  robotsContent?: string;
 };
 
 const DEFAULT_SITE_NAME = "Builder.Contractors";
@@ -52,6 +53,7 @@ export function HeadManager({
   siteName = DEFAULT_SITE_NAME,
   imageUrl = DEFAULT_IMAGE_URL,
   twitterImageUrl = DEFAULT_TWITTER_IMAGE_URL,
+  robotsContent = DEFAULT_ROBOTS_CONTENT,
 }: HeadManagerProps) {
   useEffect(() => {
     const baseUrl = window.location.origin;
@@ -68,12 +70,12 @@ export function HeadManager({
 
     ensureMetaTag('meta[name="title"]', { name: "title" }).setAttribute("content", title);
     ensureMetaTag('meta[name="description"]', { name: "description" }).setAttribute("content", description);
-    ensureMetaTag('meta[name="robots"]', { name: "robots" }).setAttribute("content", DEFAULT_ROBOTS_CONTENT);
+    ensureMetaTag('meta[name="robots"]', { name: "robots" }).setAttribute("content", robotsContent);
     ensureMetaTag('meta[name="googlebot"]', { name: "googlebot" }).setAttribute(
       "content",
-      DEFAULT_ROBOTS_CONTENT,
+      robotsContent,
     );
-    ensureMetaTag('meta[name="bingbot"]', { name: "bingbot" }).setAttribute("content", DEFAULT_ROBOTS_CONTENT);
+    ensureMetaTag('meta[name="bingbot"]', { name: "bingbot" }).setAttribute("content", robotsContent);
     ensureMetaTag('meta[property="article:publisher"]', { property: "article:publisher" }).setAttribute(
       "content",
       siteName,
@@ -95,23 +97,23 @@ export function HeadManager({
     ensureMetaTag('meta[property="og:url"]', { property: "og:url" }).setAttribute("content", canonicalUrl);
     ensureMetaTag('meta[property="og:image"]', { property: "og:image" }).setAttribute("content", imageUrl);
 
-    ensureMetaTag('meta[property="twitter:card"]', { property: "twitter:card" }).setAttribute(
+    ensureMetaTag('meta[name="twitter:card"]', { name: "twitter:card" }).setAttribute(
       "content",
       "summary_large_image",
     );
-    ensureMetaTag('meta[property="twitter:title"]', { property: "twitter:title" }).setAttribute(
+    ensureMetaTag('meta[name="twitter:title"]', { name: "twitter:title" }).setAttribute(
       "content",
       title,
     );
-    ensureMetaTag('meta[property="twitter:description"]', { property: "twitter:description" }).setAttribute(
+    ensureMetaTag('meta[name="twitter:description"]', { name: "twitter:description" }).setAttribute(
       "content",
       description,
     );
-    ensureMetaTag('meta[property="twitter:url"]', { property: "twitter:url" }).setAttribute(
+    ensureMetaTag('meta[name="twitter:url"]', { name: "twitter:url" }).setAttribute(
       "content",
       canonicalUrl,
     );
-    ensureMetaTag('meta[property="twitter:image"]', { property: "twitter:image" }).setAttribute(
+    ensureMetaTag('meta[name="twitter:image"]', { name: "twitter:image" }).setAttribute(
       "content",
       twitterImageUrl,
     );
@@ -151,7 +153,7 @@ export function HeadManager({
       link.setAttribute("href", alternate.href);
       link.dataset.managed = "head-manager";
     });
-  }, [alternateLinks, canonicalPath, description, keywords, siteName, title, imageUrl, twitterImageUrl]);
+  }, [alternateLinks, canonicalPath, description, keywords, siteName, title, imageUrl, twitterImageUrl, robotsContent]);
 
   return null;
 }
