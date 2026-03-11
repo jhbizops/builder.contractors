@@ -7,6 +7,7 @@ import { geoDetectionMiddleware } from "./middleware/geoDetection";
 import { pool } from "./db";
 import { DEFAULT_SESSION_MAX_AGE, SESSION_COOKIE_NAME } from "./session";
 import { buildApiLogLine, shouldSkipBodyParsers } from "./http/requestRouting";
+import { assertAdminBootstrapStartupConfig } from "./adminBootstrap";
 
 const PgStore = connectPgSimple(session);
 
@@ -17,6 +18,8 @@ const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) {
   throw new Error("SESSION_SECRET must be defined");
 }
+
+assertAdminBootstrapStartupConfig();
 
 app.use(
   session({
