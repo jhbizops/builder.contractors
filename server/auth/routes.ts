@@ -9,6 +9,15 @@ import { DEFAULT_SESSION_MAX_AGE, REMEMBER_ME_SESSION_MAX_AGE, SESSION_COOKIE_NA
 import { toPublicUser } from "../users/serializers";
 import { getBillingService } from "../billing/instance";
 import { authLoginRateLimit, authRegisterRateLimit } from "../middleware/authRateLimit";
+import {
+  canConsumeBootstrapToken,
+  consumeBootstrapToken,
+  getAdminBootstrapSecurityConfig,
+  getClientIp,
+  isBootstrapIpAllowed,
+  verifyBootstrapToken,
+} from "../adminBootstrap";
+import { log } from "../vite";
 
 const authRouter = Router();
 
@@ -27,6 +36,12 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
   rememberMe: z.boolean().optional(),
+});
+
+const bootstrapAdminSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(12),
+  token: z.string().min(1),
 });
 
 function ensureSessionRegenerated(req: Request): Promise<void> {
@@ -65,12 +80,8 @@ const registerHandler: RequestHandler = async (req, res, next) => {
 
     const requestedRole = payload.role ?? "dual";
     if (requestedRole === "admin") {
-      const users = await storage.listUsers();
-      const hasAdmin = users.some((user) => user.role === "admin" || user.role === "super_admin");
-      if (hasAdmin) {
-        res.status(403).json({ message: "Admin role is already assigned." });
-        return;
-      }
+      res.status(403).json({ message: "Admin bootstrap endpoint is required for admin provisioning." });
+      return;
     }
 
     const salt = generateSalt();
@@ -199,9 +210,114 @@ const logoutHandler: RequestHandler = async (req, res, next) => {
   }
 };
 
+const bootstrapAdminHandler: RequestHandler = async (req, res, next) => {
+  const config = getAdminBootstrapSecurityConfig();
+  const requestIp = getClientIp(req);
+  const requestId = req.headers["x-request-id"];
+
+  const audit = (outcome: "allowed" | "blocked", reason: string) => {
+    log(
+      JSON.stringify({
+        event: "admin_bootstrap_attempt",
+        outcome,
+        reason,
+        ip: requestIp,
+        requestId: typeof requestId === "string" ? requestId : null,
+      }),
+      "security",
+    );
+  };
+
+  try {
+    if (!config.enabled) {
+      audit("blocked", "feature_disabled");
+      res.status(404).json({ message: "Not found" });
+      return;
+    }
+
+    if (!config.token) {
+      audit("blocked", "token_not_configured");
+      res.status(500).json({ message: "Bootstrap is misconfigured." });
+      return;
+    }
+
+    if (!isBootstrapIpAllowed(requestIp, config.allowedIps)) {
+      audit("blocked", "ip_not_allowed");
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const payload = bootstrapAdminSchema.parse(req.body);
+
+    if (!canConsumeBootstrapToken()) {
+      audit("blocked", "token_already_used");
+      res.status(409).json({ message: "Bootstrap token already used." });
+      return;
+    }
+
+    if (!verifyBootstrapToken(payload.token, config.token)) {
+      audit("blocked", "invalid_token");
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const users = await storage.listUsers();
+    const hasAdmin = users.some((user) => user.role === "admin" || user.role === "super_admin");
+
+    if (hasAdmin) {
+      audit("blocked", "admin_already_exists");
+      res.status(409).json({ message: "Admin role is already assigned." });
+      return;
+    }
+
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(payload.password, salt);
+
+    const user = await storage.createUser({
+      id: `user_${randomUUID()}`,
+      email: payload.email,
+      role: "admin",
+      country: null,
+      region: null,
+      locale: null,
+      currency: null,
+      languages: [],
+      approved: true,
+      passwordHash,
+      passwordSalt: salt,
+    });
+
+    consumeBootstrapToken();
+    audit("allowed", "admin_created");
+
+    await ensureSessionRegenerated(req);
+    req.session.userId = user.id;
+    req.session.userRole = user.role;
+    await saveSession(req);
+
+    const billingService = getBillingService();
+    const profile = await billingService.getUserBilling(user.id);
+
+    if (!profile) {
+      res.status(500).json({ message: "Unable to build user profile" });
+      return;
+    }
+
+    res.status(201).json({ user: toPublicUser(profile) });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      audit("blocked", "invalid_payload");
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+};
+
 authRouter.post("/register", authRegisterRateLimit, registerHandler);
 authRouter.post("/login", authLoginRateLimit, loginHandler);
 authRouter.post("/logout", logoutHandler);
 authRouter.get("/me", meHandler);
+authRouter.post("/bootstrap-admin", bootstrapAdminHandler);
 
 export { authRouter };

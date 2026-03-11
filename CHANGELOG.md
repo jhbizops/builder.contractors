@@ -1,4 +1,5 @@
 ## Unreleased
+- Hardened admin provisioning by removing hardcoded admin credentials, gating `/admin-setup` out of production routing, and adding secure one-time server bootstrap with env flag, token, IP allowlist, startup guard, and audit logging.
 - Added a UX execution backlog with sequenced epics and acceptance criteria in `docs/ux/tasks.md`.
 - Added dynamic sitemap/robots routes backed by shared route config and build-time release date metadata.
 - Expanded SEO/GEO coverage with crawler directives, richer JSON-LD service schema, and new `/llms.txt` + `/llms-full.txt` endpoints for AI retrieval engines.

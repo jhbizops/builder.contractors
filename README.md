@@ -18,6 +18,7 @@ Copy `.env.example` to `.env` and set:
 - `SESSION_SECRET` for Express sessions
 - `RELEASE_DATE` (YYYY-MM-DD) for sitemap lastmod generation
 - Stripe billing keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ENTERPRISE`, `STRIPE_WEBHOOK_SECRET`
+- Admin bootstrap guardrails (all required when `ALLOW_ADMIN_BOOTSTRAP=true` in production): `ADMIN_BOOTSTRAP_TOKEN`, `ADMIN_BOOTSTRAP_ALLOWED_IPS`
 
 
 ## SEO and GEO
@@ -62,6 +63,7 @@ Copy `.env.example` to `.env` and set:
 
 ## Authentication
 - Login and registration are protected with per-IP and per-email rate limits; repeated failures return generic errors with `Retry-After` guidance and valid credentials reset the failed-attempt counter.
+- The `/admin-setup` client route is excluded from production builds; privileged first-admin creation is available only through `/api/auth/bootstrap-admin` when explicitly enabled by `ALLOW_ADMIN_BOOTSTRAP=true` with one-time token and IP allowlist safeguards.
 
 ## Performance
 - Sales dashboard filtering and stats are memoised to keep list interactions responsive, and the lead detail modal loads lazily to reduce the initial bundle.

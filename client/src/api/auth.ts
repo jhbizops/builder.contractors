@@ -37,6 +37,19 @@ export async function logoutUser(): Promise<void> {
   await apiRequest("POST", "/api/auth/logout");
 }
 
+export interface BootstrapAdminPayload {
+  email: string;
+  password: string;
+  token: string;
+}
+
+export async function bootstrapAdmin(payload: BootstrapAdminPayload): Promise<User> {
+  const res = await apiRequest("POST", "/api/auth/bootstrap-admin", payload);
+  const json = await res.json();
+  const { user } = singleUserResponseSchema.parse(json);
+  return mapUser(user);
+}
+
 export async function fetchCurrentUser(): Promise<User | null> {
   const res = await fetch("/api/auth/me", { credentials: "include" });
 

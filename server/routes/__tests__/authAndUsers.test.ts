@@ -10,6 +10,7 @@ import {
 import type { User } from "@shared/schema";
 import type { IStorage } from "../../storage";
 import { defaultBillingPlans } from "@shared/billingPlans";
+import { resetAdminBootstrapStateForTests } from "../../adminBootstrap";
 
 const mockStore = new Map<string, User>();
 
@@ -239,6 +240,11 @@ describe("auth and users routes", () => {
   let resetStorage: () => void;
 
   beforeEach(async () => {
+    process.env.ALLOW_ADMIN_BOOTSTRAP = "true";
+    process.env.ADMIN_BOOTSTRAP_TOKEN = "test-bootstrap-token";
+    process.env.ADMIN_BOOTSTRAP_ALLOWED_IPS = "::ffff:127.0.0.1,127.0.0.1";
+    resetAdminBootstrapStateForTests();
+
     const storageModule = (await import("../../storageInstance")) as unknown as {
       __resetMockStorage: () => void;
     };
@@ -316,16 +322,18 @@ describe("auth and users routes", () => {
   it("allows admins to list and approve users", async () => {
     const adminAgent = request.agent(app);
     const adminRes = await adminAgent
-      .post("/api/auth/register")
-      .send({ email: "admin@example.com", password: "AdminPass123!", role: "admin" })
+      .post("/api/auth/bootstrap-admin")
+      .set("x-forwarded-for", "127.0.0.1")
+      .send({
+        email: "admin@example.com",
+        password: "AdminPass12345!",
+        token: "test-bootstrap-token",
+      })
       .expect(201);
+
     const storageModule = (await import("../../storageInstance")) as unknown as { storage: IStorage };
     const adminRecord = await storageModule.storage.getUser(adminRes.body.user.id);
     expect(adminRecord?.role).toBe("admin");
-    await adminAgent
-      .post("/api/auth/login")
-      .send({ email: "admin@example.com", password: "AdminPass123!" })
-      .expect(200);
 
     const userAgent = request.agent(app);
     const userRes = await userAgent
@@ -354,16 +362,39 @@ describe("auth and users routes", () => {
     await userAgent.get("/api/users").expect(403);
   });
 
-  it("blocks additional admin registration once an admin exists", async () => {
-    const adminAgent = request.agent(app);
-    await adminAgent
-      .post("/api/auth/register")
-      .send({ email: "admin@example.com", password: "AdminPass123!", role: "admin" })
+  it("allows bootstrap token only once", async () => {
+    await request(app)
+      .post("/api/auth/bootstrap-admin")
+      .set("x-forwarded-for", "127.0.0.1")
+      .send({
+        email: "admin@example.com",
+        password: "AdminPass12345!",
+        token: "test-bootstrap-token",
+      })
       .expect(201);
 
     await request(app)
-      .post("/api/auth/register")
-      .send({ email: "admin2@example.com", password: "AdminPass123!", role: "admin" })
+      .post("/api/auth/bootstrap-admin")
+      .set("x-forwarded-for", "127.0.0.1")
+      .send({
+        email: "admin2@example.com",
+        password: "AdminPass12345!",
+        token: "test-bootstrap-token",
+      })
+      .expect(409);
+  });
+
+  it("blocks bootstrap requests from non-allowlisted IPs", async () => {
+    process.env.ADMIN_BOOTSTRAP_ALLOWED_IPS = "10.0.0.1";
+    resetAdminBootstrapStateForTests();
+
+    await request(app)
+      .post("/api/auth/bootstrap-admin")
+      .send({
+        email: "admin@example.com",
+        password: "AdminPass12345!",
+        token: "test-bootstrap-token",
+      })
       .expect(403);
   });
 });

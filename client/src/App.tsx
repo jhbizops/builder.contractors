@@ -36,13 +36,15 @@ const marketingRoutes = [
   { slug: "/pricing", component: Pricing },
 ];
 
+const adminSetupEnabledInRuntime = !import.meta.env.PROD;
+
 // Loading placeholder
 function LoadingFallback() {
   return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 }
 
 // Auto-seed admin account in development
-function Router() {
+export function Router({ enableAdminSetupRoute = adminSetupEnabledInRuntime }: { enableAdminSetupRoute?: boolean }) {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
@@ -50,7 +52,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/logout" component={ClearSession} />
-        <Route path="/admin-setup" component={AdminSetup} />
+        {enableAdminSetupRoute ? <Route path="/admin-setup" component={AdminSetup} /> : null}
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/dashboard/sales" component={SalesDashboard} />
         <Route path="/dashboard/builder" component={BuilderDashboard} />
