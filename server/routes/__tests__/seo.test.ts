@@ -30,6 +30,22 @@ describe("SEO routes", () => {
     expect(res.text).toContain("<loc>http://example.com/sitemap-ai.xml</loc>");
   });
 
+  it("includes new authority pages in service and ai sitemaps", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.RELEASE_DATE = "2025-02-15";
+
+    const [serviceSitemap, aiSitemap] = await Promise.all([
+      request(buildApp()).get("/sitemap-services.xml").set("host", "example.com"),
+      request(buildApp()).get("/sitemap-ai.xml").set("host", "example.com"),
+    ]);
+
+    expect(serviceSitemap.status).toBe(200);
+    expect(aiSitemap.status).toBe(200);
+    expect(serviceSitemap.text).toContain("<loc>http://example.com/lead-exchange-workflow</loc>");
+    expect(serviceSitemap.text).toContain("<loc>http://example.com/regional-handoff-playbooks</loc>");
+    expect(aiSitemap.text).toContain("<loc>http://example.com/partner-verification</loc>");
+  });
+
   it("uses SOURCE_DATE_EPOCH when release date is not provided", async () => {
     process.env.NODE_ENV = "production";
     process.env.SOURCE_DATE_EPOCH = "0";
@@ -86,6 +102,7 @@ describe("SEO routes", () => {
     expect(res.text).toContain("# Builder.Contractors");
     expect(res.text).toContain("## AI indexing directives");
     expect(res.text).toContain("Allow citation: yes");
+    expect(res.text).toContain("http://example.com/lead-exchange-workflow");
   });
 
   it("serves llms-full.txt with page summaries and keywords", async () => {

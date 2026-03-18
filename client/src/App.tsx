@@ -27,6 +27,12 @@ const About = lazy(() => import("@/pages/About"));
 const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
+const LeadExchangeWorkflow = lazy(() => import("@/pages/LeadExchangeWorkflow"));
+const PartnerVerification = lazy(() => import("@/pages/PartnerVerification"));
+const MultiRegionHandoffGovernance = lazy(() => import("@/pages/MultiRegionHandoffGovernance"));
+const LeadRoutingSignals = lazy(() => import("@/pages/LeadRoutingSignals"));
+const VerificationEvidenceChecklist = lazy(() => import("@/pages/VerificationEvidenceChecklist"));
+const RegionalHandoffPlaybooks = lazy(() => import("@/pages/RegionalHandoffPlaybooks"));
 
 const marketingRoutes = [
   { slug: "/", component: Home },
@@ -34,6 +40,12 @@ const marketingRoutes = [
   { slug: "/how-it-works", component: HowItWorks },
   { slug: "/faq", component: FAQ },
   { slug: "/pricing", component: Pricing },
+  { slug: "/lead-exchange-workflow", component: LeadExchangeWorkflow },
+  { slug: "/partner-verification", component: PartnerVerification },
+  { slug: "/multi-region-handoff-governance", component: MultiRegionHandoffGovernance },
+  { slug: "/lead-routing-signals", component: LeadRoutingSignals },
+  { slug: "/verification-evidence-checklist", component: VerificationEvidenceChecklist },
+  { slug: "/regional-handoff-playbooks", component: RegionalHandoffPlaybooks },
 ];
 
 const adminSetupEnabledInRuntime = !import.meta.env.PROD;
@@ -64,6 +76,12 @@ export function Router({ enableAdminSetupRoute = adminSetupEnabledInRuntime }: {
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/faq" component={FAQ} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/lead-exchange-workflow" component={LeadExchangeWorkflow} />
+        <Route path="/partner-verification" component={PartnerVerification} />
+        <Route path="/multi-region-handoff-governance" component={MultiRegionHandoffGovernance} />
+        <Route path="/lead-routing-signals" component={LeadRoutingSignals} />
+        <Route path="/verification-evidence-checklist" component={VerificationEvidenceChecklist} />
+        <Route path="/regional-handoff-playbooks" component={RegionalHandoffPlaybooks} />
         {marketingLocales.flatMap((locale) =>
           marketingRoutes.map((route) => (
             <Route

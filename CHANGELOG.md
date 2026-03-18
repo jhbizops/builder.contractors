@@ -1,4 +1,5 @@
 ## Unreleased
+- Added regional/service intent authority pages (pillars + supporting subpages), localized marketing navigation links, and synchronized sitemap + LLM discovery outputs for the new routes.
 - Implemented deterministic build-time marketing-page rendering that writes complete SEO metadata and JSON-LD into `dist/public` for base and localized routes (including `/au/about`).
 - Added a 90-day AEO implementation plan for AI-first discovery (citability, telemetry, governance) in `docs/seo/aeo-90-day-implementation-plan.md`.
 - Hardened admin provisioning by removing hardcoded admin credentials, gating `/admin-setup` out of production routing, and adding secure one-time server bootstrap with env flag, token, IP allowlist, startup guard, and audit logging.

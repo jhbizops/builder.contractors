@@ -27,6 +27,8 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
   const homePath = marketingContext?.locale
     ? getLocalizedMarketingPath(marketingContext.locale.prefix, "/")
     : "/";
+  const toMarketingPath = (slug: string): string =>
+    marketingContext?.locale ? getLocalizedMarketingPath(marketingContext.locale.prefix, slug) : slug;
 
   return (
     <div className="min-h-screen bg-slate-50" dir={isRtl ? "rtl" : "ltr"}>
@@ -50,6 +52,12 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
               </Link>
             </div>
             <div className="flex items-center gap-4">
+              <Link href={toMarketingPath("/how-it-works")} className="text-sm text-slate-700 hover:text-slate-900 transition-colors">
+                How it works
+              </Link>
+              <Link href={toMarketingPath("/pricing")} className="text-sm text-slate-700 hover:text-slate-900 transition-colors">
+                Pricing
+              </Link>
               <CountrySelector className="w-48" />
               <Button variant="ghost" asChild>
                 <Link href="/login">Sign In</Link>
@@ -78,10 +86,10 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
               <span className="text-white font-bold">Builder.Contractors</span>
             </div>
             <nav aria-label="Footer" className="grid grid-cols-2 gap-3 text-sm">
-              <Link href="/about" className="hover:text-white transition-colors">About</Link>
-              <Link href="/how-it-works" className="hover:text-white transition-colors">How it works</Link>
-              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-              <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
+              <Link href={toMarketingPath("/about")} className="hover:text-white transition-colors">About</Link>
+              <Link href={toMarketingPath("/how-it-works")} className="hover:text-white transition-colors">How it works</Link>
+              <Link href={toMarketingPath("/pricing")} className="hover:text-white transition-colors">Pricing</Link>
+              <Link href={toMarketingPath("/faq")} className="hover:text-white transition-colors">FAQ</Link>
               <a href="/llms.txt" className="hover:text-white transition-colors">AI summary</a>
               <a href="/sitemap.xml" className="hover:text-white transition-colors">Sitemap</a>
             </nav>

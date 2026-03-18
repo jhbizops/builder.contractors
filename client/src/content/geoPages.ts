@@ -31,7 +31,20 @@ export type GeoPageContent = {
   tiers?: PricingTier[];
 };
 
-export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing", GeoPageContent> = {
+export const geoPages: Record<
+  | "home"
+  | "about"
+  | "howItWorks"
+  | "faq"
+  | "pricing"
+  | "leadExchangeWorkflow"
+  | "partnerVerification"
+  | "multiRegionHandoffGovernance"
+  | "leadRoutingSignals"
+  | "verificationEvidenceChecklist"
+  | "regionalHandoffPlaybooks",
+  GeoPageContent
+> = {
   home: {
     slug: "/",
     title: "Builder.Contractors - Exchange Leads, Grow Together",
@@ -207,6 +220,120 @@ export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing
       {
         question: "Do you offer annual pricing?",
         answer: "Annual billing is available for Growth and Enterprise plans with custom discounts.",
+      },
+    ],
+  },
+  leadExchangeWorkflow: {
+    slug: "/lead-exchange-workflow",
+    title: "Lead Exchange Workflow for Builders and Contractors",
+    summary: "A governed workflow for lead intake, partner matching, scoped sharing, and closed-loop project outcomes.",
+    keywords: [
+      "lead exchange workflow",
+      "contractor lead routing",
+      "builder referral handoff process",
+      "construction lead governance",
+    ],
+    faqs: [
+      {
+        question: "How does lead exchange stay controlled?",
+        answer: "Leads are routed through role-based workflows with scoped visibility, status checkpoints, and auditable handoff history.",
+      },
+      {
+        question: "Can teams exchange leads across regions?",
+        answer: "Yes. Routing logic supports region-aware assignment while preserving compliance and accountability controls.",
+      },
+    ],
+  },
+  partnerVerification: {
+    slug: "/partner-verification",
+    title: "Partner Verification Framework",
+    summary: "Verify builder and contractor partners with identity, licensing, insurance, and delivery-readiness controls.",
+    keywords: [
+      "partner verification",
+      "contractor credential checks",
+      "builder trust framework",
+      "trade partner due diligence",
+    ],
+    faqs: [
+      {
+        question: "What proof is required for partner verification?",
+        answer: "Teams typically validate legal entity, licence and insurance details, coverage area, and operational capability.",
+      },
+      {
+        question: "Does verification happen once or continuously?",
+        answer: "Verification is ongoing with policy-based reviews to maintain trust and compliance over time.",
+      },
+    ],
+  },
+  multiRegionHandoffGovernance: {
+    slug: "/multi-region-handoff-governance",
+    title: "Multi-Region Handoff Governance",
+    summary: "Coordinate project handoffs across regions with policy, SLA checkpoints, and clear ownership transitions.",
+    keywords: [
+      "multi-region handoff governance",
+      "cross-region project routing",
+      "construction handoff policy",
+      "regional service governance",
+    ],
+    faqs: [
+      {
+        question: "How are cross-region handoffs governed?",
+        answer: "Handoffs follow predefined ownership gates, service-level targets, and compliance policies per region.",
+      },
+      {
+        question: "Can governance adapt to local requirements?",
+        answer: "Yes. Teams can enforce local policy controls while keeping global visibility and reporting.",
+      },
+    ],
+  },
+  leadRoutingSignals: {
+    slug: "/lead-routing-signals",
+    title: "Lead Routing Signals and Matching Rules",
+    summary: "Define matching signals that improve handoff quality and route each lead to the best-fit verified partner.",
+    keywords: [
+      "lead routing signals",
+      "partner matching rules",
+      "construction lead qualification",
+      "referral prioritization",
+    ],
+    faqs: [
+      {
+        question: "What are the most useful routing signals?",
+        answer: "Trade capability, region, current capacity, project complexity, and compliance status are high-impact signals.",
+      },
+    ],
+  },
+  verificationEvidenceChecklist: {
+    slug: "/verification-evidence-checklist",
+    title: "Partner Verification Evidence Checklist",
+    summary: "A practical checklist for collecting and validating the evidence needed to onboard trusted partners.",
+    keywords: [
+      "verification checklist",
+      "contractor onboarding evidence",
+      "partner compliance documents",
+      "trade credential validation",
+    ],
+    faqs: [
+      {
+        question: "Why use a checklist for partner verification?",
+        answer: "Checklists reduce onboarding errors, improve consistency, and support audit readiness.",
+      },
+    ],
+  },
+  regionalHandoffPlaybooks: {
+    slug: "/regional-handoff-playbooks",
+    title: "Regional Handoff Playbooks",
+    summary: "Operational playbooks for cross-region lead acceptance, transfer, and completion updates.",
+    keywords: [
+      "regional handoff playbooks",
+      "cross-region workflow templates",
+      "handoff operations guide",
+      "service transition process",
+    ],
+    faqs: [
+      {
+        question: "When should teams use regional playbooks?",
+        answer: "Use playbooks whenever work moves between service areas to maintain quality and consistent communication.",
       },
     ],
   },

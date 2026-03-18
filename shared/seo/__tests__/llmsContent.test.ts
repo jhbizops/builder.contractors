@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { geoPages } from "../../../client/src/content/geoPages";
 import { LLM_BRAND, LLM_KEY_PUBLIC_PATHS, renderLlmsFullTxt, renderLlmsTxt } from "../llmsContent";
 
-const llmsPages = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing].map((page) => ({
+const llmsPages = Object.values(geoPages).map((page) => ({
   slug: page.slug,
   title: page.title,
   summary: page.summary,
