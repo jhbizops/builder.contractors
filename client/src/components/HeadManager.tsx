@@ -16,8 +16,8 @@ type HeadManagerProps = {
 };
 
 const DEFAULT_SITE_NAME = "Builder.Contractors";
-const DEFAULT_IMAGE_URL = "https://www.builder.contractors/og-image.jpg";
-const DEFAULT_TWITTER_IMAGE_URL = "https://www.builder.contractors/twitter-image.jpg";
+const DEFAULT_IMAGE_URL = "https://www.builder.contractors/social-preview.svg";
+const DEFAULT_TWITTER_IMAGE_URL = "https://www.builder.contractors/social-preview.svg";
 const DEFAULT_ROBOTS_CONTENT = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
 const ensureMetaTag = (selector: string, attributes: Record<string, string>) => {
