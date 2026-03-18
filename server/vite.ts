@@ -69,7 +69,6 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(import.meta.dirname, "public");
-  const marketingRoutes = ["/", "/about", "/how-it-works", "/faq", "/pricing"];
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -77,16 +76,21 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.get(marketingRoutes, (req, res, next) => {
+  app.get("*", (req, res, next) => {
     const normalizedPath =
       req.path !== "/" && req.path.endsWith("/") ? req.path.slice(0, -1) : req.path;
-    const filePath =
+    if (path.extname(normalizedPath)) {
+      next();
+      return;
+    }
+
+    const routeIndexPath =
       normalizedPath === "/"
         ? path.join(distPath, "index.html")
         : path.join(distPath, normalizedPath.replace(/^\//, ""), "index.html");
 
-    if (fs.existsSync(filePath)) {
-      res.sendFile(filePath);
+    if (fs.existsSync(routeIndexPath)) {
+      res.sendFile(routeIndexPath);
       return;
     }
 

@@ -1,8 +1,9 @@
-import { getGeoPageContent, type GeoPageKey } from "@/content/geoPages";
+import { geoPages, getGeoPageContent, type GeoPageKey } from "@/content/geoPages";
 import {
   getLocalizedMarketingPath,
   getMarketingAlternateLinks,
   marketingLocales,
+  marketingPageSlugs,
   type MarketingLocale,
 } from "@/content/locales";
 import {
@@ -14,13 +15,13 @@ import {
 
 const DEFAULT_ROBOTS_CONTENT = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
-const pageKeyBySlug: Record<string, GeoPageKey> = {
-  "/": "home",
-  "/about": "about",
-  "/how-it-works": "howItWorks",
-  "/faq": "faq",
-  "/pricing": "pricing",
-};
+const pageKeyBySlug: Record<string, GeoPageKey> = Object.entries(geoPages).reduce(
+  (acc, [pageKey, content]) => ({
+    ...acc,
+    [content.slug]: pageKey as GeoPageKey,
+  }),
+  {} as Record<string, GeoPageKey>,
+);
 
 const escapeHtml = (value: string): string =>
   value
@@ -40,20 +41,32 @@ export type MarketingRenderPage = {
 };
 
 export const getMarketingRenderPages = (): MarketingRenderPage[] => {
-  const basePages = Object.entries(pageKeyBySlug).map(([slug, pageKey]) => ({
-    slug,
-    canonicalPath: slug,
-    pageKey,
-    locale: null,
-  }));
+  const basePages = marketingPageSlugs.map((slug) => {
+    const pageKey = pageKeyBySlug[slug];
+    if (!pageKey) {
+      throw new Error(`No marketing prerender page key registered for slug: ${slug}`);
+    }
+    return {
+      slug,
+      canonicalPath: slug,
+      pageKey,
+      locale: null,
+    };
+  });
 
   const localizedPages = marketingLocales.flatMap((locale) =>
-    Object.entries(pageKeyBySlug).map(([slug, pageKey]) => ({
-      slug,
-      canonicalPath: getLocalizedMarketingPath(locale.prefix, slug),
-      pageKey,
-      locale,
-    })),
+    marketingPageSlugs.map((slug) => {
+      const pageKey = pageKeyBySlug[slug];
+      if (!pageKey) {
+        throw new Error(`No marketing prerender page key registered for slug: ${slug}`);
+      }
+      return {
+        slug,
+        canonicalPath: getLocalizedMarketingPath(locale.prefix, slug),
+        pageKey,
+        locale,
+      };
+    }),
   );
 
   return [...basePages, ...localizedPages];

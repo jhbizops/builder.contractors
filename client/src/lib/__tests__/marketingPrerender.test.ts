@@ -25,6 +25,30 @@ describe("marketing prerender helpers", () => {
     expect(headMarkup).toContain('"@type":"Service"');
   });
 
+  it("builds localized canonical and alternate tags for locale-prefixed pages", () => {
+    const headMarkup = buildMarketingHeadMarkup(
+      {
+        slug: "/about",
+        canonicalPath: "/uk/about",
+        pageKey: "about",
+        locale: {
+          locale: "en-GB",
+          region: "GB",
+          prefix: "/uk",
+          hreflang: "en-GB",
+          countryName: "United Kingdom",
+        },
+      },
+      "https://www.builder.contractors",
+    );
+
+    expect(headMarkup).toContain('rel="canonical" href="https://www.builder.contractors/uk/about"');
+    expect(headMarkup).toContain('rel="alternate" hreflang="x-default" href="https://www.builder.contractors/about"');
+    expect(headMarkup).toContain('rel="alternate" hreflang="en-US" href="https://www.builder.contractors/us/about"');
+    expect(headMarkup).toContain('rel="alternate" hreflang="en-GB" href="https://www.builder.contractors/uk/about"');
+    expect(headMarkup).toContain('rel="alternate" hreflang="en-AU" href="https://www.builder.contractors/au/about"');
+  });
+
   it("replaces managed head tags while preserving unrelated head content", () => {
     const template = [
       "<html><head>",
