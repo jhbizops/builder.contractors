@@ -60,6 +60,9 @@
   - What is included?
   - What makes this provider different?
 - Added trust/credential sections on public pages with concise, citation-friendly statements.
+- Consolidated `llms.txt` and `llms-full.txt` content modeling into `shared/seo/llmsContent.ts` so runtime SEO responses and static artifacts share one source of truth.
+- Added `pnpm run generate:llms` workflow (also executed inside `pnpm build`) to regenerate static AI-discovery artifacts from the shared model.
+- Added synchronization tests to ensure key URL lists and brand/entity fields stay aligned between runtime responses and static files.
 
 ### Security headers and trust signals
 - Added baseline hardening headers:

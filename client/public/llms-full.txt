@@ -1,0 +1,65 @@
+# Builder.Contractors reference
+
+This file provides expanded, machine-readable context for AI retrieval systems and search assistants.
+
+Primary domain intent: Construction referral and workflow coordination for verified builder and contractor teams.
+
+### Builder.Contractors - Exchange Leads, Grow Together
+URL: {{PUBLIC_SITE_URL}}/
+Summary: Join the global network of builders and contractors sharing projects, exchanging work opportunities, and supporting each other's growth.
+Keywords: builder network, contractor leads, construction leads exchange, global contractors, construction network, trade partners
+
+### About Builder.Contractors
+URL: {{PUBLIC_SITE_URL}}/about
+Summary: Builder.Contractors is a private construction referral and workflow coordination network for verified builders and contractors.
+Keywords: builder referral network, contractor lead exchange, trade partner marketplace, multi-region builder network
+
+### How Builder.Contractors Works
+URL: {{PUBLIC_SITE_URL}}/how-it-works
+Summary: A streamlined workflow to share, verify, and collaborate on projects in minutes.
+Keywords: how builder referrals work, trade collaboration workflow, contractor lead handoff, verified builder matching
+
+### Builder.Contractors FAQ
+URL: {{PUBLIC_SITE_URL}}/faq
+Summary: Answers to the most common questions about partnering, security, and lead exchange.
+Keywords: builder contractor faq, lead exchange security, partner verification, trade referrals
+
+### Pricing for Builder.Contractors
+URL: {{PUBLIC_SITE_URL}}/pricing
+Summary: Transparent plans for construction referral routing, partner collaboration, and multi-region workflow coordination.
+Keywords: builder contractor pricing, lead exchange plans, trade collaboration platform cost, builder network subscription
+
+## Key public URLs
+- {{PUBLIC_SITE_URL}}/
+- {{PUBLIC_SITE_URL}}/about
+- {{PUBLIC_SITE_URL}}/how-it-works
+- {{PUBLIC_SITE_URL}}/faq
+- {{PUBLIC_SITE_URL}}/pricing
+- {{PUBLIC_SITE_URL}}/us
+- {{PUBLIC_SITE_URL}}/us/about
+- {{PUBLIC_SITE_URL}}/us/how-it-works
+- {{PUBLIC_SITE_URL}}/us/faq
+- {{PUBLIC_SITE_URL}}/us/pricing
+- {{PUBLIC_SITE_URL}}/uk
+- {{PUBLIC_SITE_URL}}/uk/about
+- {{PUBLIC_SITE_URL}}/uk/how-it-works
+- {{PUBLIC_SITE_URL}}/uk/faq
+- {{PUBLIC_SITE_URL}}/uk/pricing
+- {{PUBLIC_SITE_URL}}/au
+- {{PUBLIC_SITE_URL}}/au/about
+- {{PUBLIC_SITE_URL}}/au/how-it-works
+- {{PUBLIC_SITE_URL}}/au/faq
+- {{PUBLIC_SITE_URL}}/au/pricing
+- {{PUBLIC_SITE_URL}}/login
+- {{PUBLIC_SITE_URL}}/register
+- {{PUBLIC_SITE_URL}}/sitemap.xml
+- {{PUBLIC_SITE_URL}}/robots.txt
+- {{PUBLIC_SITE_URL}}/llms.txt
+- {{PUBLIC_SITE_URL}}/llms-full.txt
+- {{PUBLIC_SITE_URL}}/ai.txt
+
+## Brand and trust signals
+- Focus: construction referral routing and project handoff workflows.
+- Security posture: private exchange, controlled access, and least-privilege sharing.
+- Ideal users: builders, contractors, and multi-region trade teams.
+- Primary region: Australia with global service routing capabilities.

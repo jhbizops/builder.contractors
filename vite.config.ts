@@ -42,6 +42,7 @@ export default defineConfig(() => {
       setupFiles: './client/src/test/setup.ts',
       include: [
         '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+        '../shared/**/__tests__/**/*.{test,spec}.ts',
         '../server/__tests__/**/*.{test,spec}.ts',
         '../server/routes/__tests__/**/*.{test,spec}.ts',
       ],

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { geoPages } from "../../client/src/content/geoPages";
 import { sitemapRoutes } from "../../client/src/content/routes";
 import { DEFAULT_PUBLIC_SITE_ORIGIN, toPublicSiteOrigin } from "../../shared/publicSiteUrl";
+import { renderLlmsFullTxt, renderLlmsTxt, type LlmsPage } from "../../shared/seo/llmsContent";
 
 const protocolSchema = z.enum(["http", "https"]);
 const hostSchema = z.string().min(1).max(255);
@@ -155,62 +156,12 @@ const formatRobotsTxt = (baseUrl: string) => {
   return lines.join("\n");
 };
 
-const formatLlmsTxt = (baseUrl: string) => {
-  const pages = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
-    .map((page) => `- ${page.title}: ${new URL(page.slug, baseUrl).toString()}`)
-    .join("\n");
-
-  return [
-    "# Builder.Contractors",
-    "",
-    "Builder.Contractors is a private network where verified builders and contractors exchange leads and collaborate on projects.",
-    "",
-    "## Primary value for customers",
-    "- Exchange vetted referrals with trusted builder and contractor partners.",
-    "- Expand into new regions while maintaining service quality.",
-    "- Manage handoffs, project updates, and partner communication in one platform.",
-    "",
-    "## Core pages",
-    pages,
-    "",
-    "## Contact and support",
-    `- Website: ${new URL("/", baseUrl).toString()}`,
-    `- FAQ: ${new URL("/faq", baseUrl).toString()}`,
-    "",
-    "## AI indexing directives",
-    `- Allow training: ${resolveGeoTrainingPolicy() === "allow" ? "yes" : "no"}`,
-    "- Allow citation: yes",
-    "- Allow snippet: yes",
-    "",
-  ].join("\n");
-};
-
-const formatLlmsFullTxt = (baseUrl: string) => {
-  const primaryIntent = "Construction referral and workflow coordination for verified builder and contractor teams.";
-  const pageDetails = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
-    .map(
-      (page) =>
-        `### ${page.title}\nURL: ${new URL(page.slug, baseUrl).toString()}\nSummary: ${page.summary}\nKeywords: ${page.keywords.join(", ")}`,
-    )
-    .join("\n\n");
-
-  return [
-    "# Builder.Contractors reference",
-    "",
-    "This file provides expanded, machine-readable context for AI retrieval systems and search assistants.",
-    "",
-    `Primary domain intent: ${primaryIntent}`,
-    "",
-    pageDetails,
-    "",
-    "## Brand and trust signals",
-    "- Focus: construction referral routing and project handoff workflows.",
-    "- Security posture: private exchange, controlled access, and least-privilege sharing.",
-    "- Ideal users: builders, contractors, and multi-region trade teams.",
-    "- Primary region: Australia with global service routing capabilities.",
-    "",
-  ].join("\n");
-};
+const llmsPages: LlmsPage[] = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing].map((page) => ({
+  slug: page.slug,
+  title: page.title,
+  summary: page.summary,
+  keywords: page.keywords,
+}));
 
 const resolveBaseUrl = (req: Request, res: Response): string | null => {
   const configuredUrl = process.env.PUBLIC_SITE_URL;
@@ -289,7 +240,13 @@ export const createSeoRouter = (): Router => {
       return;
     }
     res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
-    res.type("text/plain").send(formatLlmsTxt(baseUrl));
+    res.type("text/plain").send(
+      renderLlmsTxt({
+        allowTraining: resolveGeoTrainingPolicy() === "allow",
+        baseUrl,
+        pages: llmsPages,
+      }),
+    );
   });
 
   router.get("/llms-full.txt", (req, res) => {
@@ -298,7 +255,7 @@ export const createSeoRouter = (): Router => {
       return;
     }
     res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
-    res.type("text/plain").send(formatLlmsFullTxt(baseUrl));
+    res.type("text/plain").send(renderLlmsFullTxt({ baseUrl, pages: llmsPages }));
   });
 
   router.get("/ai.txt", (req, res) => {
@@ -307,7 +264,13 @@ export const createSeoRouter = (): Router => {
       return;
     }
     res.setHeader("X-Robots-Tag", "index, follow, max-snippet:-1, max-image-preview:large");
-    res.type("text/plain").send(formatLlmsTxt(baseUrl));
+    res.type("text/plain").send(
+      renderLlmsTxt({
+        allowTraining: resolveGeoTrainingPolicy() === "allow",
+        baseUrl,
+        pages: llmsPages,
+      }),
+    );
   });
 
   return router;
