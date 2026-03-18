@@ -1,0 +1,28 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="40" y1="40" x2="1160" y2="590" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A" />
+      <stop offset="1" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="122" y1="122" x2="1078" y2="508" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6" stop-opacity="0.18" />
+      <stop offset="1" stop-color="#38BDF8" stop-opacity="0.3" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="630" fill="url(#bgGradient)" />
+  <rect x="40" y="40" width="1120" height="550" rx="28" fill="url(#accentGradient)" stroke="#93C5FD" stroke-opacity="0.2" />
+
+  <text x="120" y="245" fill="#E2E8F0" font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="42" font-weight="600" letter-spacing="1.2">
+    BUILDER.CONTRACTORS
+  </text>
+  <text x="120" y="330" fill="#FFFFFF" font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="72" font-weight="700">
+    Exchange Leads.
+  </text>
+  <text x="120" y="404" fill="#FFFFFF" font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="72" font-weight="700">
+    Grow Together.
+  </text>
+  <text x="120" y="484" fill="#BFDBFE" font-family="Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="500">
+    Global network for builders and contractors
+  </text>
+</svg>
