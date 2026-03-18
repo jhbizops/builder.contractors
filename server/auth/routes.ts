@@ -24,7 +24,6 @@ const authRouter = Router();
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(["dual", "admin"]).optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   locale: z.string().optional(),
@@ -43,6 +42,62 @@ const bootstrapAdminSchema = z.object({
   password: z.string().min(12),
   token: z.string().min(1),
 });
+
+const privilegedRoles = new Set(["admin", "super_admin"]);
+type ProcessEnv = Record<string, string | undefined>;
+
+function getPublicRegistrationDefaultRole(env: ProcessEnv = process.env): string {
+  const configured = env.PUBLIC_REGISTRATION_DEFAULT_ROLE?.trim().toLowerCase();
+  if (!configured || privilegedRoles.has(configured)) {
+    return "dual";
+  }
+  return configured;
+}
+
+async function tryAcquireAdminBootstrapGuard(email: string): Promise<boolean> {
+  if (!process.env.DATABASE_URL) {
+    return true;
+  }
+
+  const { pool } = await import("../db");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["admin_bootstrap_guard"]);
+    await client.query(
+      `CREATE TABLE IF NOT EXISTS admin_bootstrap_state (
+        id smallint PRIMARY KEY CHECK (id = 1),
+        consumed_at timestamp NOT NULL DEFAULT now(),
+        consumed_by text NOT NULL
+      )`,
+    );
+
+    const existingAdmin = await client.query<{ id: string }>(
+      `SELECT id FROM users WHERE role IN ('admin', 'super_admin') LIMIT 1`,
+    );
+    if (existingAdmin.rowCount && existingAdmin.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    const insert = await client.query(
+      `INSERT INTO admin_bootstrap_state (id, consumed_at, consumed_by)
+       VALUES (1, now(), $1)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [email],
+    );
+
+    await client.query("COMMIT");
+    return (insert.rowCount ?? 0) > 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 function ensureSessionRegenerated(req: Request): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -78,19 +133,14 @@ const registerHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const requestedRole = payload.role ?? "dual";
-    if (requestedRole === "admin") {
-      res.status(403).json({ message: "Admin bootstrap endpoint is required for admin provisioning." });
-      return;
-    }
-
     const salt = generateSalt();
     const passwordHash = await hashPassword(payload.password, salt);
+    const role = getPublicRegistrationDefaultRole();
 
     const user = await storage.createUser({
       id: `user_${randomUUID()}`,
       email: payload.email,
-      role: requestedRole,
+      role,
       country: payload.country ?? null,
       region: payload.region ?? null,
       locale: payload.locale ?? null,
@@ -261,10 +311,8 @@ const bootstrapAdminHandler: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const users = await storage.listUsers();
-    const hasAdmin = users.some((user) => user.role === "admin" || user.role === "super_admin");
-
-    if (hasAdmin) {
+    const canBootstrap = await tryAcquireAdminBootstrapGuard(payload.email);
+    if (!canBootstrap) {
       audit("blocked", "admin_already_exists");
       res.status(409).json({ message: "Admin role is already assigned." });
       return;

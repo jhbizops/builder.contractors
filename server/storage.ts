@@ -164,6 +164,16 @@ export class DatabaseStorage implements IStorage {
     return user ?? null;
   }
 
+  async updateUserRole(id: string, role: User["role"]): Promise<User | null> {
+    const [user] = await this.db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, id))
+      .returning();
+
+    return user ?? null;
+  }
+
   async upsertBillingPlans(plans: InsertBillingPlan[]): Promise<BillingPlan[]> {
     const inserted = await this.db
       .insert(billingPlans)

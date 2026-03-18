@@ -15,7 +15,9 @@ import { resetAdminBootstrapStateForTests } from "../../adminBootstrap";
 const mockStore = new Map<string, User>();
 
 vi.mock("../../storageInstance", () => {
-  const storage: IStorage = {
+  const storage: IStorage & {
+    updateUserRole: (id: string, role: User["role"]) => Promise<User | null>;
+  } = {
     async getUser(id: string) {
       return mockStore.get(id);
     },
@@ -46,6 +48,15 @@ vi.mock("../../storageInstance", () => {
         return null;
       }
       const updated: User = { ...existing, approved };
+      mockStore.set(id, updated);
+      return updated;
+    },
+    async updateUserRole(id: string, role: User["role"]) {
+      const existing = mockStore.get(id);
+      if (!existing) {
+        return null;
+      }
+      const updated: User = { ...existing, role };
       mockStore.set(id, updated);
       return updated;
     },
@@ -243,6 +254,7 @@ describe("auth and users routes", () => {
     process.env.ALLOW_ADMIN_BOOTSTRAP = "true";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "test-bootstrap-token";
     process.env.ADMIN_BOOTSTRAP_ALLOWED_IPS = "::ffff:127.0.0.1,127.0.0.1";
+    delete process.env.PUBLIC_REGISTRATION_DEFAULT_ROLE;
     resetAdminBootstrapStateForTests();
 
     const storageModule = (await import("../../storageInstance")) as unknown as {
@@ -286,6 +298,28 @@ describe("auth and users routes", () => {
       .post("/api/auth/login")
       .send({ email: "tester@example.com", password: "WrongPassword" })
       .expect(401);
+  });
+
+  it("ignores public registration role input and always assigns a non-admin default role", async () => {
+    process.env.PUBLIC_REGISTRATION_DEFAULT_ROLE = "builder";
+
+    const registerRes = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "attempt-admin@example.com", password: "Password123!", role: "admin" })
+      .expect(201);
+
+    expect(registerRes.body.user.role).toBe("builder");
+  });
+
+  it("falls back to dual when configured public registration role is privileged", async () => {
+    process.env.PUBLIC_REGISTRATION_DEFAULT_ROLE = "admin";
+
+    const registerRes = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "fallback@example.com", password: "Password123!", role: "admin" })
+      .expect(201);
+
+    expect(registerRes.body.user.role).toBe("dual");
   });
 
   it("extends session duration when remember me is enabled", async () => {
@@ -360,6 +394,31 @@ describe("auth and users routes", () => {
     expect(approvalRes.body.user).not.toHaveProperty("passwordSalt");
 
     await userAgent.get("/api/users").expect(403);
+  });
+
+  it("allows admins to promote a user to admin via dedicated endpoint", async () => {
+    const adminAgent = request.agent(app);
+    await adminAgent
+      .post("/api/auth/bootstrap-admin")
+      .set("x-forwarded-for", "127.0.0.1")
+      .send({
+        email: "admin@example.com",
+        password: "AdminPass12345!",
+        token: "test-bootstrap-token",
+      })
+      .expect(201);
+
+    const userRes = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "promote@example.com", password: "Password123!" })
+      .expect(201);
+
+    const promoted = await adminAgent
+      .patch(`/api/users/${userRes.body.user.id}/promote`)
+      .send({ role: "admin" })
+      .expect(200);
+
+    expect(promoted.body.user.role).toBe("admin");
   });
 
   it("allows bootstrap token only once", async () => {
