@@ -23,3 +23,4 @@
 - Added ads, ad creatives, and ad reviews data models plus moderated ad management routes with AI review capture.
 - Added an ads delivery endpoint with targeting/cap filtering and a client AdSlot that renders only when creatives are returned.
 - Enabled remember-me login sessions (30-day cookie) and clarified the sign-in UX for faster access.
+- Hardened auth role controls by enforcing server-side public registration defaults, adding admin-only `PATCH /api/users/:id/promote`, and persisting first-admin bootstrap guards in the database to prevent concurrent bootstrap races.

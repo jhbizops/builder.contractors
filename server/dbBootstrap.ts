@@ -20,6 +20,7 @@ const requiredTables = [
   "subscriptions",
   "user_entitlements",
   "countries",
+  "admin_bootstrap_state",
 ];
 
 const bootstrapStatements = [
@@ -88,6 +89,11 @@ const bootstrapStatements = [
     currency text NOT NULL,
     localize boolean NOT NULL DEFAULT false,
     proficiency text NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS admin_bootstrap_state (
+    id smallint PRIMARY KEY CHECK (id = 1),
+    consumed_at timestamp NOT NULL DEFAULT now(),
+    consumed_by text NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS leads (
     id text PRIMARY KEY,
