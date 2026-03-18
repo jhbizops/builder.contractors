@@ -29,7 +29,7 @@ export default function About() {
         items={[
           { label: "Entity", value: "Builder.Contractors by Elyment" },
           { label: "Audience", value: "Licensed builders, contractors, and operations teams" },
-          { label: "Primary offering", value: "Verified lead handoff and partner collaboration" },
+          { label: "Primary offering", value: "Construction referral routing and workflow coordination" },
           { label: "Coverage", value: "NSW first, Australia-wide, and global partner routing" },
         ]}
       />
@@ -38,7 +38,7 @@ export default function About() {
         <div className="grid gap-4 md:grid-cols-2">
           <article>
             <h3 className="text-lg font-semibold text-slate-900">What is this service?</h3>
-            <p className="text-slate-600">A verified partner network that lets builders and contractors exchange leads with compliance guardrails.</p>
+            <p className="text-slate-600">A verified partner network that helps builders and contractors route referrals and coordinate project handoffs.</p>
           </article>
           <article>
             <h3 className="text-lg font-semibold text-slate-900">Who is it for?</h3>

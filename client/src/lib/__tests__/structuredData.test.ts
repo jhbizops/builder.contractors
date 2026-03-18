@@ -39,7 +39,7 @@ describe("structured data helpers", () => {
     expect(graph[3]?.["@type"]).toBe("FAQPage");
   });
 
-  it("creates an expanded homepage graph with organization, legal service and ratings", () => {
+  it("creates a coherent homepage graph around construction referral workflows", () => {
     const homeFaqs = [
       {
         question: "Who can join Builder.Contractors?",
@@ -55,14 +55,16 @@ describe("structured data helpers", () => {
     );
     const graph = data["@graph"] as Array<Record<string, unknown>>;
 
-    expect(graph.length).toBeGreaterThanOrEqual(10);
+    expect(graph.length).toBeGreaterThanOrEqual(7);
     expect(graph.some((node) => node["@type"] === "Organization")).toBe(true);
-    expect(graph.some((node) => node["@type"] === "LocalBusiness")).toBe(true);
-    expect(graph.some((node) => node["@type"] === "ProfessionalService")).toBe(true);
     expect(graph.some((node) => node["@type"] === "Person")).toBe(true);
-    expect(graph.some((node) => node["@type"] === "AggregateRating")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "WebSite")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "Service")).toBe(true);
     expect(graph.some((node) => node["@type"] === "Article")).toBe(true);
     expect(graph.some((node) => node["@type"] === "SoftwareApplication")).toBe(true);
     expect(graph.some((node) => node["@type"] === "FAQPage")).toBe(true);
+
+    const personNode = graph.find((node) => node["@type"] === "Person");
+    expect(personNode?.jobTitle).toBe("Construction Referral Workflow Lead");
   });
 });
