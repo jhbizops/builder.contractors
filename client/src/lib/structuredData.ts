@@ -3,6 +3,10 @@ import { DEFAULT_PUBLIC_SITE_ORIGIN } from "@shared/publicSiteUrl";
 import { getCanonicalSiteOrigin } from "@/lib/publicSiteUrl";
 
 type PricingTier = NonNullable<GeoPageContent["tiers"]>[number];
+type HomeFaqEntry = {
+  question: string;
+  answer: string;
+};
 
 type JsonLdValue = Record<string, unknown>;
 
@@ -132,6 +136,7 @@ export const buildOrganizationWebsiteStructuredData = (
   title: string,
   description: string,
   url: string = getCanonicalSiteOrigin(),
+  homeFaqs: HomeFaqEntry[] = [],
 ): JsonLdValue => {
   const organizationId = `${url}/#organization`;
   const personId = `${url}/#principal`;
@@ -289,6 +294,23 @@ export const buildOrganizationWebsiteStructuredData = (
         "Regional routing and reporting",
       ],
     },
+    ...(homeFaqs.length > 0
+      ? [
+          {
+            "@type": "FAQPage",
+            "@id": `${url}/#faq-home`,
+            mainEntityOfPage: { "@id": `${url}/#webpage` },
+            mainEntity: homeFaqs.map((faq) => ({
+              "@type": "Question",
+              name: faq.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.answer,
+              },
+            })),
+          },
+        ]
+      : []),
     ],
   };
 };

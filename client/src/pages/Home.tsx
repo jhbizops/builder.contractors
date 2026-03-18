@@ -112,6 +112,46 @@ export default function Home() {
       icon: Zap,
     },
   ];
+  const aboutPath = marketingContext.locale
+    ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.about.slug)
+    : geoPages.about.slug;
+  const pricingPath = marketingContext.locale
+    ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.pricing.slug)
+    : geoPages.pricing.slug;
+  const faqPath = marketingContext.locale
+    ? getLocalizedMarketingPath(marketingContext.locale.prefix, geoPages.faq.slug)
+    : geoPages.faq.slug;
+  const answerEngineFaqs = [
+    {
+      question: 'Who can join Builder.Contractors?',
+      answer:
+        'Builder.Contractors is designed for licensed builders and qualified contractors who need trusted partners for overflow or out-of-area work. Teams complete profile and verification checks before exchanging projects. Review qualification standards on About, compare plan access on Pricing, and check edge cases in FAQ.',
+    },
+    {
+      question: 'What is the pricing entry point?',
+      answer:
+        'You can start on a free entry tier and upgrade when your referral volume, reporting, or team controls grow. Paid plans add stronger routing, collaboration, and visibility features for multi-region operations. Compare inclusions on Pricing, see platform context on About, and review billing details in FAQ.',
+    },
+    {
+      question: 'Which regions does Builder.Contractors support?',
+      answer:
+        'Builder.Contractors supports teams across NSW, Australia-wide operations, and expanding global partner coverage, with region-aware matching to keep referrals relevant. You can set service areas and collaborate with verified teams in target markets. Learn market scope on About, regional plan fit on Pricing, and policies in FAQ.',
+    },
+    {
+      question: 'How does Builder.Contractors protect trust and security?',
+      answer:
+        'Trust is reinforced through verified profiles, controlled role-based access, and auditable referral workflows so every handoff has accountability. The platform is built for sensitive, multi-tenant operations where secure collaboration matters. Read trust principles on About, security-supporting plan options on Pricing, and safeguards in FAQ.',
+    },
+    {
+      question: 'How quickly can my team get started?',
+      answer:
+        'Most teams can publish a profile, define service regions, and begin referrals in less than a day using the guided onboarding flow. You can start small, validate partner quality, then scale access controls as usage increases. See onboarding context on About, setup pathways on Pricing, and rollout answers in FAQ.',
+    },
+  ];
+  const answerEngineFaqStructuredData = answerEngineFaqs.map((faq) => ({
+    question: faq.question,
+    answer: faq.answer,
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white scroll-smooth" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -130,7 +170,7 @@ export default function Home() {
       />
       <StructuredData
         id="home-organization-structured-data"
-        data={buildOrganizationWebsiteStructuredData(seo.title, seo.summary)}
+        data={buildOrganizationWebsiteStructuredData(seo.title, seo.summary, undefined, answerEngineFaqStructuredData)}
       />
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
@@ -526,6 +566,41 @@ export default function Home() {
                   </Card>
                 );
               })}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-slate-50">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold text-slate-900">Quick answers for builders and contractors</h2>
+              <p className="mt-3 text-slate-600">
+                Direct answers for common evaluation questions before your team starts exchanging leads.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {answerEngineFaqs.map((faq) => (
+                <Card key={faq.question} className="border border-slate-200 shadow-sm">
+                  <CardContent className="pt-6 space-y-3">
+                    <h3 className="text-lg font-semibold text-slate-900">{faq.question}</h3>
+                    <p className="text-slate-700">{faq.answer}</p>
+                    <p className="text-sm text-slate-600">
+                      Learn more:{' '}
+                      <Link href={aboutPath} className="font-medium text-blue-700 underline underline-offset-2">
+                        About
+                      </Link>
+                      {' · '}
+                      <Link href={pricingPath} className="font-medium text-blue-700 underline underline-offset-2">
+                        Pricing
+                      </Link>
+                      {' · '}
+                      <Link href={faqPath} className="font-medium text-blue-700 underline underline-offset-2">
+                        FAQ
+                      </Link>
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>

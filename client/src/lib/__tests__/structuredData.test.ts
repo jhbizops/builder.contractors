@@ -40,7 +40,19 @@ describe("structured data helpers", () => {
   });
 
   it("creates an expanded homepage graph with organization, legal service and ratings", () => {
-    const data = buildOrganizationWebsiteStructuredData(geoPages.home.title, geoPages.home.summary);
+    const homeFaqs = [
+      {
+        question: "Who can join Builder.Contractors?",
+        answer:
+          "Builder.Contractors is designed for licensed builders and qualified contractors exchanging trusted referrals.",
+      },
+    ];
+    const data = buildOrganizationWebsiteStructuredData(
+      geoPages.home.title,
+      geoPages.home.summary,
+      undefined,
+      homeFaqs,
+    );
     const graph = data["@graph"] as Array<Record<string, unknown>>;
 
     expect(graph.length).toBeGreaterThanOrEqual(10);
@@ -51,5 +63,6 @@ describe("structured data helpers", () => {
     expect(graph.some((node) => node["@type"] === "AggregateRating")).toBe(true);
     expect(graph.some((node) => node["@type"] === "Article")).toBe(true);
     expect(graph.some((node) => node["@type"] === "SoftwareApplication")).toBe(true);
+    expect(graph.some((node) => node["@type"] === "FAQPage")).toBe(true);
   });
 });
