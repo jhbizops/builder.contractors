@@ -141,6 +141,7 @@ export const buildOrganizationWebsiteStructuredData = (
   const organizationId = `${url}/#organization`;
   const personId = `${url}/#principal`;
   const websiteId = `${url}/#website`;
+  const primaryDomainIntent = "Construction referral and workflow coordination for verified builder and contractor teams";
 
   return {
     "@context": SCHEMA_CONTEXT,
@@ -152,6 +153,8 @@ export const buildOrganizationWebsiteStructuredData = (
       url: `${url}/`,
       logo: `${url}/og-image.jpg`,
       description,
+      slogan: primaryDomainIntent,
+      knowsAbout: ["Construction referrals", "Lead handoff workflows", "Builder-contractor collaboration"],
       sameAs: ["https://elyment.com.au"],
       areaServed: ["NSW", "Australia", "Global"],
       contactPoint: {
@@ -164,64 +167,23 @@ export const buildOrganizationWebsiteStructuredData = (
     {
       "@type": "Person",
       "@id": personId,
-      name: "Principal Solicitor, Builder.Contractors",
-      jobTitle: "Principal Legal & Compliance Lead",
+      name: "Principal Operations Lead, Builder.Contractors",
+      jobTitle: "Construction Referral Workflow Lead",
       worksFor: { "@id": organizationId },
-      knowsAbout: ["Conveyancing", "Construction compliance", "Contract risk management"],
-    },
-    {
-      "@type": "LocalBusiness",
-      "@id": `${url}/#localbusiness`,
-      name: "Builder.Contractors Australia",
-      url: `${url}/`,
-      priceRange: "Free - Custom",
-      telephone: "+61-2-0000-0000",
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: "Sydney",
-        addressRegion: "NSW",
-        addressCountry: "AU",
-      },
-    },
-    {
-      "@type": "ProfessionalService",
-      "@id": `${url}/#professional-service`,
-      name: "Builder.Contractors Professional Services",
-      serviceType: "Builder and contractor partner coordination",
-      areaServed: ["NSW", "Australia", "Global"],
-      provider: { "@id": organizationId },
-    },
-    {
-      "@type": "Review",
-      "@id": `${url}/#review-1`,
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: "5",
-        bestRating: "5",
-      },
-      author: {
-        "@type": "Person",
-        name: "Luca Marino",
-      },
-      reviewBody: "Referrals outside our service area are now handled with consistent quality.",
-      itemReviewed: { "@id": `${url}/#service` },
-    },
-    {
-      "@type": "AggregateRating",
-      "@id": `${url}/#aggregate-rating`,
-      ratingValue: "4.9",
-      reviewCount: "126",
-      bestRating: "5",
-      worstRating: "1",
-      itemReviewed: { "@id": `${url}/#service` },
+      knowsAbout: [
+        "Construction referral routing",
+        "Builder-contractor partner qualification",
+        "Project handoff workflows",
+      ],
     },
     {
       "@type": "WebSite",
       "@id": websiteId,
       url: `${url}/`,
       name: "Builder.Contractors",
-      description,
+      description: primaryDomainIntent,
       inLanguage: "en",
+      about: { "@id": `${url}/#service` },
       potentialAction: {
         "@type": "SearchAction",
         target: `${url}/faq`,
@@ -243,8 +205,8 @@ export const buildOrganizationWebsiteStructuredData = (
     {
       "@type": "Service",
       "@id": `${url}/#service`,
-      name: "Builder and contractor lead exchange network",
-      serviceType: "Lead exchange and contractor collaboration",
+      name: "Construction referral and workflow coordination",
+      serviceType: primaryDomainIntent,
       provider: {
         "@id": organizationId,
       },
@@ -280,6 +242,7 @@ export const buildOrganizationWebsiteStructuredData = (
       "@id": `${url}/#application`,
       name: "Builder.Contractors Platform",
       applicationCategory: "BusinessApplication",
+      applicationSubCategory: primaryDomainIntent,
       operatingSystem: "Web",
       offers: {
         "@type": "Offer",
@@ -287,6 +250,7 @@ export const buildOrganizationWebsiteStructuredData = (
         price: "0",
       },
       publisher: { "@id": organizationId },
+      description: primaryDomainIntent,
       featureList: [
         "Verified partner onboarding",
         "Lead handoff workflow",

@@ -51,7 +51,7 @@ export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing
     slug: "/about",
     title: "About Builder.Contractors",
     summary:
-      "Builder.Contractors is a private exchange for builders and contractors to share leads, build trusted partnerships, and grow across regions.",
+      "Builder.Contractors is a private construction referral and workflow coordination network for verified builders and contractors.",
     keywords: [
       "builder referral network",
       "contractor lead exchange",
@@ -158,7 +158,7 @@ export const geoPages: Record<"home" | "about" | "howItWorks" | "faq" | "pricing
   pricing: {
     slug: "/pricing",
     title: "Pricing for Builder.Contractors",
-    summary: "Transparent plans designed for growing trade businesses and enterprise builders.",
+    summary: "Transparent plans for construction referral routing, partner collaboration, and multi-region workflow coordination.",
     keywords: [
       "builder contractor pricing",
       "lead exchange plans",

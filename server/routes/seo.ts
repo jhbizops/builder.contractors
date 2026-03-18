@@ -186,6 +186,7 @@ const formatLlmsTxt = (baseUrl: string) => {
 };
 
 const formatLlmsFullTxt = (baseUrl: string) => {
+  const primaryIntent = "Construction referral and workflow coordination for verified builder and contractor teams.";
   const pageDetails = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing]
     .map(
       (page) =>
@@ -198,10 +199,12 @@ const formatLlmsFullTxt = (baseUrl: string) => {
     "",
     "This file provides expanded, machine-readable context for AI retrieval systems and search assistants.",
     "",
+    `Primary domain intent: ${primaryIntent}`,
+    "",
     pageDetails,
     "",
     "## Brand and trust signals",
-    "- Focus: verified builder and contractor partnerships.",
+    "- Focus: construction referral routing and project handoff workflows.",
     "- Security posture: private exchange, controlled access, and least-privilege sharing.",
     "- Ideal users: builders, contractors, and multi-region trade teams.",
     "- Primary region: Australia with global service routing capabilities.",

@@ -41,9 +41,9 @@ export default function Pricing() {
       <AISummaryBlock
         heading="Pricing summary"
         items={[
-          { label: "Starter", value: "Free plan for initial partner network setup" },
-          { label: "Growth", value: "AUD 99/month with unlimited invites and regional routing" },
-          { label: "Enterprise", value: "Custom governance, security controls, and reporting" },
+          { label: "Starter", value: "Free plan for initial referral and handoff workflows" },
+          { label: "Growth", value: "AUD 99/month with unlimited invites and regional referral routing" },
+          { label: "Enterprise", value: "Custom workflow governance, security controls, and reporting" },
           { label: "Billing model", value: "Upgrade or downgrade without partner data loss" },
         ]}
       />
@@ -57,7 +57,7 @@ export default function Pricing() {
           </article>
           <article>
             <h3 className="text-lg font-semibold text-slate-900">What is included?</h3>
-            <p className="text-slate-600">Verified profiles, lead routing, partner collaboration workflows, and support aligned to your plan.</p>
+            <p className="text-slate-600">Verified profiles, referral routing, partner collaboration workflows, and support aligned to your plan.</p>
           </article>
           <article>
             <h3 className="text-lg font-semibold text-slate-900">Where is it available?</h3>
