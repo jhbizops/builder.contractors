@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { geoPages } from "../../client/src/content/geoPages";
 import { sitemapRoutes } from "../../client/src/content/routes";
+import { DEFAULT_PUBLIC_SITE_ORIGIN, toPublicSiteOrigin } from "../../shared/publicSiteUrl";
 
 const protocolSchema = z.enum(["http", "https"]);
 const hostSchema = z.string().min(1).max(255);
@@ -211,13 +212,12 @@ const formatLlmsFullTxt = (baseUrl: string) => {
 const resolveBaseUrl = (req: Request, res: Response): string | null => {
   const configuredUrl = process.env.PUBLIC_SITE_URL;
   if (configuredUrl) {
-    try {
-      const parsed = new URL(configuredUrl);
-      return `${parsed.protocol}//${parsed.host}`;
-    } catch {
+    const canonicalOrigin = toPublicSiteOrigin(configuredUrl);
+    if (!canonicalOrigin) {
       res.status(500).send("Invalid PUBLIC_SITE_URL");
       return null;
     }
+    return canonicalOrigin;
   }
 
   const protocolResult = protocolSchema.safeParse(req.protocol);
@@ -228,7 +228,7 @@ const resolveBaseUrl = (req: Request, res: Response): string | null => {
     return null;
   }
 
-  return `${protocolResult.data}://${hostResult.data}`;
+  return toPublicSiteOrigin(`${protocolResult.data}://${hostResult.data}`) ?? DEFAULT_PUBLIC_SITE_ORIGIN;
 };
 
 export const createSeoRouter = (): Router => {

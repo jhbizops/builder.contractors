@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { getCanonicalSiteOrigin } from "@/lib/publicSiteUrl";
 
 type HeadManagerProps = {
   title: string;
@@ -16,8 +17,8 @@ type HeadManagerProps = {
 };
 
 const DEFAULT_SITE_NAME = "Builder.Contractors";
-const DEFAULT_IMAGE_URL = "https://www.builder.contractors/social-preview.svg";
-const DEFAULT_TWITTER_IMAGE_URL = "https://www.builder.contractors/social-preview.svg";
+const DEFAULT_IMAGE_PATH = "/social-preview.svg";
+const DEFAULT_TWITTER_IMAGE_PATH = "/social-preview.svg";
 const DEFAULT_ROBOTS_CONTENT = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
 const ensureMetaTag = (selector: string, attributes: Record<string, string>) => {
@@ -51,12 +52,12 @@ export function HeadManager({
   canonicalPath,
   alternateLinks,
   siteName = DEFAULT_SITE_NAME,
-  imageUrl = DEFAULT_IMAGE_URL,
-  twitterImageUrl = DEFAULT_TWITTER_IMAGE_URL,
+  imageUrl = DEFAULT_IMAGE_PATH,
+  twitterImageUrl = DEFAULT_TWITTER_IMAGE_PATH,
   robotsContent = DEFAULT_ROBOTS_CONTENT,
 }: HeadManagerProps) {
   useEffect(() => {
-    const baseUrl = window.location.origin;
+    const baseUrl = getCanonicalSiteOrigin(window.location.origin);
     const resolvedPath = canonicalPath ?? window.location.pathname;
     const canonicalUrl = new URL(resolvedPath, baseUrl).toString();
     const keywordContent = keywords?.length ? keywords.join(", ") : undefined;
@@ -95,7 +96,7 @@ export function HeadManager({
       description,
     );
     ensureMetaTag('meta[property="og:url"]', { property: "og:url" }).setAttribute("content", canonicalUrl);
-    ensureMetaTag('meta[property="og:image"]', { property: "og:image" }).setAttribute("content", imageUrl);
+    ensureMetaTag('meta[property="og:image"]', { property: "og:image" }).setAttribute("content", new URL(imageUrl, baseUrl).toString());
 
     ensureMetaTag('meta[name="twitter:card"]', { name: "twitter:card" }).setAttribute(
       "content",
@@ -115,7 +116,7 @@ export function HeadManager({
     );
     ensureMetaTag('meta[name="twitter:image"]', { name: "twitter:image" }).setAttribute(
       "content",
-      twitterImageUrl,
+      new URL(twitterImageUrl, baseUrl).toString(),
     );
 
     ensureLinkTag('link[rel="canonical"]', { rel: "canonical" }).setAttribute("href", canonicalUrl);
