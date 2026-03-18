@@ -15,8 +15,10 @@ export default defineConfig(() => {
     plugins.push(cartographer());
   }
 
+
   return {
     plugins,
+    envPrefix: ["VITE_", "PUBLIC_"],
     resolve: {
       alias: {
         '@': path.resolve(rootDir, 'client', 'src'),

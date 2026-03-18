@@ -1,14 +1,14 @@
 import type { GeoPageFaq, GeoPageContent } from "@/content/geoPages";
+import { DEFAULT_PUBLIC_SITE_ORIGIN } from "@shared/publicSiteUrl";
+import { getCanonicalSiteOrigin } from "@/lib/publicSiteUrl";
 
 type PricingTier = NonNullable<GeoPageContent["tiers"]>[number];
 
 type JsonLdValue = Record<string, unknown>;
 
 const SCHEMA_CONTEXT = "https://schema.org";
-const BASE_URL = "https://www.builder.contractors";
+const BASE_URL = DEFAULT_PUBLIC_SITE_ORIGIN;
 
-const ORGANIZATION_ID = `${BASE_URL}/#organization`;
-const WEBSITE_ID = `${BASE_URL}/#website`;
 
 const parsePrice = (priceLabel: string): string | undefined => {
   const match = priceLabel.match(/\$([\d,.]+)/);
@@ -41,35 +41,41 @@ export const buildFaqPageStructuredData = (faqs: GeoPageFaq[]): JsonLdValue => (
   })),
 });
 
-export const buildServicePageStructuredData = (page: GeoPageContent, path: string): JsonLdValue => {
+export const buildServicePageStructuredData = (
+  page: GeoPageContent,
+  path: string,
+  baseUrl: string = getCanonicalSiteOrigin(),
+): JsonLdValue => {
+  const organizationId = `${baseUrl}/#organization`;
+  const websiteId = `${baseUrl}/#website`;
   const offers = (page.tiers ?? []).map(defaultOfferForTier);
-  const pageId = `${BASE_URL}${path}#webpage`;
-  const serviceId = `${BASE_URL}${path}#service`;
+  const pageId = `${baseUrl}${path}#webpage`;
+  const serviceId = `${baseUrl}${path}#service`;
   return {
     "@context": SCHEMA_CONTEXT,
     "@graph": [
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: `${BASE_URL}/` },
-          { "@type": "ListItem", position: 2, name: page.title, item: `${BASE_URL}${path}` },
+          { "@type": "ListItem", position: 1, name: "Home", item: `${baseUrl}/` },
+          { "@type": "ListItem", position: 2, name: page.title, item: `${baseUrl}${path}` },
         ],
       },
       {
         "@type": "WebPage",
         "@id": pageId,
-        url: `${BASE_URL}${path}`,
+        url: `${baseUrl}${path}`,
         name: page.title,
         description: page.summary,
-        isPartOf: { "@id": WEBSITE_ID },
-        about: { "@id": ORGANIZATION_ID },
+        isPartOf: { "@id": websiteId },
+        about: { "@id": organizationId },
       },
       {
         "@type": "Service",
         "@id": serviceId,
         name: page.title,
         description: page.summary,
-        provider: { "@id": ORGANIZATION_ID },
+        provider: { "@id": organizationId },
         areaServed: [
           { "@type": "AdministrativeArea", name: "NSW" },
           { "@type": "Country", name: "Australia" },
@@ -77,7 +83,7 @@ export const buildServicePageStructuredData = (page: GeoPageContent, path: strin
         ],
         availableChannel: {
           "@type": "ServiceChannel",
-          serviceUrl: `${BASE_URL}${path}`,
+          serviceUrl: `${baseUrl}${path}`,
           availableLanguage: ["en-AU", "en-US", "en-GB"],
         },
         mainEntityOfPage: { "@id": pageId },
@@ -97,7 +103,7 @@ export const buildServicePageStructuredData = (page: GeoPageContent, path: strin
         ? [
           {
             "@type": "FAQPage",
-            "@id": `${BASE_URL}${path}#faq`,
+            "@id": `${baseUrl}${path}#faq`,
             mainEntityOfPage: { "@id": pageId },
             mainEntity: page.faqs.map((faq) => ({
               "@type": "Question",
@@ -125,7 +131,7 @@ export const buildProductStructuredData = (tiers: PricingTier[], name: string, d
 export const buildOrganizationWebsiteStructuredData = (
   title: string,
   description: string,
-  url: string = BASE_URL,
+  url: string = getCanonicalSiteOrigin(),
 ): JsonLdValue => {
   const organizationId = `${url}/#organization`;
   const personId = `${url}/#principal`;

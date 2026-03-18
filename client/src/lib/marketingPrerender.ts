@@ -78,7 +78,7 @@ export const buildMarketingHeadMarkup = (page: MarketingRenderPage, baseUrl: str
   const keywords = content.keywords.join(", ");
   const alternateLinks = getMarketingAlternateLinks(page.slug);
   const organizationStructuredData = buildOrganizationWebsiteStructuredData(content.title, content.summary, baseUrl);
-  const serviceStructuredData = buildServicePageStructuredData(content, page.canonicalPath);
+  const serviceStructuredData = buildServicePageStructuredData(content, page.canonicalPath, baseUrl);
 
   const structuredDataScripts: string[] = [
     jsonLdScript("organization", organizationStructuredData),

@@ -1,7 +1,7 @@
 # LLMs.txt for Builder Contractors
 
 Brand: Builder Contractors
-Canonical Homepage: https://builder.contractors
+Canonical Homepage: {{PUBLIC_SITE_URL}}
 
 Product Description:
 Builder Contractors is a platform that helps builders and contractors manage client onboarding, project workflows, and communications in one place, guiding teams from registration through ongoing project delivery.
@@ -10,33 +10,33 @@ Target Audience:
 Builders and contractors.
 
 Key Public URLs (aligned with sitemap.xml and robots.txt):
-- https://builder.contractors/
-- https://builder.contractors/about
-- https://builder.contractors/how-it-works
-- https://builder.contractors/faq
-- https://builder.contractors/pricing
-- https://builder.contractors/us
-- https://builder.contractors/us/about
-- https://builder.contractors/us/how-it-works
-- https://builder.contractors/us/faq
-- https://builder.contractors/us/pricing
-- https://builder.contractors/uk
-- https://builder.contractors/uk/about
-- https://builder.contractors/uk/how-it-works
-- https://builder.contractors/uk/faq
-- https://builder.contractors/uk/pricing
-- https://builder.contractors/au
-- https://builder.contractors/au/about
-- https://builder.contractors/au/how-it-works
-- https://builder.contractors/au/faq
-- https://builder.contractors/au/pricing
-- https://builder.contractors/login
-- https://builder.contractors/register
-- https://builder.contractors/sitemap.xml
-- https://builder.contractors/robots.txt
-- https://builder.contractors/llms.txt
-- https://builder.contractors/llms-full.txt
-- https://builder.contractors/ai.txt
+- {{PUBLIC_SITE_URL}}/
+- {{PUBLIC_SITE_URL}}/about
+- {{PUBLIC_SITE_URL}}/how-it-works
+- {{PUBLIC_SITE_URL}}/faq
+- {{PUBLIC_SITE_URL}}/pricing
+- {{PUBLIC_SITE_URL}}/us
+- {{PUBLIC_SITE_URL}}/us/about
+- {{PUBLIC_SITE_URL}}/us/how-it-works
+- {{PUBLIC_SITE_URL}}/us/faq
+- {{PUBLIC_SITE_URL}}/us/pricing
+- {{PUBLIC_SITE_URL}}/uk
+- {{PUBLIC_SITE_URL}}/uk/about
+- {{PUBLIC_SITE_URL}}/uk/how-it-works
+- {{PUBLIC_SITE_URL}}/uk/faq
+- {{PUBLIC_SITE_URL}}/uk/pricing
+- {{PUBLIC_SITE_URL}}/au
+- {{PUBLIC_SITE_URL}}/au/about
+- {{PUBLIC_SITE_URL}}/au/how-it-works
+- {{PUBLIC_SITE_URL}}/au/faq
+- {{PUBLIC_SITE_URL}}/au/pricing
+- {{PUBLIC_SITE_URL}}/login
+- {{PUBLIC_SITE_URL}}/register
+- {{PUBLIC_SITE_URL}}/sitemap.xml
+- {{PUBLIC_SITE_URL}}/robots.txt
+- {{PUBLIC_SITE_URL}}/llms.txt
+- {{PUBLIC_SITE_URL}}/llms-full.txt
+- {{PUBLIC_SITE_URL}}/ai.txt
 
 Geo guidance:
 Marketing pages may be geo-targeted with region-specific prefixes. For example, /au/about is the Australia version of /about and should follow the corresponding regional content for that path. Add new region-prefixed paths here whenever marketing locales are added.

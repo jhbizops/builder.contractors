@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import { resolvePublicSiteOrigin } from "../shared/publicSiteUrl";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { sitemapRoutes } from "../client/src/content/routes";
@@ -11,7 +12,7 @@ import {
 
 const rootDir = process.cwd();
 const distPublicDir = path.join(rootDir, "dist", "public");
-const baseUrl = process.env.PUBLIC_SITE_URL ?? "https://www.builder.contractors";
+const baseUrl = resolvePublicSiteOrigin(process.env.PUBLIC_SITE_URL);
 
 export const normalizeRoutePath = (routePath: string): string => {
   if (routePath === "/") {

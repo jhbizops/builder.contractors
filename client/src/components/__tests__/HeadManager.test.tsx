@@ -1,6 +1,7 @@
 import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { HeadManager } from '@/components/HeadManager';
+import { getCanonicalSiteOrigin } from '@/lib/publicSiteUrl';
 
 const getMeta = (selector: string) => document.head.querySelector<HTMLMetaElement>(selector);
 
@@ -30,7 +31,8 @@ describe('HeadManager', () => {
       expect(document.title).toBe('About Builder.Contractors');
     });
 
-    const canonicalUrl = `${window.location.origin}/about`;
+    const canonicalOrigin = getCanonicalSiteOrigin(window.location.origin);
+    const canonicalUrl = `${canonicalOrigin}/about`;
 
     expect(getMeta('meta[name="description"]')?.content).toBe('About page description.');
     expect(getMeta('meta[name="robots"]')?.content).toContain('index,follow');
@@ -47,22 +49,22 @@ describe('HeadManager', () => {
       canonicalUrl,
     );
     expect(document.head.querySelector('link[rel="alternate"][type="text/plain"]')?.getAttribute('href')).toBe(
-      `${window.location.origin}/llms.txt`,
+      `${canonicalOrigin}/llms.txt`,
     );
     expect(document.head.querySelector('link[rel="alternate"][type="text/markdown"]')?.getAttribute('href')).toBe(
-      `${window.location.origin}/llms-full.txt`,
+      `${canonicalOrigin}/llms-full.txt`,
     );
     expect(document.head.querySelector('link[rel="sitemap"][title="Primary sitemap"]')?.getAttribute('href')).toBe(
-      `${window.location.origin}/sitemap.xml`,
+      `${canonicalOrigin}/sitemap.xml`,
     );
     expect(document.head.querySelector('link[rel="sitemap"][data-variant="ai"]')?.getAttribute('href')).toBe(
-      `${window.location.origin}/sitemap-ai.xml`,
+      `${canonicalOrigin}/sitemap-ai.xml`,
     );
     expect(document.head.querySelector('link[rel="alternate"][hreflang="x-default"]')?.getAttribute('href')).toBe(
       canonicalUrl,
     );
     expect(document.head.querySelector('link[rel="alternate"][hreflang="en-US"]')?.getAttribute('href')).toBe(
-      `${window.location.origin}/us/about`,
+      `${canonicalOrigin}/us/about`,
     );
   });
 
