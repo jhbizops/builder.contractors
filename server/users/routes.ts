@@ -27,6 +27,10 @@ const approvalSchema = z.object({
   approved: z.boolean(),
 });
 
+const promoteAdminSchema = z.object({
+  role: z.literal("admin"),
+});
+
 usersRouter.patch("/:id/approval", async (req, res, next) => {
   try {
     const { approved } = approvalSchema.parse(req.body);
@@ -40,6 +44,33 @@ usersRouter.patch("/:id/approval", async (req, res, next) => {
     const billingService = getBillingService();
     const profile = await billingService.getUserBilling(updated.id);
 
+    if (!profile) {
+      res.status(500).json({ message: "Unable to build user profile" });
+      return;
+    }
+
+    res.json({ user: toPublicUser(profile) });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: "Invalid request", issues: error.issues });
+      return;
+    }
+    next(error);
+  }
+});
+
+usersRouter.patch("/:id/promote", async (req, res, next) => {
+  try {
+    promoteAdminSchema.parse(req.body);
+    const updated = await storage.updateUserRole(req.params.id, "admin");
+
+    if (!updated) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const billingService = getBillingService();
+    const profile = await billingService.getUserBilling(updated.id);
     if (!profile) {
       res.status(500).json({ message: "Unable to build user profile" });
       return;
