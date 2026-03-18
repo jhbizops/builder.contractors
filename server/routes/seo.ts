@@ -35,7 +35,19 @@ const SEARCH_BOTS = [
 
 const BLOCKED_SCRAPERS = ["DotBot", "MJ12bot", "BLEXBot", "SemrushBot-SA", "ZoominfoBot"] as const;
 
-const PUBLIC_SERVICE_PATHS = ["/", "/about", "/how-it-works", "/faq", "/pricing"];
+const PUBLIC_SERVICE_PATHS = [
+  "/",
+  "/about",
+  "/how-it-works",
+  "/faq",
+  "/pricing",
+  "/lead-exchange-workflow",
+  "/partner-verification",
+  "/multi-region-handoff-governance",
+  "/lead-routing-signals",
+  "/verification-evidence-checklist",
+  "/regional-handoff-playbooks",
+];
 
 const normalizeLastmod = (value: string): string => {
   if (/^\d+$/.test(value)) {
@@ -156,7 +168,7 @@ const formatRobotsTxt = (baseUrl: string) => {
   return lines.join("\n");
 };
 
-const llmsPages: LlmsPage[] = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing].map((page) => ({
+const llmsPages: LlmsPage[] = Object.values(geoPages).map((page) => ({
   slug: page.slug,
   title: page.title,
   summary: page.summary,

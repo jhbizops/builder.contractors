@@ -13,6 +13,12 @@ Builder.Contractors is a private network where verified builders and contractors
 - How Builder.Contractors Works: {{PUBLIC_SITE_URL}}/how-it-works
 - Builder.Contractors FAQ: {{PUBLIC_SITE_URL}}/faq
 - Pricing for Builder.Contractors: {{PUBLIC_SITE_URL}}/pricing
+- Lead Exchange Workflow for Builders and Contractors: {{PUBLIC_SITE_URL}}/lead-exchange-workflow
+- Partner Verification Framework: {{PUBLIC_SITE_URL}}/partner-verification
+- Multi-Region Handoff Governance: {{PUBLIC_SITE_URL}}/multi-region-handoff-governance
+- Lead Routing Signals and Matching Rules: {{PUBLIC_SITE_URL}}/lead-routing-signals
+- Partner Verification Evidence Checklist: {{PUBLIC_SITE_URL}}/verification-evidence-checklist
+- Regional Handoff Playbooks: {{PUBLIC_SITE_URL}}/regional-handoff-playbooks
 
 ## Key public URLs (sitemap and robots aligned)
 - {{PUBLIC_SITE_URL}}/
@@ -20,21 +26,45 @@ Builder.Contractors is a private network where verified builders and contractors
 - {{PUBLIC_SITE_URL}}/how-it-works
 - {{PUBLIC_SITE_URL}}/faq
 - {{PUBLIC_SITE_URL}}/pricing
+- {{PUBLIC_SITE_URL}}/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/partner-verification
+- {{PUBLIC_SITE_URL}}/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/us
 - {{PUBLIC_SITE_URL}}/us/about
 - {{PUBLIC_SITE_URL}}/us/how-it-works
 - {{PUBLIC_SITE_URL}}/us/faq
 - {{PUBLIC_SITE_URL}}/us/pricing
+- {{PUBLIC_SITE_URL}}/us/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/us/partner-verification
+- {{PUBLIC_SITE_URL}}/us/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/us/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/us/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/us/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/uk
 - {{PUBLIC_SITE_URL}}/uk/about
 - {{PUBLIC_SITE_URL}}/uk/how-it-works
 - {{PUBLIC_SITE_URL}}/uk/faq
 - {{PUBLIC_SITE_URL}}/uk/pricing
+- {{PUBLIC_SITE_URL}}/uk/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/uk/partner-verification
+- {{PUBLIC_SITE_URL}}/uk/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/uk/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/uk/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/uk/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/au
 - {{PUBLIC_SITE_URL}}/au/about
 - {{PUBLIC_SITE_URL}}/au/how-it-works
 - {{PUBLIC_SITE_URL}}/au/faq
 - {{PUBLIC_SITE_URL}}/au/pricing
+- {{PUBLIC_SITE_URL}}/au/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/au/partner-verification
+- {{PUBLIC_SITE_URL}}/au/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/au/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/au/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/au/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/login
 - {{PUBLIC_SITE_URL}}/register
 - {{PUBLIC_SITE_URL}}/sitemap.xml

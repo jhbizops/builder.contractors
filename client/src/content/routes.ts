@@ -22,6 +22,12 @@ const marketingRouteSettings: Record<
   "/how-it-works": { changefreq: "monthly", priority: 0.6 },
   "/faq": { changefreq: "monthly", priority: 0.5 },
   "/pricing": { changefreq: "monthly", priority: 0.6 },
+  "/lead-exchange-workflow": { changefreq: "weekly", priority: 0.8 },
+  "/partner-verification": { changefreq: "weekly", priority: 0.8 },
+  "/multi-region-handoff-governance": { changefreq: "weekly", priority: 0.8 },
+  "/lead-routing-signals": { changefreq: "monthly", priority: 0.7 },
+  "/verification-evidence-checklist": { changefreq: "monthly", priority: 0.7 },
+  "/regional-handoff-playbooks": { changefreq: "monthly", priority: 0.7 },
 };
 
 const marketingRoutes = marketingPageSlugs.flatMap((slug) => {

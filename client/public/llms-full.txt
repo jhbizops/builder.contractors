@@ -29,27 +29,81 @@ URL: {{PUBLIC_SITE_URL}}/pricing
 Summary: Transparent plans for construction referral routing, partner collaboration, and multi-region workflow coordination.
 Keywords: builder contractor pricing, lead exchange plans, trade collaboration platform cost, builder network subscription
 
+### Lead Exchange Workflow for Builders and Contractors
+URL: {{PUBLIC_SITE_URL}}/lead-exchange-workflow
+Summary: A governed workflow for lead intake, partner matching, scoped sharing, and closed-loop project outcomes.
+Keywords: lead exchange workflow, contractor lead routing, builder referral handoff process, construction lead governance
+
+### Partner Verification Framework
+URL: {{PUBLIC_SITE_URL}}/partner-verification
+Summary: Verify builder and contractor partners with identity, licensing, insurance, and delivery-readiness controls.
+Keywords: partner verification, contractor credential checks, builder trust framework, trade partner due diligence
+
+### Multi-Region Handoff Governance
+URL: {{PUBLIC_SITE_URL}}/multi-region-handoff-governance
+Summary: Coordinate project handoffs across regions with policy, SLA checkpoints, and clear ownership transitions.
+Keywords: multi-region handoff governance, cross-region project routing, construction handoff policy, regional service governance
+
+### Lead Routing Signals and Matching Rules
+URL: {{PUBLIC_SITE_URL}}/lead-routing-signals
+Summary: Define matching signals that improve handoff quality and route each lead to the best-fit verified partner.
+Keywords: lead routing signals, partner matching rules, construction lead qualification, referral prioritization
+
+### Partner Verification Evidence Checklist
+URL: {{PUBLIC_SITE_URL}}/verification-evidence-checklist
+Summary: A practical checklist for collecting and validating the evidence needed to onboard trusted partners.
+Keywords: verification checklist, contractor onboarding evidence, partner compliance documents, trade credential validation
+
+### Regional Handoff Playbooks
+URL: {{PUBLIC_SITE_URL}}/regional-handoff-playbooks
+Summary: Operational playbooks for cross-region lead acceptance, transfer, and completion updates.
+Keywords: regional handoff playbooks, cross-region workflow templates, handoff operations guide, service transition process
+
 ## Key public URLs
 - {{PUBLIC_SITE_URL}}/
 - {{PUBLIC_SITE_URL}}/about
 - {{PUBLIC_SITE_URL}}/how-it-works
 - {{PUBLIC_SITE_URL}}/faq
 - {{PUBLIC_SITE_URL}}/pricing
+- {{PUBLIC_SITE_URL}}/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/partner-verification
+- {{PUBLIC_SITE_URL}}/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/us
 - {{PUBLIC_SITE_URL}}/us/about
 - {{PUBLIC_SITE_URL}}/us/how-it-works
 - {{PUBLIC_SITE_URL}}/us/faq
 - {{PUBLIC_SITE_URL}}/us/pricing
+- {{PUBLIC_SITE_URL}}/us/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/us/partner-verification
+- {{PUBLIC_SITE_URL}}/us/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/us/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/us/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/us/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/uk
 - {{PUBLIC_SITE_URL}}/uk/about
 - {{PUBLIC_SITE_URL}}/uk/how-it-works
 - {{PUBLIC_SITE_URL}}/uk/faq
 - {{PUBLIC_SITE_URL}}/uk/pricing
+- {{PUBLIC_SITE_URL}}/uk/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/uk/partner-verification
+- {{PUBLIC_SITE_URL}}/uk/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/uk/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/uk/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/uk/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/au
 - {{PUBLIC_SITE_URL}}/au/about
 - {{PUBLIC_SITE_URL}}/au/how-it-works
 - {{PUBLIC_SITE_URL}}/au/faq
 - {{PUBLIC_SITE_URL}}/au/pricing
+- {{PUBLIC_SITE_URL}}/au/lead-exchange-workflow
+- {{PUBLIC_SITE_URL}}/au/partner-verification
+- {{PUBLIC_SITE_URL}}/au/multi-region-handoff-governance
+- {{PUBLIC_SITE_URL}}/au/lead-routing-signals
+- {{PUBLIC_SITE_URL}}/au/verification-evidence-checklist
+- {{PUBLIC_SITE_URL}}/au/regional-handoff-playbooks
 - {{PUBLIC_SITE_URL}}/login
 - {{PUBLIC_SITE_URL}}/register
 - {{PUBLIC_SITE_URL}}/sitemap.xml

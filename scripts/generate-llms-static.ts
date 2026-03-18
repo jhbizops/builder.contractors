@@ -6,7 +6,7 @@ import { renderLlmsFullTxt, renderLlmsTxt } from "../shared/seo/llmsContent";
 const publicDir = path.join(process.cwd(), "client", "public");
 const baseUrlPlaceholder = "{{PUBLIC_SITE_URL}}";
 
-const llmsPages = [geoPages.home, geoPages.about, geoPages.howItWorks, geoPages.faq, geoPages.pricing].map((page) => ({
+const llmsPages = Object.values(geoPages).map((page) => ({
   slug: page.slug,
   title: page.title,
   summary: page.summary,
