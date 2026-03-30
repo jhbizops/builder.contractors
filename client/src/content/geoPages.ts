@@ -99,7 +99,8 @@ export const geoPages: Record<
   howItWorks: {
     slug: "/how-it-works",
     title: "How Builder.Contractors Works",
-    summary: "A streamlined workflow to share, verify, and collaborate on projects in minutes.",
+    summary:
+      "Stop losing quote requests in email threads. Keep scope, pricing, and subcontractor communication documented in one shared workflow.",
     keywords: [
       "how builder referrals work",
       "trade collaboration workflow",
@@ -113,11 +114,13 @@ export const geoPages: Record<
       },
       {
         title: "Share or receive leads",
-        description: "Send projects to partners who match the scope, location, and trade requirements.",
+        description:
+          "Send quote requests to subcontractors with clear scope, location, and trade requirements so every response stays linked to the job.",
       },
       {
         title: "Coordinate delivery",
-        description: "Track handoffs, communicate inside the platform, and keep homeowners informed.",
+        description:
+          "Track handoffs, approvals, and updates inside the platform so builders and subcontractors can contract with confidence.",
       },
     ],
     faqs: [
