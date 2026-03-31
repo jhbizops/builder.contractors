@@ -10,10 +10,14 @@ const servicesRouter = Router();
 const updateServiceSchema = insertServiceSchema.partial();
 
 servicesRouter.use(requireAuth);
+const isAdmin = (role: string | undefined) => role === "admin" || role === "super_admin";
+const tenantScope = (user: { id: string; role: string }) =>
+  (isAdmin(user.role) ? { adminGlobal: true as const } : { tenantId: user.id });
 
 servicesRouter.get("/", async (_req, res, next) => {
   try {
-    const services = await storage.listServices();
+    const user = res.locals.authenticatedUser as { id: string; role: string };
+    const services = await storage.listServices(tenantScope(user));
     res.json({ services });
   } catch (error) {
     next(error);
@@ -23,8 +27,10 @@ servicesRouter.get("/", async (_req, res, next) => {
 servicesRouter.post("/", async (req, res, next) => {
   try {
     const payload = insertServiceSchema.parse(req.body);
+    const user = res.locals.authenticatedUser as { id: string; role: string };
     const servicePayload: InsertService = {
       id: `service_${randomUUID()}`,
+      tenantId: user.id,
       name: payload.name,
       description: payload.description ?? null,
       unit: payload.unit,
@@ -46,7 +52,8 @@ servicesRouter.post("/", async (req, res, next) => {
 servicesRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateServiceSchema.parse(req.body);
-    const service = await storage.updateService(req.params.id, payload);
+    const user = res.locals.authenticatedUser as { id: string; role: string };
+    const service = await storage.updateService(req.params.id, payload, tenantScope(user));
     if (!service) {
       res.status(404).json({ message: "Service not found" });
       return;

@@ -123,6 +123,9 @@ function isAdmin(role: string | undefined): boolean {
 function isBuilder(role: string | undefined): boolean {
   return role === "builder" || role === "dual";
 }
+function tenantScope(user: AuthenticatedUser) {
+  return isAdmin(user.role) ? { adminGlobal: true as const } : { tenantId: user.id };
+}
 
 function isApprovedBuilder(user: AuthenticatedUser): boolean {
   return user.approved && isBuilder(user.role);
@@ -146,7 +149,7 @@ jobsRouter.get("/", async (req, res, next) => {
   try {
     const filters = parseListFilters(req.query);
     const user = getUser(res);
-    const jobs = await storage.listJobs(filters);
+    const jobs = await storage.listJobs(filters, tenantScope(user));
     res.json({ jobs: jobs.map((job) => sanitizeJob(job, user)) });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -169,6 +172,7 @@ jobsRouter.post("/", async (req, res, next) => {
 
     const job = await storage.createJob({
       id: `job_${randomUUID()}`,
+      tenantId: user.id,
       title: payload.title,
       description: payload.description ?? null,
       privateDetails: payload.privateDetails ?? null,
@@ -203,7 +207,7 @@ jobsRouter.post("/", async (req, res, next) => {
 
 jobsRouter.get("/:id/activity", async (req, res, next) => {
   try {
-    const job = await storage.getJob(req.params.id);
+    const job = await storage.getJob(req.params.id, tenantScope(getUser(res)));
     if (!job) {
       res.status(404).json({ message: "Job not found" });
       return;
@@ -218,8 +222,8 @@ jobsRouter.get("/:id/activity", async (req, res, next) => {
 jobsRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateJobSchema.parse(req.body);
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -231,7 +235,7 @@ jobsRouter.patch("/:id", async (req, res, next) => {
       return;
     }
 
-    const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() });
+    const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() }, tenantScope(user));
     res.json({ job: updated ? sanitizeJob(updated, user) : updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -245,8 +249,8 @@ jobsRouter.patch("/:id", async (req, res, next) => {
 jobsRouter.patch("/:id/status", async (req, res, next) => {
   try {
     const payload = statusSchema.parse(req.body);
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -261,7 +265,7 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
       return;
     }
 
-    const updated = await storage.setJobStatus(job.id, payload.status);
+    const updated = await storage.setJobStatus(job.id, payload.status, tenantScope(user));
 
     await storage.addActivityLog({
       id: `log_${randomUUID()}`,
@@ -285,8 +289,8 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
 jobsRouter.post("/:id/assign", async (req, res, next) => {
   try {
     const payload = assignSchema.parse(req.body);
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -306,7 +310,7 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
     }
 
     const isReassignment = job.assigneeId !== null && payload.assigneeId !== job.assigneeId;
-    const updated = await storage.assignJob(job.id, payload.assigneeId, {
+    const updated = await storage.assignJob(job.id, payload.assigneeId, tenantScope(user), {
       allowReassign: isReassignment,
     });
 
@@ -336,8 +340,8 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
 
 jobsRouter.post("/:id/claim", async (req, res, next) => {
   try {
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -354,7 +358,7 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
       return;
     }
 
-    const claimed = await storage.claimJob(job.id, user.id);
+    const claimed = await storage.claimJob(job.id, user.id, tenantScope(user));
 
     if (!claimed) {
       res.status(409).json({ message: "Job already assigned" });
@@ -379,8 +383,8 @@ jobsRouter.post("/:id/claim", async (req, res, next) => {
 jobsRouter.post("/:id/invite", async (req, res, next) => {
   try {
     const payload = inviteSchema.parse(req.body);
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -432,8 +436,8 @@ jobsRouter.post("/:id/invite", async (req, res, next) => {
 jobsRouter.post("/:id/activity", async (req, res, next) => {
   try {
     const payload = activityNoteSchema.parse(req.body);
-    const job = await storage.getJob(req.params.id);
     const user = getUser(res);
+    const job = await storage.getJob(req.params.id, tenantScope(user));
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });

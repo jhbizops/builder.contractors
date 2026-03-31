@@ -65,7 +65,12 @@ vi.mock("../storageInstance", () => {
       jobs.set(id, updated);
       return updated;
     },
-    async assignJob(id: string, assigneeId: string | null, options: { allowReassign?: boolean } = {}) {
+    async assignJob(
+      id: string,
+      assigneeId: string | null,
+      _scope: { tenantId?: string; adminGlobal?: boolean },
+      options: { allowReassign?: boolean } = {},
+    ) {
       const existing = jobs.get(id);
       if (!existing) return null;
 

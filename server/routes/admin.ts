@@ -8,7 +8,7 @@ adminRouter.use(requireAdmin);
 
 adminRouter.get("/metrics", async (_req, res, next) => {
   try {
-    const [users, leads] = await Promise.all([storage.listUsers(), storage.listLeads()]);
+    const [users, leads] = await Promise.all([storage.listUsers(), storage.listLeads({}, { adminGlobal: true })]);
     const pendingApprovals = users.filter((user) => !user.approved).length;
     const activeLeads = leads.filter((lead) => lead.status === "in_progress").length;
 

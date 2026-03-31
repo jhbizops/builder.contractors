@@ -49,7 +49,7 @@ export interface IStorage {
   updateUserApproval(id: string, approved: boolean): Promise<User | null>;
   getUserProfile(userId: string): Promise<UserProfile | null>;
   createJob(job: InsertJob): Promise<Job>;
-  getJob(id: string): Promise<Job | null>;
+  getJob(id: string, scope: TenantScope): Promise<Job | null>;
   listJobs(filters?: {
     ownerId?: string;
     assigneeId?: string;
@@ -57,32 +57,32 @@ export interface IStorage {
     region?: string | string[];
     country?: string | string[];
     trade?: string | string[];
-  }): Promise<Job[]>;
+  }, scope: TenantScope): Promise<Job[]>;
   updateJob(
     id: string,
     updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
-  ): Promise<Job | null>;
-  setJobStatus(id: string, status: Job["status"]): Promise<Job | null>;
-  assignJob(id: string, assigneeId: string | null, options?: { allowReassign?: boolean }): Promise<Job | null>;
-  claimJob(id: string, assigneeId: string): Promise<Job | null>;
+  , scope: TenantScope): Promise<Job | null>;
+  setJobStatus(id: string, status: Job["status"], scope: TenantScope): Promise<Job | null>;
+  assignJob(id: string, assigneeId: string | null, scope: TenantScope, options?: { allowReassign?: boolean }): Promise<Job | null>;
+  claimJob(id: string, assigneeId: string, scope: TenantScope): Promise<Job | null>;
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   listJobActivity(jobId: string): Promise<ActivityLog[]>;
   createAd(ad: InsertAd): Promise<Ad>;
-  getAd(id: string): Promise<Ad | null>;
-  listAds(filters?: { status?: string | string[] }): Promise<Ad[]>;
-  listAdCreatives(adIds?: string[]): Promise<AdCreative[]>;
-  updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null>;
+  getAd(id: string, scope: TenantScope): Promise<Ad | null>;
+  listAds(filters: { status?: string | string[] } | undefined, scope: TenantScope): Promise<Ad[]>;
+  listAdCreatives(adIds: string[] | undefined, scope: TenantScope): Promise<AdCreative[]>;
+  updateAdStatus(id: string, status: Ad["status"], updatedBy: string, scope: TenantScope): Promise<Ad | null>;
   createAdReview(review: InsertAdReview): Promise<AdReview>;
-  listAdReviews(adId: string): Promise<AdReview[]>;
+  listAdReviews(adId: string, scope: TenantScope): Promise<AdReview[]>;
   listAdInsights(): Promise<AdInsightsRow[]>;
   createLead(lead: InsertLead): Promise<Lead>;
-  getLead(id: string, options?: { partnerId?: string }): Promise<Lead | null>;
+  getLead(id: string, scope: TenantScope): Promise<Lead | null>;
   listLeads(filters?: {
     partnerId?: string;
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
-  }): Promise<Lead[]>;
+  }, scope: TenantScope): Promise<Lead[]>;
   updateLead(
     id: string,
     updates: Partial<
@@ -91,12 +91,12 @@ export interface IStorage {
         "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
       >
     >,
-    options?: { partnerId?: string },
+    scope: TenantScope,
   ): Promise<Lead | null>;
-  deleteLead(id: string, options?: { partnerId?: string }): Promise<boolean>;
+  deleteLead(id: string, scope: TenantScope): Promise<boolean>;
   addLeadComment(comment: InsertLeadComment): Promise<LeadComment>;
-  listLeadComments(leadId: string, options?: { partnerId?: string }): Promise<LeadComment[]>;
-  listLeadActivity(leadId: string, options?: { partnerId?: string }): Promise<ActivityLog[]>;
+  listLeadComments(leadId: string, scope: TenantScope): Promise<LeadComment[]>;
+  listLeadActivity(leadId: string, scope: TenantScope): Promise<ActivityLog[]>;
   createExportJob(exportJob: InsertExportJob): Promise<ExportJob>;
   getExportJob(id: string, options?: { createdBy?: string; tenantId?: string }): Promise<ExportJob | null>;
   listExportJobs(filters?: { createdBy?: string; tenantId?: string }): Promise<ExportJob[]>;
@@ -104,13 +104,15 @@ export interface IStorage {
     id: string,
     updates: Partial<Pick<ExportJob, "status" | "fileUrl" | "updatedAt">>,
   ): Promise<ExportJob | null>;
-  listServices(): Promise<Service[]>;
+  listServices(scope: TenantScope): Promise<Service[]>;
   createService(service: InsertService): Promise<Service>;
   updateService(
     id: string,
     updates: Partial<Pick<Service, "name" | "description" | "unit" | "basePrice" | "active">>,
+    scope: TenantScope,
   ): Promise<Service | null>;
 }
+export type TenantScope = { tenantId: string } | { adminGlobal: true };
 
 export interface UserProfile {
   user: User;
@@ -129,6 +131,12 @@ export type AdInsightsRow = {
 
 export class DatabaseStorage implements IStorage {
   constructor(private readonly db: NodePgDatabase<typeof schema>) {}
+  private tenantCondition<T>(column: T, scope: TenantScope): SQL<unknown> | undefined {
+    if ("adminGlobal" in scope && scope.adminGlobal) {
+      return undefined;
+    }
+    return eq(column as never, scope.tenantId);
+  }
 
   async getUser(id: string): Promise<User | undefined> {
     return this.db.query.users.findFirst({
@@ -334,9 +342,10 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async getJob(id: string): Promise<Job | null> {
+  async getJob(id: string, scope: TenantScope): Promise<Job | null> {
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
     const record = await this.db.query.jobs.findFirst({
-      where: eq(jobs.id, id),
+      where: tenantCondition ? and(eq(jobs.id, id), tenantCondition) : eq(jobs.id, id),
     });
     return record ?? null;
   }
@@ -348,8 +357,10 @@ export class DatabaseStorage implements IStorage {
     region?: string | string[];
     country?: string | string[];
     trade?: string | string[];
-  } = {}): Promise<Job[]> {
+  } = {}, scope: TenantScope): Promise<Job[]> {
     const conditions = [];
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
 
     if (filters.ownerId) {
       conditions.push(eq(jobs.ownerId, filters.ownerId));
@@ -392,28 +403,34 @@ export class DatabaseStorage implements IStorage {
   async updateJob(
     id: string,
     updates: Partial<Pick<Job, "title" | "description" | "privateDetails" | "region" | "country" | "trade" | "updatedAt">>,
-  ): Promise<Job | null> {
+  , scope: TenantScope): Promise<Job | null> {
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
+    const whereClause = tenantCondition ? and(eq(jobs.id, id), tenantCondition) : eq(jobs.id, id);
     const [record] = await this.db
       .update(jobs)
       .set({ ...updates, updatedAt: updates.updatedAt ?? new Date() })
-      .where(eq(jobs.id, id))
+      .where(whereClause)
       .returning();
 
     return record ?? null;
   }
 
-  async setJobStatus(id: string, status: Job["status"]): Promise<Job | null> {
+  async setJobStatus(id: string, status: Job["status"], scope: TenantScope): Promise<Job | null> {
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
+    const whereClause = tenantCondition ? and(eq(jobs.id, id), tenantCondition) : eq(jobs.id, id);
     const [record] = await this.db
       .update(jobs)
       .set({ status, updatedAt: new Date() })
-      .where(eq(jobs.id, id))
+      .where(whereClause)
       .returning();
     return record ?? null;
   }
 
-  async assignJob(id: string, assigneeId: string | null, options: { allowReassign?: boolean } = {}): Promise<Job | null> {
+  async assignJob(id: string, assigneeId: string | null, scope: TenantScope, options: { allowReassign?: boolean } = {}): Promise<Job | null> {
     const now = new Date();
-    const condition = options.allowReassign ? eq(jobs.id, id) : and(eq(jobs.id, id), isNull(jobs.assigneeId));
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
+    const idCondition = options.allowReassign ? eq(jobs.id, id) : and(eq(jobs.id, id), isNull(jobs.assigneeId));
+    const condition = tenantCondition ? and(idCondition, tenantCondition) : idCondition;
 
     const [record] = await this.db
       .update(jobs)
@@ -424,14 +441,15 @@ export class DatabaseStorage implements IStorage {
     return record ?? null;
   }
 
-  async claimJob(id: string, assigneeId: string): Promise<Job | null> {
+  async claimJob(id: string, assigneeId: string, scope: TenantScope): Promise<Job | null> {
     const now = new Date();
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
 
     return this.db.transaction(async (tx) => {
       const [assigned] = await tx
         .update(jobs)
         .set({ assigneeId, updatedAt: now })
-        .where(and(eq(jobs.id, id), isNull(jobs.assigneeId)))
+        .where(tenantCondition ? and(eq(jobs.id, id), isNull(jobs.assigneeId), tenantCondition) : and(eq(jobs.id, id), isNull(jobs.assigneeId)))
         .returning();
 
       if (!assigned) {
@@ -478,15 +496,18 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async getAd(id: string): Promise<Ad | null> {
+  async getAd(id: string, scope: TenantScope): Promise<Ad | null> {
+    const tenantCondition = this.tenantCondition(schema.ads.tenantId, scope);
     const ad = await this.db.query.ads.findFirst({
-      where: eq(schema.ads.id, id),
+      where: tenantCondition ? and(eq(schema.ads.id, id), tenantCondition) : eq(schema.ads.id, id),
     });
     return ad ?? null;
   }
 
-  async listAds(filters: { status?: string | string[] } = {}): Promise<Ad[]> {
+  async listAds(filters: { status?: string | string[] } = {}, scope: TenantScope): Promise<Ad[]> {
     const conditions = [];
+    const tenantCondition = this.tenantCondition(schema.ads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
     if (filters.status) {
       const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
       conditions.push(inArray(schema.ads.status, statuses));
@@ -500,21 +521,26 @@ export class DatabaseStorage implements IStorage {
     return filteredQuery.orderBy(desc(schema.ads.updatedAt), desc(schema.ads.createdAt));
   }
 
-  async listAdCreatives(adIds?: string[]): Promise<AdCreative[]> {
+  async listAdCreatives(adIds: string[] = [], scope: TenantScope): Promise<AdCreative[]> {
+    const tenantCondition = this.tenantCondition(adCreatives.tenantId, scope);
     const baseQuery = this.db.select().from(adCreatives);
-    if (!adIds?.length) {
-      return baseQuery.orderBy(desc(adCreatives.updatedAt), desc(adCreatives.createdAt));
+    if (!adIds.length) {
+      const scoped = tenantCondition ? baseQuery.where(tenantCondition) : baseQuery;
+      return scoped.orderBy(desc(adCreatives.updatedAt), desc(adCreatives.createdAt));
     }
+    const adIdCondition = inArray(adCreatives.adId, adIds);
     return baseQuery
-      .where(inArray(adCreatives.adId, adIds))
+      .where(tenantCondition ? and(adIdCondition, tenantCondition) : adIdCondition)
       .orderBy(desc(adCreatives.updatedAt), desc(adCreatives.createdAt));
   }
 
-  async updateAdStatus(id: string, status: Ad["status"], updatedBy: string): Promise<Ad | null> {
+  async updateAdStatus(id: string, status: Ad["status"], updatedBy: string, scope: TenantScope): Promise<Ad | null> {
+    const tenantCondition = this.tenantCondition(schema.ads.tenantId, scope);
+    const whereClause = tenantCondition ? and(eq(schema.ads.id, id), tenantCondition) : eq(schema.ads.id, id);
     const [record] = await this.db
       .update(schema.ads)
       .set({ status, updatedBy, updatedAt: new Date() })
-      .where(eq(schema.ads.id, id))
+      .where(whereClause)
       .returning();
     return record ?? null;
   }
@@ -527,11 +553,15 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async listAdReviews(adId: string): Promise<AdReview[]> {
+  async listAdReviews(adId: string, scope: TenantScope): Promise<AdReview[]> {
+    const tenantCondition = this.tenantCondition(schema.adReviews.tenantId, scope);
+    const whereClause = tenantCondition
+      ? and(eq(schema.adReviews.adId, adId), tenantCondition)
+      : eq(schema.adReviews.adId, adId);
     return this.db
       .select()
       .from(schema.adReviews)
-      .where(eq(schema.adReviews.adId, adId))
+      .where(whereClause)
       .orderBy(desc(schema.adReviews.createdAt));
   }
 
@@ -554,8 +584,9 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async getLead(id: string, options: { partnerId?: string } = {}): Promise<Lead | null> {
-    const whereClause = options.partnerId ? and(eq(leads.id, id), eq(leads.partnerId, options.partnerId)) : eq(leads.id, id);
+  async getLead(id: string, scope: TenantScope): Promise<Lead | null> {
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    const whereClause = tenantCondition ? and(eq(leads.id, id), tenantCondition) : eq(leads.id, id);
     const lead = await this.db.query.leads.findFirst({
       where: whereClause,
     });
@@ -567,8 +598,10 @@ export class DatabaseStorage implements IStorage {
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
-  } = {}): Promise<Lead[]> {
+  } = {}, scope: TenantScope): Promise<Lead[]> {
     const conditions = [];
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
 
     if (filters.partnerId) {
       conditions.push(eq(leads.partnerId, filters.partnerId));
@@ -607,12 +640,11 @@ export class DatabaseStorage implements IStorage {
         "clientName" | "status" | "location" | "country" | "region" | "notes" | "files" | "updatedBy" | "updatedAt"
       >
     >,
-    options: { partnerId?: string } = {},
+    scope: TenantScope,
   ): Promise<Lead | null> {
     const conditions: SQL<unknown>[] = [eq(leads.id, id)];
-    if (options.partnerId) {
-      conditions.push(eq(leads.partnerId, options.partnerId));
-    }
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
     const whereClause = conditions.reduce<SQL<unknown> | undefined>(
       (acc, condition) => (acc ? and(acc, condition) : condition),
       undefined,
@@ -626,11 +658,10 @@ export class DatabaseStorage implements IStorage {
     return record ?? null;
   }
 
-  async deleteLead(id: string, options: { partnerId?: string } = {}): Promise<boolean> {
+  async deleteLead(id: string, scope: TenantScope): Promise<boolean> {
     const conditions: SQL<unknown>[] = [eq(leads.id, id)];
-    if (options.partnerId) {
-      conditions.push(eq(leads.partnerId, options.partnerId));
-    }
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
     const whereClause = conditions.reduce<SQL<unknown> | undefined>(
       (acc, condition) => (acc ? and(acc, condition) : condition),
       undefined,
@@ -650,11 +681,10 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async listLeadComments(leadId: string, options: { partnerId?: string } = {}): Promise<LeadComment[]> {
+  async listLeadComments(leadId: string, scope: TenantScope): Promise<LeadComment[]> {
     const conditions: SQL<unknown>[] = [eq(leadComments.leadId, leadId)];
-    if (options.partnerId) {
-      conditions.push(eq(leads.partnerId, options.partnerId));
-    }
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
     const whereClause = conditions.reduce<SQL<unknown> | undefined>(
       (acc, condition) => (acc ? and(acc, condition) : condition),
       undefined,
@@ -669,11 +699,10 @@ export class DatabaseStorage implements IStorage {
       .then((rows) => rows.map((row) => row.lead_comments).filter((comment): comment is LeadComment => Boolean(comment)));
   }
 
-  async listLeadActivity(leadId: string, options: { partnerId?: string } = {}): Promise<ActivityLog[]> {
+  async listLeadActivity(leadId: string, scope: TenantScope): Promise<ActivityLog[]> {
     const conditions: SQL<unknown>[] = [eq(activityLogs.leadId, leadId)];
-    if (options.partnerId) {
-      conditions.push(eq(leads.partnerId, options.partnerId));
-    }
+    const tenantCondition = this.tenantCondition(leads.tenantId, scope);
+    if (tenantCondition) conditions.push(tenantCondition);
     const whereClause = conditions.reduce<SQL<unknown> | undefined>(
       (acc, condition) => (acc ? and(acc, condition) : condition),
       undefined,
@@ -743,8 +772,10 @@ export class DatabaseStorage implements IStorage {
     return record ?? null;
   }
 
-  async listServices(): Promise<Service[]> {
-    return this.db.select().from(services).orderBy(desc(services.active), services.name);
+  async listServices(scope: TenantScope): Promise<Service[]> {
+    const tenantCondition = this.tenantCondition(services.tenantId, scope);
+    const baseQuery = this.db.select().from(services);
+    return (tenantCondition ? baseQuery.where(tenantCondition) : baseQuery).orderBy(desc(services.active), services.name);
   }
 
   async createService(service: InsertService): Promise<Service> {
@@ -758,11 +789,14 @@ export class DatabaseStorage implements IStorage {
   async updateService(
     id: string,
     updates: Partial<Pick<Service, "name" | "description" | "unit" | "basePrice" | "active">>,
+    scope: TenantScope,
   ): Promise<Service | null> {
+    const tenantCondition = this.tenantCondition(services.tenantId, scope);
+    const whereClause = tenantCondition ? and(eq(services.id, id), tenantCondition) : eq(services.id, id);
     const [record] = await this.db
       .update(services)
       .set(updates)
-      .where(eq(services.id, id))
+      .where(whereClause)
       .returning();
     return record ?? null;
   }
