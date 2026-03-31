@@ -310,6 +310,50 @@ describe("leads router (integration)", () => {
     await agent.patch(`/api/leads/${lead.id}`).send({ status: "completed" }).expect(403);
   });
 
+  it("forbids tenant override attempts by non-admin users", async () => {
+    const user = await createUser({ id: "partner_tenant", email: "partner@example.com" });
+    const otherTenant = await createUser({ id: "tenant_other", email: "other@example.com" });
+    const agent = request.agent(app);
+    await loginAgent(agent, user.id);
+
+    await agent
+      .post("/api/leads")
+      .send({ clientName: "Client", partnerId: otherTenant.id })
+      .expect(403);
+
+    await agent
+      .post("/api/leads")
+      .send({ clientName: "Client", tenantId: otherTenant.id })
+      .expect(403);
+  });
+
+  it("allows admin impersonation only for approved non-admin tenant targets", async () => {
+    const admin = await createUser({ id: "admin", role: "admin", email: "admin@example.com" });
+    const tenant = await createUser({ id: "tenant_ok", email: "tenant@example.com", approved: true });
+    const unapproved = await createUser({ id: "tenant_unapproved", approved: false });
+    const adminTarget = await createUser({ id: "admin_target", role: "admin" });
+
+    const adminAgent = request.agent(app);
+    await loginAgent(adminAgent, admin.id);
+
+    const allowed = await adminAgent
+      .post("/api/leads")
+      .send({ clientName: "Cross-tenant", tenantId: tenant.id })
+      .expect(201);
+    expect(allowed.body.lead.tenantId).toBe(tenant.id);
+    expect(allowed.body.lead.partnerId).toBe(tenant.id);
+
+    await adminAgent
+      .post("/api/leads")
+      .send({ clientName: "Denied", tenantId: unapproved.id })
+      .expect(403);
+
+    await adminAgent
+      .post("/api/leads")
+      .send({ clientName: "Denied", tenantId: adminTarget.id })
+      .expect(403);
+  });
+
   it("scopes listing and reading to the owner unless admin", async () => {
     const owner = await createUser({ id: "owner", email: "owner@example.com" });
     const other = await createUser({ id: "other", email: "other@example.com" });
