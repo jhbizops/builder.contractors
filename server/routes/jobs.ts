@@ -1,4 +1,4 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { jobStatusEnum, type Job } from "@shared/schema";
@@ -124,7 +124,21 @@ function isBuilder(role: string | undefined): boolean {
   return role === "builder" || role === "dual";
 }
 function tenantScope(user: AuthenticatedUser) {
-  return isAdmin(user.role) ? { adminGlobal: true as const } : { tenantId: user.id };
+  return { tenantId: user.id } as const;
+}
+
+function resolveJobScope(req: Request, user: AuthenticatedUser, operation: string) {
+  if (!isAdmin(user.role) || req.query.adminGlobal !== "true") {
+    return tenantScope(user);
+  }
+
+  console.info("[jobs] adminGlobal scope enabled", {
+    operation,
+    actorId: user.id,
+    path: req.originalUrl,
+    method: req.method,
+  });
+  return { adminGlobal: true as const };
 }
 
 function isApprovedBuilder(user: AuthenticatedUser): boolean {
@@ -149,7 +163,8 @@ jobsRouter.get("/", async (req, res, next) => {
   try {
     const filters = parseListFilters(req.query);
     const user = getUser(res);
-    const jobs = await storage.listJobs(filters, tenantScope(user));
+    const scope = resolveJobScope(req, user, "jobs.list");
+    const jobs = await storage.listJobs(scope, filters);
     res.json({ jobs: jobs.map((job) => sanitizeJob(job, user)) });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -207,12 +222,14 @@ jobsRouter.post("/", async (req, res, next) => {
 
 jobsRouter.get("/:id/activity", async (req, res, next) => {
   try {
-    const job = await storage.getJob(req.params.id, tenantScope(getUser(res)));
+    const user = getUser(res);
+    const scope = resolveJobScope(req, user, "jobs.activity.list");
+    const job = await storage.getJob(req.params.id, scope);
     if (!job) {
       res.status(404).json({ message: "Job not found" });
       return;
     }
-    const activity = await storage.listJobActivity(job.id);
+    const activity = await storage.listJobActivity(job.id, scope);
     res.json({ activity });
   } catch (error) {
     next(error);
@@ -223,7 +240,8 @@ jobsRouter.patch("/:id", async (req, res, next) => {
   try {
     const payload = updateJobSchema.parse(req.body);
     const user = getUser(res);
-    const job = await storage.getJob(req.params.id, tenantScope(user));
+    const scope = resolveJobScope(req, user, "jobs.update");
+    const job = await storage.getJob(req.params.id, scope);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -235,7 +253,7 @@ jobsRouter.patch("/:id", async (req, res, next) => {
       return;
     }
 
-    const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() }, tenantScope(user));
+    const updated = await storage.updateJob(job.id, { ...payload, updatedAt: new Date() }, scope);
     res.json({ job: updated ? sanitizeJob(updated, user) : updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -250,7 +268,8 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
   try {
     const payload = statusSchema.parse(req.body);
     const user = getUser(res);
-    const job = await storage.getJob(req.params.id, tenantScope(user));
+    const scope = resolveJobScope(req, user, "jobs.status");
+    const job = await storage.getJob(req.params.id, scope);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -265,7 +284,7 @@ jobsRouter.patch("/:id/status", async (req, res, next) => {
       return;
     }
 
-    const updated = await storage.setJobStatus(job.id, payload.status, tenantScope(user));
+    const updated = await storage.setJobStatus(job.id, payload.status, scope);
 
     await storage.addActivityLog({
       id: `log_${randomUUID()}`,
@@ -290,7 +309,8 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
   try {
     const payload = assignSchema.parse(req.body);
     const user = getUser(res);
-    const job = await storage.getJob(req.params.id, tenantScope(user));
+    const scope = resolveJobScope(req, user, "jobs.assign");
+    const job = await storage.getJob(req.params.id, scope);
 
     if (!job) {
       res.status(404).json({ message: "Job not found" });
@@ -310,7 +330,7 @@ jobsRouter.post("/:id/assign", async (req, res, next) => {
     }
 
     const isReassignment = job.assigneeId !== null && payload.assigneeId !== job.assigneeId;
-    const updated = await storage.assignJob(job.id, payload.assigneeId, tenantScope(user), {
+    const updated = await storage.assignJob(job.id, payload.assigneeId, scope, {
       allowReassign: isReassignment,
     });
 

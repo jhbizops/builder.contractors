@@ -50,23 +50,24 @@ export interface IStorage {
   getUserProfile(userId: string): Promise<UserProfile | null>;
   createJob(job: InsertJob): Promise<Job>;
   getJob(id: string, scope: TenantScope): Promise<Job | null>;
-  listJobs(filters?: {
+  listJobs(scope: TenantScope, filters?: {
     ownerId?: string;
     assigneeId?: string;
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
     trade?: string | string[];
-  }, scope: TenantScope): Promise<Job[]>;
+  }): Promise<Job[]>;
   updateJob(
     id: string,
     updates: Partial<Pick<Job, "title" | "description" | "region" | "country" | "trade" | "updatedAt">>,
-  , scope: TenantScope): Promise<Job | null>;
+    scope: TenantScope,
+  ): Promise<Job | null>;
   setJobStatus(id: string, status: Job["status"], scope: TenantScope): Promise<Job | null>;
   assignJob(id: string, assigneeId: string | null, scope: TenantScope, options?: { allowReassign?: boolean }): Promise<Job | null>;
   claimJob(id: string, assigneeId: string, scope: TenantScope): Promise<Job | null>;
   addActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
-  listJobActivity(jobId: string): Promise<ActivityLog[]>;
+  listJobActivity(jobId: string, scope: TenantScope): Promise<ActivityLog[]>;
   createAd(ad: InsertAd): Promise<Ad>;
   getAd(id: string, scope: TenantScope): Promise<Ad | null>;
   listAds(filters: { status?: string | string[] } | undefined, scope: TenantScope): Promise<Ad[]>;
@@ -131,7 +132,15 @@ export type AdInsightsRow = {
 
 export class DatabaseStorage implements IStorage {
   constructor(private readonly db: NodePgDatabase<typeof schema>) {}
+  private assertScoped(scope: TenantScope | undefined): TenantScope {
+    if (!scope) {
+      throw new Error("Tenant scope is required");
+    }
+    return scope;
+  }
+
   private tenantCondition<T>(column: T, scope: TenantScope): SQL<unknown> | undefined {
+    this.assertScoped(scope);
     if ("adminGlobal" in scope && scope.adminGlobal) {
       return undefined;
     }
@@ -350,14 +359,14 @@ export class DatabaseStorage implements IStorage {
     return record ?? null;
   }
 
-  async listJobs(filters: {
+  async listJobs(scope: TenantScope, filters: {
     ownerId?: string;
     assigneeId?: string;
     status?: string | string[];
     region?: string | string[];
     country?: string | string[];
     trade?: string | string[];
-  } = {}, scope: TenantScope): Promise<Job[]> {
+  } = {}): Promise<Job[]> {
     const conditions = [];
     const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
     if (tenantCondition) conditions.push(tenantCondition);
@@ -403,7 +412,8 @@ export class DatabaseStorage implements IStorage {
   async updateJob(
     id: string,
     updates: Partial<Pick<Job, "title" | "description" | "privateDetails" | "region" | "country" | "trade" | "updatedAt">>,
-  , scope: TenantScope): Promise<Job | null> {
+    scope: TenantScope,
+  ): Promise<Job | null> {
     const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
     const whereClause = tenantCondition ? and(eq(jobs.id, id), tenantCondition) : eq(jobs.id, id);
     const [record] = await this.db
@@ -480,12 +490,25 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async listJobActivity(jobId: string): Promise<ActivityLog[]> {
-    return this.db
-      .select()
+  async listJobActivity(jobId: string, scope: TenantScope): Promise<ActivityLog[]> {
+    const tenantCondition = this.tenantCondition(jobs.tenantId, scope);
+    const conditions: SQL<unknown>[] = [eq(activityLogs.jobId, jobId)];
+    if (tenantCondition) {
+      conditions.push(tenantCondition);
+    }
+
+    let whereClause = conditions[0] as SQL<unknown>;
+    for (const condition of conditions.slice(1)) {
+      whereClause = and(whereClause, condition) as SQL<unknown>;
+    }
+    const records = await this.db
+      .select({ log: activityLogs })
       .from(activityLogs)
-      .where(eq(activityLogs.jobId, jobId))
+      .innerJoin(jobs, eq(activityLogs.jobId, jobs.id))
+      .where(whereClause)
       .orderBy(desc(activityLogs.timestamp));
+
+    return records.map((record) => record.log);
   }
 
   async createAd(ad: InsertAd): Promise<Ad> {

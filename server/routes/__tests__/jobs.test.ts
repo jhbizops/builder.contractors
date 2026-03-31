@@ -57,11 +57,15 @@ vi.mock("../../storageInstance", () => {
       jobs.set(record.id, record);
       return record;
     },
-    async getJob(id: string) {
-      return jobs.get(id) ?? null;
+    async getJob(id: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
+      const job = jobs.get(id);
+      if (!job) return null;
+      if (scope.tenantId && job.tenantId && job.tenantId !== scope.tenantId) return null;
+      return job;
     },
-    async listJobs(filters = {}) {
+    async listJobs(scope: { tenantId?: string; adminGlobal?: boolean } = {}, filters = {}) {
       return Array.from(jobs.values()).filter((job) => {
+        if (scope.tenantId && job.tenantId && job.tenantId !== scope.tenantId) return false;
         if (filters.ownerId && job.ownerId !== filters.ownerId) return false;
         if (filters.assigneeId && job.assigneeId !== filters.assigneeId) return false;
         if (filters.status) {
@@ -83,32 +87,41 @@ vi.mock("../../storageInstance", () => {
         return true;
       });
     },
-    async updateJob(id: string, updates) {
+    async updateJob(id: string, updates, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const existing = jobs.get(id);
       if (!existing) return null;
+      if (scope.tenantId && existing.tenantId && existing.tenantId !== scope.tenantId) return null;
       const updated: Job = { ...existing, ...updates };
       jobs.set(id, updated);
       return updated;
     },
-    async setJobStatus(id: string, status: Job["status"]) {
+    async setJobStatus(id: string, status: Job["status"], scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const existing = jobs.get(id);
       if (!existing) return null;
+      if (scope.tenantId && existing.tenantId && existing.tenantId !== scope.tenantId) return null;
       const updated: Job = { ...existing, status, updatedAt: new Date() };
       jobs.set(id, updated);
       return updated;
     },
-    async assignJob(id: string, assigneeId: string | null, options: { allowReassign?: boolean } = {}) {
+    async assignJob(
+      id: string,
+      assigneeId: string | null,
+      scope: { tenantId?: string; adminGlobal?: boolean } = {},
+      options: { allowReassign?: boolean } = {},
+    ) {
       const existing = jobs.get(id);
       if (!existing) return null;
+      if (scope.tenantId && existing.tenantId && existing.tenantId !== scope.tenantId) return null;
       if (!options.allowReassign && existing.assigneeId && assigneeId !== existing.assigneeId) return null;
       if (!options.allowReassign && existing.assigneeId) return null;
       const updated: Job = { ...existing, assigneeId, updatedAt: new Date() };
       jobs.set(id, updated);
       return updated;
     },
-    async claimJob(id: string, assigneeId: string) {
+    async claimJob(id: string, assigneeId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const existing = jobs.get(id);
       if (!existing || existing.assigneeId) return null;
+      if (scope.tenantId && existing.tenantId && existing.tenantId !== scope.tenantId) return null;
       const nextStatus = existing.status === "open" ? "in_progress" : existing.status;
       const updated: Job = { ...existing, assigneeId, status: nextStatus, updatedAt: new Date() };
       jobs.set(id, updated);
@@ -122,7 +135,10 @@ vi.mock("../../storageInstance", () => {
       activityLogs.set(record.id, record);
       return record;
     },
-    async listJobActivity(jobId: string) {
+    async listJobActivity(jobId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
+      const job = jobs.get(jobId);
+      if (!job) return [];
+      if (scope.tenantId && job.tenantId && job.tenantId !== scope.tenantId) return [];
       return Array.from(activityLogs.values()).filter((log) => log.jobId === jobId);
     },
     async createAd() {
@@ -423,6 +439,74 @@ describe("jobs router", () => {
     const res = await agent.get("/api/jobs").query({ trade: "framing" }).expect(200);
     expect(res.body.jobs).toHaveLength(1);
     expect(res.body.jobs[0]?.trade).toBe("framing");
+  });
+
+  it("does not list jobs from another tenant", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const otherTenant = await createUser({ email: "other@example.com" });
+    const agent = request.agent(app);
+    await loginAgent(agent, owner.id);
+
+    await storage.createJob({
+      id: "job_owner_tenant",
+      title: "Owner tenant job",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      tenantId: owner.id,
+      assigneeId: null,
+      region: "apac",
+      country: "AU",
+      trade: "framing",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await storage.createJob({
+      id: "job_other_tenant",
+      title: "Other tenant job",
+      description: null,
+      status: "open",
+      ownerId: otherTenant.id,
+      tenantId: otherTenant.id,
+      assigneeId: null,
+      region: "na",
+      country: "US",
+      trade: "electrical",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const res = await agent.get("/api/jobs").expect(200);
+    expect(res.body.jobs).toHaveLength(1);
+    expect(res.body.jobs[0]?.id).toBe("job_owner_tenant");
+  });
+
+  it("denies cross-tenant entity access on update/status/assign/activity", async () => {
+    const owner = await createUser({ email: "owner@example.com" });
+    const otherTenant = await createUser({ email: "other@example.com" });
+    const assignee = await createUser({ email: "assignee@example.com" });
+    const foreignJob = await storage.createJob({
+      id: "job_foreign_entity",
+      title: "Foreign tenant job",
+      description: null,
+      status: "open",
+      ownerId: owner.id,
+      tenantId: owner.id,
+      assigneeId: null,
+      region: null,
+      country: null,
+      trade: "general",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const agent = request.agent(app);
+    await loginAgent(agent, otherTenant.id);
+
+    await agent.patch(`/api/jobs/${foreignJob.id}`).send({ title: "x" }).expect(404);
+    await agent.patch(`/api/jobs/${foreignJob.id}/status`).send({ status: "completed" }).expect(404);
+    await agent.post(`/api/jobs/${foreignJob.id}/assign`).send({ assigneeId: assignee.id }).expect(404);
+    await agent.get(`/api/jobs/${foreignJob.id}/activity`).expect(404);
   });
 
   it("redacts private details for non-collaborators", async () => {

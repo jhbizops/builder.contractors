@@ -276,7 +276,7 @@ describe("job claim and reassignment guards", () => {
     const resTwo = await agentTwo.post(`/api/jobs/${job.id}/claim`).expect(409);
 
     expect(resTwo.body.message).toBe("Job already assigned");
-    const activity = await storage.listJobActivity(job.id);
+    const activity = await storage.listJobActivity(job.id, { tenantId: owner.id });
     expect(activity.filter((log) => log.action === "job_claimed")).toHaveLength(1);
   });
 
@@ -292,7 +292,7 @@ describe("job claim and reassignment guards", () => {
     const res = await agent.post(`/api/jobs/${job.id}/assign`).send({ assigneeId: newAssignee.id }).expect(200);
     expect(res.body.job.assigneeId).toBe(newAssignee.id);
 
-    const activity = await storage.listJobActivity(job.id);
+    const activity = await storage.listJobActivity(job.id, { tenantId: owner.id });
     expect(activity.find((log) => log.action === "job_assigned" && log.details.assigneeId === newAssignee.id)).toBeDefined();
   });
 });
