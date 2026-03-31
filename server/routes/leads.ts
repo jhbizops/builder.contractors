@@ -19,7 +19,6 @@ const leadFileSchema = z.object({
 });
 
 const createLeadSchema = z.object({
-  partnerId: z.string().optional(),
   clientName: z.string().min(1),
   status: statusEnum.default("new"),
   location: z.string().optional(),
@@ -97,6 +96,9 @@ function parseListFilters(query: unknown) {
 function isAdmin(role: string | undefined): boolean {
   return role === "admin" || role === "super_admin";
 }
+function tenantScope(user: AuthenticatedUser) {
+  return isAdmin(user.role) ? { adminGlobal: true as const } : { tenantId: user.id };
+}
 
 function requireApproval(user: AuthenticatedUser): boolean {
   return user.approved || isAdmin(user.role);
@@ -111,10 +113,10 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
 }
 
 async function getAuthorizedLead(id: string, user: AuthenticatedUser, res: Response) {
-  const lead = await storage.getLead(id, { partnerId: isAdmin(user.role) ? undefined : user.id });
+  const lead = await storage.getLead(id, tenantScope(user));
   if (lead) return lead;
 
-  const existing = await storage.getLead(id);
+  const existing = await storage.getLead(id, { adminGlobal: true });
   if (existing) {
     res.status(403).json({ message: "Forbidden" });
     return null;
@@ -133,8 +135,7 @@ leadsRouter.get("/", async (req, res, next) => {
     if (!ensureApproved(user, res, "Approval required to access leads")) return;
     const leads = await storage.listLeads({
       ...filters,
-      partnerId: isAdmin(user.role) ? undefined : user.id,
-    });
+    }, tenantScope(user));
     res.json({ leads });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -154,7 +155,8 @@ leadsRouter.post("/", async (req, res, next) => {
 
     const leadPayload: InsertLead = {
       id: `lead_${randomUUID()}`,
-      partnerId: isAdmin(user.role) ? parsed.partnerId ?? user.id : user.id,
+      tenantId: user.id,
+      partnerId: user.id,
       clientName: parsed.clientName,
       status: parsed.status,
       location: parsed.location ?? null,
@@ -202,7 +204,7 @@ leadsRouter.patch("/:id", async (req, res, next) => {
     const updated = await storage.updateLead(
       lead.id,
       { ...payload, updatedBy: user.email },
-      { partnerId: isAdmin(user.role) ? undefined : user.id },
+      tenantScope(user),
     );
 
     if (!updated) {
@@ -226,7 +228,7 @@ leadsRouter.delete("/:id", async (req, res, next) => {
     if (!ensureApproved(user, res, "Approval required to delete leads")) return;
     const lead = await getAuthorizedLead(req.params.id, user, res);
     if (!lead) return;
-    const deleted = await storage.deleteLead(lead.id, { partnerId: isAdmin(user.role) ? undefined : user.id });
+    const deleted = await storage.deleteLead(lead.id, tenantScope(user));
     if (!deleted) {
       res.status(404).json({ message: "Lead not found" });
       return;
@@ -255,9 +257,7 @@ leadsRouter.get("/:id/comments", async (req, res, next) => {
     if (!ensureApproved(user, res, "Approval required to access leads")) return;
     const lead = await getAuthorizedLead(req.params.id, user, res);
     if (!lead) return;
-    const comments = await storage.listLeadComments(req.params.id, {
-      partnerId: isAdmin(user.role) ? undefined : user.id,
-    });
+    const comments = await storage.listLeadComments(req.params.id, tenantScope(user));
     res.json({ comments });
   } catch (error) {
     next(error);
@@ -294,9 +294,7 @@ leadsRouter.get("/:id/activity", async (req, res, next) => {
     if (!ensureApproved(user, res, "Approval required to access leads")) return;
     const lead = await getAuthorizedLead(req.params.id, user, res);
     if (!lead) return;
-    const activity = await storage.listLeadActivity(req.params.id, {
-      partnerId: isAdmin(user.role) ? undefined : user.id,
-    });
+    const activity = await storage.listLeadActivity(req.params.id, tenantScope(user));
     res.json({ activity });
   } catch (error) {
     next(error);

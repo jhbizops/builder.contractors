@@ -37,7 +37,7 @@ export async function recordAiReview(
 }
 
 export async function assertPublishAllowed(storage: IStorage, adId: string): Promise<void> {
-  const reviews = await storage.listAdReviews(adId);
+  const reviews = await storage.listAdReviews(adId, { adminGlobal: true });
   const approved = reviews.some((review) => review.status === "approved");
   if (!approved) {
     throw new ModerationBlockedError("Ad requires approval before publishing");

@@ -108,15 +108,15 @@ vi.mock("../storageInstance", () => {
       leads.set(record.id, record);
       return record;
     },
-    async getLead(id: string, options = {}) {
+    async getLead(id: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return null;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return null;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return null;
       return lead;
     },
-    async listLeads(filters = {}) {
+    async listLeads(filters = {}, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       return Array.from(leads.values()).filter((lead) => {
-        if (filters.partnerId && lead.partnerId !== filters.partnerId) return false;
+        if (scope.tenantId && lead.tenantId !== scope.tenantId) return false;
         if (filters.status) {
           const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
           if (!statuses.includes(lead.status)) return false;
@@ -132,18 +132,18 @@ vi.mock("../storageInstance", () => {
         return true;
       });
     },
-    async updateLead(id: string, updates, options = {}) {
+    async updateLead(id: string, updates, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return null;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return null;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return null;
       const updated: Lead = { ...lead, ...updates, updatedAt: updates.updatedAt ?? new Date() };
       leads.set(id, updated);
       return updated;
     },
-    async deleteLead(id: string, options = {}) {
+    async deleteLead(id: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return false;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return false;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return false;
       leads.delete(id);
       return true;
     },
@@ -152,18 +152,18 @@ vi.mock("../storageInstance", () => {
       leadComments.set(record.id, record);
       return record;
     },
-    async listLeadComments(leadId: string, options = {}) {
+    async listLeadComments(leadId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(leadId);
       if (!lead) return [];
-      if (options.partnerId && lead.partnerId !== options.partnerId) return [];
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return [];
       return Array.from(leadComments.values())
         .filter((comment) => comment.leadId === leadId)
         .sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
     },
-    async listLeadActivity(leadId: string, options = {}) {
+    async listLeadActivity(leadId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(leadId);
       if (!lead) return [];
-      if (options.partnerId && lead.partnerId !== options.partnerId) return [];
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return [];
       return Array.from(activities.values())
         .filter((log) => log.leadId === leadId)
         .sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
@@ -291,7 +291,7 @@ describe("leads router", () => {
     await loginAgent(agent, user.id);
 
     const createRes = await agent.post("/api/leads").send({ clientName: "My Client" }).expect(201);
-    expect(createRes.body.lead.partnerId).toBe(user.id);
+    expect(createRes.body.lead.tenantId).toBe(user.id);
 
     const listRes = await agent.get("/api/leads").expect(200);
     expect(listRes.body.leads).toHaveLength(1);
@@ -308,6 +308,7 @@ describe("leads router", () => {
     const other = await createUser({ email: "other@example.com" });
     await storage.createLead({
       id: "lead_1",
+      tenantId: owner.id,
       partnerId: owner.id,
       clientName: "Owner Client",
       status: "new",
@@ -335,6 +336,7 @@ describe("leads router", () => {
     const owner = await createUser({ email: "owner@example.com" });
     await storage.createLead({
       id: "lead_admin",
+      tenantId: owner.id,
       partnerId: owner.id,
       clientName: "Owner Client",
       status: "new",
@@ -364,6 +366,7 @@ describe("leads router", () => {
     const unapproved = await createUser({ id: "user_unapproved", email: "bad@example.com", approved: false });
     const lead = await storage.createLead({
       id: "lead_comments",
+      tenantId: owner.id,
       partnerId: owner.id,
       clientName: "Owner Client",
       status: "new",

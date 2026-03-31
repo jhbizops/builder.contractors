@@ -18,7 +18,6 @@ const adsRouter = Router();
 const targetingSchema = z.record(z.string(), z.unknown());
 
 const createAdSchema = z.object({
-  advertiserId: z.string().optional(),
   name: z.string().min(1, "Name is required"),
   targeting: targetingSchema.optional(),
 });
@@ -103,6 +102,9 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
   }
   return true;
 }
+function tenantScope(user: AuthenticatedUser) {
+  return isAdmin(user.role) ? { adminGlobal: true as const } : { tenantId: user.id };
+}
 
 adsRouter.use(requireAuth);
 
@@ -115,8 +117,8 @@ adsRouter.get("/delivery", async (req, res, next) => {
       return;
     }
     const query = queryResult.data;
-    const ads = await storage.listAds({ status: "approved" });
-    const creatives = await storage.listAdCreatives(ads.map((ad) => ad.id));
+    const ads = await storage.listAds({ status: "approved" }, tenantScope(user));
+    const creatives = await storage.listAdCreatives(ads.map((ad) => ad.id), tenantScope(user));
     const creativesByAd = creatives.reduce<Record<string, typeof creatives>>((acc, creative) => {
       if (!acc[creative.adId]) {
         acc[creative.adId] = [];
@@ -177,15 +179,10 @@ adsRouter.post("/", async (req, res, next) => {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to create ads")) return;
     const payload = createAdSchema.parse(req.body);
-    const admin = isAdmin(user.role);
-    if (!admin && payload.advertiserId && payload.advertiserId !== user.id) {
-      res.status(403).json({ message: "Forbidden" });
-      return;
-    }
-
     const adPayload: InsertAd = {
       id: `ad_${randomUUID()}`,
-      advertiserId: admin ? payload.advertiserId ?? user.id : user.id,
+      tenantId: user.id,
+      advertiserId: user.id,
       name: payload.name,
       targeting: payload.targeting ?? {},
       status: "draft",
@@ -215,7 +212,7 @@ adsRouter.post("/:id/reviews", async (req, res, next) => {
     }
 
     const payload = reviewSchema.parse(req.body);
-    const ad = await storage.getAd(req.params.id);
+    const ad = await storage.getAd(req.params.id, tenantScope(user));
     if (!ad) {
       res.status(404).json({ message: "Ad not found" });
       return;
@@ -225,6 +222,7 @@ adsRouter.post("/:id/reviews", async (req, res, next) => {
     if (payload.source === "ai") {
       review = await recordAiReview(storage, {
         adId: ad.id,
+        tenantId: ad.tenantId,
         status: payload.status,
         result: payload.result ?? {},
         notes: payload.notes ?? null,
@@ -246,7 +244,7 @@ adsRouter.post("/:id/reviews", async (req, res, next) => {
     }
 
     if (payload.status === "approved" || payload.status === "rejected") {
-      await storage.updateAdStatus(ad.id, payload.status, user.email);
+      await storage.updateAdStatus(ad.id, payload.status, user.email, tenantScope(user));
     }
 
     res.status(201).json({ review });
@@ -264,7 +262,7 @@ adsRouter.patch("/:id/status", async (req, res, next) => {
     const user = getUser(res);
     if (!ensureApproved(user, res, "Approval required to update ads")) return;
     const payload = updateStatusSchema.parse(req.body);
-    const ad = await storage.getAd(req.params.id);
+    const ad = await storage.getAd(req.params.id, tenantScope(user));
     if (!ad) {
       res.status(404).json({ message: "Ad not found" });
       return;
@@ -301,7 +299,7 @@ adsRouter.patch("/:id/status", async (req, res, next) => {
       return;
     }
 
-    const updated = await storage.updateAdStatus(ad.id, payload.status, user.email);
+    const updated = await storage.updateAdStatus(ad.id, payload.status, user.email, tenantScope(user));
     if (!updated) {
       res.status(404).json({ message: "Ad not found" });
       return;

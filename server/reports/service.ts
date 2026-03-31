@@ -66,7 +66,7 @@ function serializeJobs(jobs: Job[]): string {
   return buildCsv(headers, rows);
 }
 
-async function buildExportPayload(storage: IStorage, filters: ExportFilters): Promise<string> {
+async function buildExportPayload(storage: IStorage, filters: ExportFilters, tenantId: string): Promise<string> {
   if (filters.report === "jobs") {
     const jobs = await storage.listJobs({
       ownerId: filters.ownerId,
@@ -75,7 +75,7 @@ async function buildExportPayload(storage: IStorage, filters: ExportFilters): Pr
       region: filters.region,
       country: filters.country,
       trade: filters.trade,
-    });
+    }, { tenantId });
     return serializeJobs(jobs);
   }
 
@@ -83,7 +83,7 @@ async function buildExportPayload(storage: IStorage, filters: ExportFilters): Pr
     status: filters.status,
     region: filters.region,
     country: filters.country,
-  });
+  }, { tenantId });
   return serializeLeads(leads);
 }
 
@@ -109,7 +109,7 @@ export async function createExportJob(options: {
   });
 
   try {
-    const content = await buildExportPayload(storage, filters);
+    const content = await buildExportPayload(storage, filters, tenantId);
     await writeExportFile(id, content);
     const fileUrl = buildExportDownloadUrl(id);
     const completedAt = new Date();

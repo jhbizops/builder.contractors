@@ -112,16 +112,16 @@ vi.mock("../../storageInstance", () => {
       leads.set(record.id, record);
       return record;
     },
-    async getLead(id: string, options = {}) {
+    async getLead(id: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return null;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return null;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return null;
       return lead;
     },
-    async listLeads(filters = {}) {
-      lastListFilters = filters;
+    async listLeads(filters = {}, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
+      lastListFilters = { ...filters, ...scope };
       return Array.from(leads.values()).filter((lead) => {
-        if (filters.partnerId && lead.partnerId !== filters.partnerId) return false;
+        if (scope.tenantId && lead.tenantId !== scope.tenantId) return false;
         if (filters.status) {
           const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
           if (!statuses.includes(lead.status)) return false;
@@ -137,18 +137,18 @@ vi.mock("../../storageInstance", () => {
         return true;
       });
     },
-    async updateLead(id: string, updates, options = {}) {
+    async updateLead(id: string, updates, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return null;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return null;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return null;
       const updated: Lead = { ...lead, ...updates, updatedAt: updates.updatedAt ?? new Date() };
       leads.set(id, updated);
       return updated;
     },
-    async deleteLead(id: string, options = {}) {
+    async deleteLead(id: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(id);
       if (!lead) return false;
-      if (options.partnerId && lead.partnerId !== options.partnerId) return false;
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return false;
       leads.delete(id);
       return true;
     },
@@ -157,18 +157,18 @@ vi.mock("../../storageInstance", () => {
       leadComments.set(record.id, record);
       return record;
     },
-    async listLeadComments(leadId: string, options = {}) {
+    async listLeadComments(leadId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(leadId);
       if (!lead) return [];
-      if (options.partnerId && lead.partnerId !== options.partnerId) return [];
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return [];
       return Array.from(leadComments.values())
         .filter((comment) => comment.leadId === leadId)
         .sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
     },
-    async listLeadActivity(leadId: string, options = {}) {
+    async listLeadActivity(leadId: string, scope: { tenantId?: string; adminGlobal?: boolean } = {}) {
       const lead = leads.get(leadId);
       if (!lead) return [];
-      if (options.partnerId && lead.partnerId !== options.partnerId) return [];
+      if (scope.tenantId && lead.tenantId !== scope.tenantId) return [];
       return Array.from(activities.values())
         .filter((log) => log.leadId === leadId)
         .sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
@@ -292,6 +292,7 @@ describe("leads router (integration)", () => {
 
     const lead = await storage.createLead({
       id: "lead_unapproved",
+      tenantId: user.id,
       partnerId: user.id,
       clientName: "Client",
       status: "new",
@@ -316,6 +317,7 @@ describe("leads router (integration)", () => {
 
     await storage.createLead({
       id: "lead_owner",
+      tenantId: owner.id,
       partnerId: owner.id,
       clientName: "Owner Client",
       status: "new",
@@ -332,6 +334,7 @@ describe("leads router (integration)", () => {
 
     await storage.createLead({
       id: "lead_other",
+      tenantId: other.id,
       partnerId: other.id,
       clientName: "Other Client",
       status: "new",
@@ -351,14 +354,14 @@ describe("leads router (integration)", () => {
     const listRes = await ownerAgent.get("/api/leads").expect(200);
     expect(listRes.body.leads).toHaveLength(1);
     expect(listRes.body.leads[0].id).toBe("lead_owner");
-    expect(getState().lastListFilters).toMatchObject({ partnerId: owner.id });
+    expect(getState().lastListFilters).toMatchObject({ tenantId: owner.id });
     await ownerAgent.get("/api/leads/lead_other").expect(403);
 
     const adminAgent = request.agent(app);
     await loginAgent(adminAgent, admin.id);
     const adminList = await adminAgent.get("/api/leads").expect(200);
     expect(adminList.body.leads).toHaveLength(2);
-    expect(getState().lastListFilters).toMatchObject({ partnerId: undefined });
+    expect(getState().lastListFilters).toMatchObject({ adminGlobal: true });
     await adminAgent.get("/api/leads/lead_other").expect(200);
   });
 
@@ -368,6 +371,7 @@ describe("leads router (integration)", () => {
 
     const lead = await storage.createLead({
       id: "lead_secure",
+      tenantId: owner.id,
       partnerId: owner.id,
       clientName: "Secure",
       status: "new",

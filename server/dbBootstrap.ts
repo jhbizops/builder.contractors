@@ -40,6 +40,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS jobs (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     title text NOT NULL,
     description text,
     private_details text,
@@ -97,6 +98,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS leads (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     partner_id text NOT NULL,
     client_name text NOT NULL,
     status text NOT NULL DEFAULT 'new',
@@ -119,6 +121,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS services (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     name text NOT NULL,
     description text,
     unit text NOT NULL,
@@ -128,6 +131,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS custom_pricing (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     user_id text NOT NULL,
     service_id text NOT NULL,
     price integer NOT NULL,
@@ -144,6 +148,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS ads (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     advertiser_id text NOT NULL,
     name text NOT NULL,
     targeting jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -155,6 +160,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS ad_creatives (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     ad_id text NOT NULL,
     format text NOT NULL,
     headline text,
@@ -167,6 +173,7 @@ const bootstrapStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS ad_reviews (
     id text PRIMARY KEY,
+    tenant_id text NOT NULL,
     ad_id text NOT NULL,
     reviewer_id text NOT NULL,
     source text NOT NULL DEFAULT 'human',
@@ -193,6 +200,13 @@ const postBootstrapStatements = [
   `ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb`,
   `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS trade text`,
   `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS private_details text`,
+  `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE services ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE custom_pricing ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE ads ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE ad_creatives ADD COLUMN IF NOT EXISTS tenant_id text`,
+  `ALTER TABLE ad_reviews ADD COLUMN IF NOT EXISTS tenant_id text`,
 ];
 
 async function tableExists(pool: PoolLike, tableName: string): Promise<boolean> {

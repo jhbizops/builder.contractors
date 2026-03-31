@@ -81,6 +81,7 @@ export type LeadFileRecord = {
 
 export const leads = pgTable("leads", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   partnerId: text("partner_id").notNull(),
   clientName: text("client_name").notNull(),
   status: text("status").notNull().default("new"), // 'new', 'in_progress', 'completed', 'on_hold'
@@ -109,6 +110,7 @@ export const jobStatusEnum = z.enum(jobStatusValues);
 
 export const jobs = pgTable("jobs", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   privateDetails: text("private_details"),
@@ -133,6 +135,7 @@ export const adReviewSourceEnum = z.enum(adReviewSourceValues);
 
 export const ads = pgTable("ads", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   advertiserId: text("advertiser_id").notNull(),
   name: text("name").notNull(),
   targeting: jsonb("targeting").$type<Record<string, unknown>>().default({}).notNull(),
@@ -145,6 +148,7 @@ export const ads = pgTable("ads", {
 
 export const adCreatives = pgTable("ad_creatives", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   adId: text("ad_id").notNull(),
   format: text("format").notNull(),
   headline: text("headline"),
@@ -158,6 +162,7 @@ export const adCreatives = pgTable("ad_creatives", {
 
 export const adReviews = pgTable("ad_reviews", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   adId: text("ad_id").notNull(),
   reviewerId: text("reviewer_id").notNull(),
   source: text("source").notNull().default("human"),
@@ -185,6 +190,7 @@ export const exportsTable = pgTable("exports", {
 // Services table
 export const services = pgTable("services", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   unit: text("unit").notNull(), // 'project', 'sq_ft', 'hour'
@@ -196,6 +202,7 @@ export const services = pgTable("services", {
 // Custom pricing table
 export const customPricing = pgTable("custom_pricing", {
   id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
   userId: text("user_id").notNull(),
   serviceId: text("service_id").notNull(),
   price: integer("price").notNull(),
@@ -223,6 +230,7 @@ export const insertCountrySchema = createInsertSchema(countries);
 
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
+  tenantId: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -234,10 +242,12 @@ export const insertLeadCommentSchema = createInsertSchema(leadComments).omit({
 
 export const insertServiceSchema = createInsertSchema(services).omit({
   id: true,
+  tenantId: true,
 });
 
 export const insertCustomPricingSchema = createInsertSchema(customPricing).omit({
   id: true,
+  tenantId: true,
 });
 
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
@@ -253,6 +263,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
 
 const adBaseInsertSchema = createInsertSchema(ads).omit({
   id: true,
+  tenantId: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -264,6 +275,7 @@ export const updateAdSchema = adBaseInsertSchema
 
 const adReviewBaseInsertSchema = createInsertSchema(adReviews).omit({
   id: true,
+  tenantId: true,
   createdAt: true,
   updatedAt: true,
 });
