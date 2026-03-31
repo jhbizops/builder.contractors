@@ -27,6 +27,8 @@ const createLeadSchema = z.object({
   notes: z.array(z.string()).default([]),
   files: z.array(leadFileSchema).default([]),
   createdBy: z.string().optional(),
+  tenantId: z.string().optional(),
+  partnerId: z.string().optional(),
 });
 
 const updateLeadSchema = insertLeadSchema
@@ -112,6 +114,43 @@ function ensureApproved(user: AuthenticatedUser, res: Response, message: string)
   return true;
 }
 
+async function resolveLeadWriteTenant(
+  payload: z.infer<typeof createLeadSchema>,
+  user: AuthenticatedUser,
+  res: Response,
+): Promise<{ tenantId: string; partnerId: string } | null> {
+  const requestedTenantId = payload.tenantId ?? payload.partnerId;
+  if (payload.tenantId && payload.partnerId && payload.tenantId !== payload.partnerId) {
+    res.status(400).json({ message: "tenantId and partnerId must match when both are provided" });
+    return null;
+  }
+
+  if (!isAdmin(user.role)) {
+    if (requestedTenantId && requestedTenantId !== user.id) {
+      res.status(403).json({ message: "Forbidden tenant override" });
+      return null;
+    }
+    return { tenantId: user.id, partnerId: user.id };
+  }
+
+  const tenantId = requestedTenantId ?? user.id;
+  if (tenantId !== user.id) {
+    const targetTenant = await storage.getUser(tenantId);
+    const canImpersonate = Boolean(
+      targetTenant &&
+      targetTenant.approved &&
+      targetTenant.role !== "admin" &&
+      targetTenant.role !== "super_admin",
+    );
+    if (!canImpersonate) {
+      res.status(403).json({ message: "Forbidden tenant impersonation target" });
+      return null;
+    }
+  }
+
+  return { tenantId, partnerId: tenantId };
+}
+
 async function getAuthorizedLead(id: string, user: AuthenticatedUser, res: Response) {
   const lead = await storage.getLead(id, tenantScope(user));
   if (lead) return lead;
@@ -152,11 +191,13 @@ leadsRouter.post("/", async (req, res, next) => {
     const parsed = createLeadSchema.parse(req.body);
 
     if (!ensureApproved(user, res, "Approval required to create leads")) return;
+    const tenant = await resolveLeadWriteTenant(parsed, user, res);
+    if (!tenant) return;
 
     const leadPayload: InsertLead = {
       id: `lead_${randomUUID()}`,
-      tenantId: user.id,
-      partnerId: user.id,
+      tenantId: tenant.tenantId,
+      partnerId: tenant.partnerId,
       clientName: parsed.clientName,
       status: parsed.status,
       location: parsed.location ?? null,
