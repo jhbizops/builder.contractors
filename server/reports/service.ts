@@ -68,14 +68,14 @@ function serializeJobs(jobs: Job[]): string {
 
 async function buildExportPayload(storage: IStorage, filters: ExportFilters, tenantId: string): Promise<string> {
   if (filters.report === "jobs") {
-    const jobs = await storage.listJobs({
+    const jobs = await storage.listJobs({ tenantId }, {
       ownerId: filters.ownerId,
       assigneeId: filters.assigneeId,
       status: filters.status,
       region: filters.region,
       country: filters.country,
       trade: filters.trade,
-    }, { tenantId });
+    });
     return serializeJobs(jobs);
   }
 
