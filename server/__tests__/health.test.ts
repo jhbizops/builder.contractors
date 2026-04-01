@@ -36,9 +36,15 @@ describe("probeDatabase", () => {
 });
 
 describe("createHealthRouter", () => {
-  it("responds with live when db is healthy", async () => {
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const app = express().use("/", createHealthRouter({ db: { query }, countriesCount: 3 }));
+  it("responds with a fast liveness payload", async () => {
+    const app = express().use(
+      "/",
+      createHealthRouter({
+        startup: {
+          snapshot: () => ({ status: "ready", dependencies: [], checkedAt: new Date().toISOString() }),
+        } as any,
+      }),
+    );
 
     const response = await request(app).get("/");
 
@@ -46,23 +52,30 @@ describe("createHealthRouter", () => {
     expect(response.body).toEqual(
       expect.objectContaining({
         status: "live",
-        countries: 3,
-        db: expect.objectContaining({ status: "ok" }),
       }),
     );
   });
 
-  it("responds with degraded when db is unhealthy", async () => {
-    const query = vi.fn().mockRejectedValue(new Error("db-down"));
-    const app = express().use("/", createHealthRouter({ db: { query }, countriesCount: 2 }));
+  it("responds with 503 when readiness is not satisfied", async () => {
+    const app = express().use(
+      "/",
+      createHealthRouter({
+        startup: {
+          snapshot: () => ({
+            status: "not_ready",
+            dependencies: [{ name: "database", critical: true, status: "error" }],
+            checkedAt: new Date().toISOString(),
+          }),
+        } as any,
+      }),
+    );
 
-    const response = await request(app).get("/");
+    const response = await request(app).get("/ready");
 
     expect(response.status).toBe(503);
     expect(response.body).toEqual(
       expect.objectContaining({
-        status: "degraded",
-        db: expect.objectContaining({ status: "error", message: "db-down" }),
+        status: "not_ready",
       }),
     );
   });
