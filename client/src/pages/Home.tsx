@@ -16,6 +16,7 @@ import {
   Star,
   Clock,
   MapPin,
+  Menu,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { CountrySelector } from '@/components/CountrySelector';
@@ -26,6 +27,7 @@ import { HeadManager } from '@/components/HeadManager';
 import { getLocalizedMarketingPath, resolveMarketingCanonical } from '@/content/locales';
 import { StructuredData } from '@/components/StructuredData';
 import { buildOrganizationWebsiteStructuredData } from '@/lib/structuredData';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export default function Home() {
   const { settings } = useGlobalization();
@@ -197,7 +199,7 @@ export default function Home() {
                 Get started
               </a>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden sm:flex flex-wrap items-center gap-3">
               <CountrySelector className="w-48" />
               <Button variant="ghost" asChild data-testid="button-login">
                 <Link href="/login">Sign In</Link>
@@ -205,6 +207,34 @@ export default function Home() {
               <Button asChild data-testid="button-register">
                 <Link href="/register">Get Started</Link>
               </Button>
+            </div>
+            <div className="sm:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Open home menu" data-testid="button-home-mobile-menu">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[85vw] max-w-sm">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                    <SheetDescription>Open navigation links and primary actions.</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6 flex flex-col gap-3">
+                    <a href="#how-it-works" className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">How it works</a>
+                    <a href="#benefits" className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">Benefits</a>
+                    <a href="#explore" className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">Explore</a>
+                    <a href="#cta" className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">Get started</a>
+                    <CountrySelector className="w-full" />
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link href="/login">Sign In</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/register">Get Started</Link>
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>

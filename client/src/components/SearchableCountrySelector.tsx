@@ -124,7 +124,7 @@ export const SearchableCountrySelector: React.FC<SearchableCountrySelectorProps>
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] min-w-[240px] p-0"
+        className="w-[--radix-popover-trigger-width] min-w-0 p-0"
         align="start"
       >
         <Command shouldFilter={false}>
