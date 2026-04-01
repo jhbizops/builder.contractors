@@ -23,7 +23,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
 }) => {
   return (
     <SearchableCountrySelector
-      className={className ?? 'w-[240px]'}
+      className={className ?? 'w-full sm:w-[240px]'}
       placeholder={placeholder ?? 'Select your country'}
       value={value}
       onValueChange={onValueChange}

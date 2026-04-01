@@ -6,6 +6,8 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { useGlobalization } from "@/contexts/GlobalizationContext";
 import { HeadManager } from "@/components/HeadManager";
 import { getLocalizedMarketingPath, resolveMarketingCanonical } from "@/content/locales";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type PublicPageLayoutProps = {
   title: string;
@@ -51,7 +53,7 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
                 </span>
               </Link>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-4">
               <Link href={toMarketingPath("/how-it-works")} className="text-sm text-slate-700 hover:text-slate-900 transition-colors">
                 How it works
               </Link>
@@ -65,6 +67,42 @@ export function PublicPageLayout({ title, subtitle, children, seo }: PublicPageL
               <Button asChild>
                 <Link href="/register">Get Started</Link>
               </Button>
+            </div>
+            <div className="sm:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Open marketing menu" data-testid="button-public-mobile-menu">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[85vw] max-w-sm">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                    <SheetDescription>Access navigation links and account actions.</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6 flex flex-col gap-3">
+                    <Link href={toMarketingPath("/about")} className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                      About
+                    </Link>
+                    <Link href={toMarketingPath("/how-it-works")} className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                      How it works
+                    </Link>
+                    <Link href={toMarketingPath("/pricing")} className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                      Pricing
+                    </Link>
+                    <Link href={toMarketingPath("/faq")} className="rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                      FAQ
+                    </Link>
+                    <CountrySelector className="w-full" />
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link href="/login">Sign In</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/register">Get Started</Link>
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>

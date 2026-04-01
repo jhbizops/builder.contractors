@@ -3,11 +3,12 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Menu } from 'lucide-react';
 import { GlobalizationSettingsDialog } from '@/components/GlobalizationSettingsDialog';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { BrandLogo } from '@/components/BrandLogo';
 import { JOBS_CANONICAL_PATH } from '@/lib/routes';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 export const Navigation: React.FC = () => {
   const [location] = useLocation();
@@ -61,7 +62,7 @@ export const Navigation: React.FC = () => {
   return (
     <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
+        <div className="flex justify-between items-center py-4 sm:py-6 gap-2">
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0 mt-2">
               <Link href="/dashboard">
@@ -89,7 +90,7 @@ export const Navigation: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {getRoleOptions().length > 0 && (
               <div className="hidden md:block">
                 <Select value={currentView} onValueChange={setCurrentView}>
@@ -115,7 +116,7 @@ export const Navigation: React.FC = () => {
                 <span>{settings.timeZone}</span>
               </div>
               <GlobalizationSettingsDialog />
-              <span className="text-sm text-slate-600 hidden sm:block">
+              <span className="text-sm text-slate-600 hidden sm:block max-w-[180px] truncate">
                 {userData?.email}
               </span>
               <div className="flex items-center space-x-1">
@@ -133,6 +134,60 @@ export const Navigation: React.FC = () => {
                 </Button>
               </div>
             </div>
+
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  aria-label="Open navigation menu"
+                  data-testid="button-dashboard-mobile-menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85vw] max-w-sm">
+                <SheetHeader>
+                  <SheetTitle>Navigation</SheetTitle>
+                  <SheetDescription>Open dashboard sections and account controls.</SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 space-y-6">
+                  <div className="space-y-2">
+                    {getNavItems().map((item) => (
+                      <Link key={item.path} href={item.path}>
+                        <span
+                          className={`block rounded-md px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${
+                            location === item.path ? 'bg-primary text-white' : 'text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                  {getRoleOptions().length > 0 && (
+                    <Select value={currentView} onValueChange={setCurrentView}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getRoleOptions().map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>{settings.locale} · {settings.currency}</p>
+                    <p>{settings.timeZone}</p>
+                    {userData?.email ? <p className="truncate">{userData.email}</p> : null}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
