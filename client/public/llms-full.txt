@@ -16,7 +16,7 @@ Keywords: builder referral network, contractor lead exchange, trade partner mark
 
 ### How Builder.Contractors Works
 URL: {{PUBLIC_SITE_URL}}/how-it-works
-Summary: A streamlined workflow to share, verify, and collaborate on projects in minutes.
+Summary: Stop losing quote requests in email threads. Keep scope, pricing, and subcontractor communication documented in one shared workflow.
 Keywords: how builder referrals work, trade collaboration workflow, contractor lead handoff, verified builder matching
 
 ### Builder.Contractors FAQ
