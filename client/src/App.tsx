@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
-import { Switch, Route } from "wouter";
+import { Suspense, lazy, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +12,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/not-found";
 import { getLocalizedMarketingPath, marketingLocales } from "@/content/locales";
+import { JOBS_ALIAS_PATH, JOBS_CANONICAL_PATH } from "@/lib/routes";
 
 // Lazy load dashboard pages to improve initial load time
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -68,7 +69,8 @@ export function Router({ enableAdminSetupRoute = adminSetupEnabledInRuntime }: {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/dashboard/sales" component={SalesDashboard} />
         <Route path="/dashboard/builder" component={BuilderDashboard} />
-        <Route path="/dashboard/jobs" component={JobBoard} />
+        <Route path={JOBS_CANONICAL_PATH} component={JobBoard} />
+        <Route path={JOBS_ALIAS_PATH} component={JobBoardAliasRedirect} />
         <Route path="/dashboard/admin" component={AdminDashboard} />
         <Route path="/dashboard/billing" component={Billing} />
         <Route path="/dashboard/reports" component={Reports} />
@@ -95,6 +97,16 @@ export function Router({ enableAdminSetupRoute = adminSetupEnabledInRuntime }: {
       </Switch>
     </Suspense>
   );
+}
+
+export function JobBoardAliasRedirect() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate(JOBS_CANONICAL_PATH, { replace: true });
+  }, [navigate]);
+
+  return null;
 }
 
 function App() {

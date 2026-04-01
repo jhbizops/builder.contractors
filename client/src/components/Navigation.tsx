@@ -7,6 +7,7 @@ import { User, LogOut } from 'lucide-react';
 import { GlobalizationSettingsDialog } from '@/components/GlobalizationSettingsDialog';
 import { useGlobalization } from '@/contexts/GlobalizationContext';
 import { BrandLogo } from '@/components/BrandLogo';
+import { JOBS_CANONICAL_PATH } from '@/lib/routes';
 
 export const Navigation: React.FC = () => {
   const [location] = useLocation();
@@ -27,7 +28,7 @@ export const Navigation: React.FC = () => {
       { path: '/dashboard', label: 'Dashboard', roles: ['sales', 'builder', 'admin', 'super_admin', 'dual'] },
       { path: '/dashboard/sales', label: 'Leads', roles: ['sales', 'dual', 'admin', 'super_admin'] },
       { path: '/dashboard/builder', label: 'Services', roles: ['builder', 'dual', 'admin', 'super_admin'] },
-      { path: '/dashboard/jobs', label: 'Job Board', roles: ['builder', 'dual', 'admin', 'super_admin'] },
+      { path: JOBS_CANONICAL_PATH, label: 'Job Board', roles: ['builder', 'dual', 'admin', 'super_admin'] },
       { path: '/dashboard/admin', label: 'Admin', roles: ['admin', 'super_admin'] },
       { path: '/dashboard/reports', label: 'Reports', roles: ['sales', 'builder', 'dual', 'admin', 'super_admin'], entitlement: 'reports.export' },
       { path: '/dashboard/billing', label: 'Billing', roles: ['sales', 'builder', 'dual', 'admin', 'super_admin'] },
