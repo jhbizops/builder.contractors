@@ -7,7 +7,13 @@ import { billingRouter } from "./billing/routes";
 import { getBillingService, initializeStripe } from "./billing/instance";
 import { ensureDatabase } from "./dbBootstrap";
 import { pool } from "./db";
-import { createHealthRouter, probeDatabase } from "./routes/health";
+import {
+  createHealthRouter,
+  probeBilling,
+  probeDatabase,
+  probeExportStorage,
+  probeSessionStore,
+} from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
 import { leadsRouter } from "./routes/leads";
 import { reportsRouter } from "./routes/reports";
@@ -99,7 +105,15 @@ export async function registerRoutes(app: Express): Promise<AppRuntime> {
     res.status(403).send("Service not available in your region");
   });
 
-  app.use("/healthz", createHealthRouter({ startup }));
+  app.use("/healthz", createHealthRouter({
+    startup,
+    checks: {
+      database: () => probeDatabase(pool),
+      sessionStore: () => probeSessionStore(pool),
+      billing: () => probeBilling(getBillingService()),
+      exportStorage: () => probeExportStorage(),
+    },
+  }));
 
   const httpServer = createServer(app);
 
