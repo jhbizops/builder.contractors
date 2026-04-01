@@ -7,7 +7,7 @@ import { billingRouter } from "./billing/routes";
 import { getBillingService, initializeStripe } from "./billing/instance";
 import { ensureDatabase } from "./dbBootstrap";
 import { pool } from "./db";
-import { createHealthRouter } from "./routes/health";
+import { createHealthRouter, probeDatabase } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
 import { leadsRouter } from "./routes/leads";
 import { reportsRouter } from "./routes/reports";
@@ -15,12 +15,42 @@ import { servicesRouter } from "./routes/services";
 import { adminRouter } from "./routes/admin";
 import { createSeoRouter } from "./routes/seo";
 import { adsRouter } from "./routes/ads";
+import { createStartupCoordinator } from "./startup";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  await ensureDatabase(pool);
-  await initializeStripe();
-  const billingService = getBillingService();
-  await billingService.ensurePlans();
+export interface AppRuntime {
+  httpServer: Server;
+}
+
+export async function registerRoutes(app: Express): Promise<AppRuntime> {
+  const startup = createStartupCoordinator();
+
+  startup.startRetriableJob("database", {
+    critical: true,
+    job: async () => {
+      await ensureDatabase(pool);
+      const probe = await probeDatabase(pool);
+      if (probe.status !== "ok") {
+        throw new Error(probe.message ?? "database-probe-failed");
+      }
+    },
+  });
+
+  startup.startRetriableJob("stripe", {
+    critical: false,
+    job: async () => {
+      await initializeStripe();
+    },
+  });
+
+  startup.startRetriableJob("billing_plan_sync", {
+    critical: false,
+    baseDelayMs: 3_000,
+    maxDelayMs: 300_000,
+    job: async () => {
+      const billingService = getBillingService();
+      await billingService.ensurePlans();
+    },
+  });
 
   app.use(createSeoRouter());
 
@@ -69,12 +99,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(403).send("Service not available in your region");
   });
 
-  app.use(
-    "/healthz",
-    createHealthRouter({ db: pool, countriesCount: supportedCountries.length }),
-  );
+  app.use("/healthz", createHealthRouter({ startup }));
 
   const httpServer = createServer(app);
 
-  return httpServer;
+  return { httpServer };
 }

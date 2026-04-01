@@ -1,13 +1,31 @@
 import { Router } from "express";
+import type { StartupCoordinator } from "../startup";
 
 interface DatabaseClient {
   query<T = unknown>(text: string, params?: unknown[]): Promise<{ rows: T[] }>;
 }
 
 export interface HealthRouterOptions {
-  db: DatabaseClient;
-  countriesCount: number;
-  dbTimeoutMs?: number;
+  startup: StartupCoordinator;
+}
+
+export function createHealthRouter(options: HealthRouterOptions) {
+  const { startup } = options;
+  const router = Router();
+
+  router.get("/", (_req, res) => {
+    res.status(200).json({
+      status: "live",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  router.get("/ready", (_req, res) => {
+    const snapshot = startup.snapshot();
+    res.status(snapshot.status === "ready" ? 200 : 503).json(snapshot);
+  });
+
+  return router;
 }
 
 export interface HealthProbeResult {
@@ -40,25 +58,4 @@ export async function probeDatabase(
       clearTimeout(timeoutId);
     }
   }
-}
-
-export function createHealthRouter(options: HealthRouterOptions) {
-  const { db, countriesCount, dbTimeoutMs = DEFAULT_DB_TIMEOUT_MS } = options;
-  const router = Router();
-
-  router.get("/", async (_req, res) => {
-    const dbResult = await probeDatabase(db, dbTimeoutMs);
-    const healthy = dbResult.status === "ok";
-
-    const payload = {
-      status: healthy ? "live" : "degraded",
-      db: dbResult,
-      countries: countriesCount,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.status(healthy ? 200 : 503).json(payload);
-  });
-
-  return router;
 }
