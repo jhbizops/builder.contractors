@@ -8,10 +8,12 @@ import { pool } from "./db";
 import { DEFAULT_SESSION_MAX_AGE, SESSION_COOKIE_NAME } from "./session";
 import { buildApiLogLine, shouldSkipBodyParsers } from "./http/requestRouting";
 import { assertAdminBootstrapStartupConfig } from "./adminBootstrap";
+import { createSecurityHeadersMiddleware } from "./middleware/securityHeaders";
 
 const PgStore = connectPgSimple(session);
 
 const app = express();
+// Assumes a single TLS-terminating proxy (e.g. Replit/NGINX) forwards x-forwarded-* headers.
 app.set("trust proxy", 1);
 
 const sessionSecret = process.env.SESSION_SECRET;
@@ -21,11 +23,15 @@ if (!sessionSecret) {
 
 assertAdminBootstrapStartupConfig();
 
+const isProduction = app.get("env") === "production";
+
 app.use(
   session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
+    proxy: isProduction,
     store: new PgStore({
       pool,
       tableName: "user_sessions",
@@ -33,7 +39,7 @@ app.use(
     }),
     name: SESSION_COOKIE_NAME,
     cookie: {
-      secure: app.get("env") === "production",
+      secure: isProduction,
       httpOnly: true,
       sameSite: "lax",
       maxAge: DEFAULT_SESSION_MAX_AGE,
@@ -63,24 +69,7 @@ app.use((req, res, next) => {
 
 app.use(geoDetectionMiddleware);
 
-app.use((_req, res, next) => {
-  const crawlSafeTag = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
-  const noIndexTag = "noindex, nofollow, noarchive, nosnippet";
-  const path = _req.path;
-  const shouldNoIndex =
-    path.startsWith("/api") ||
-    path.startsWith("/dashboard") ||
-    path.startsWith("/admin") ||
-    path.startsWith("/login") ||
-    path.startsWith("/register");
-
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-  res.setHeader("X-Robots-Tag", shouldNoIndex ? noIndexTag : crawlSafeTag);
-  next();
-});
+app.use(createSecurityHeadersMiddleware(isProduction));
 
 // Cache static assets for 1 year in production
 app.use((req, res, next) => {
@@ -122,7 +111,7 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  if (app.get("env") === "development") {
+  if (!isProduction) {
     await setupVite(app, server);
   } else {
     serveStatic(app);
