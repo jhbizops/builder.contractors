@@ -33,6 +33,8 @@ const SEARCH_BOTS = [
   "GPTBot",
 ] as const;
 
+const PRIVATE_PATHS = ["/dashboard", "/admin", "/api", "/login", "/register", "/blocked"] as const;
+
 const BLOCKED_SCRAPERS = ["DotBot", "MJ12bot", "BLEXBot", "SemrushBot-SA", "ZoominfoBot"] as const;
 
 const PUBLIC_SERVICE_PATHS = [
@@ -140,20 +142,22 @@ const formatRobotsTxt = (baseUrl: string) => {
   const lines = [
     "# Builder.Contractors crawler policy",
     "User-agent: *",
-    "Disallow: /dashboard",
-    "Disallow: /admin",
-    "Disallow: /api",
-    "Disallow: /login",
-    "Disallow: /register",
-    "Disallow: /blocked",
+    ...PRIVATE_PATHS.map((privatePath) => `Disallow: ${privatePath}`),
     "Allow: /",
     "",
     "# Known spam and bulk scraping bots",
     ...BLOCKED_SCRAPERS.flatMap((bot) => [`User-agent: ${bot}`, "Disallow: /", ""]),
     "# Search, social, and AI indexing bots",
-    ...SEARCH_BOTS.flatMap((bot) => [`User-agent: ${bot}`, "Allow: /", "Crawl-delay: 2", ""]),
+    ...SEARCH_BOTS.flatMap((bot) => [
+      `User-agent: ${bot}`,
+      "Allow: /",
+      ...PRIVATE_PATHS.map((privatePath) => `Disallow: ${privatePath}`),
+      "Crawl-delay: 2",
+      "",
+    ]),
     "User-agent: Google-Extended",
     resolveGoogleExtendedDirective(),
+    ...(resolveGeoTrainingPolicy() === "allow" ? PRIVATE_PATHS.map((privatePath) => `Disallow: ${privatePath}`) : []),
     "",
     `AI-Policy: ${resolveGeoTrainingPolicy()}`,
     `LLM-Content: ${new URL("/llms.txt", baseUrl).toString()}`,
@@ -194,7 +198,8 @@ const resolveBaseUrl = (req: Request, res: Response): string | null => {
     return null;
   }
 
-  return toPublicSiteOrigin(`${protocolResult.data}://${hostResult.data}`) ?? DEFAULT_PUBLIC_SITE_ORIGIN;
+  // Match the build-time canonical origin regardless of proxy or Host headers.
+  return DEFAULT_PUBLIC_SITE_ORIGIN;
 };
 
 export const createSeoRouter = (): Router => {
@@ -287,3 +292,4 @@ export const createSeoRouter = (): Router => {
 
   return router;
 };
+

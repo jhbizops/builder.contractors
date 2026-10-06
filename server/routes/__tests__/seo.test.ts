@@ -25,9 +25,9 @@ describe("SEO routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/xml");
-    expect(res.text).toContain("<loc>http://example.com/sitemap-core.xml</loc>");
-    expect(res.text).toContain("<loc>http://example.com/sitemap-services.xml</loc>");
-    expect(res.text).toContain("<loc>http://example.com/sitemap-ai.xml</loc>");
+    expect(res.text).toContain("<loc>https://builder.contractors/sitemap-core.xml</loc>");
+    expect(res.text).toContain("<loc>https://builder.contractors/sitemap-services.xml</loc>");
+    expect(res.text).toContain("<loc>https://builder.contractors/sitemap-ai.xml</loc>");
   });
 
   it("includes new authority pages in service and ai sitemaps", async () => {
@@ -41,9 +41,9 @@ describe("SEO routes", () => {
 
     expect(serviceSitemap.status).toBe(200);
     expect(aiSitemap.status).toBe(200);
-    expect(serviceSitemap.text).toContain("<loc>http://example.com/lead-exchange-workflow</loc>");
-    expect(serviceSitemap.text).toContain("<loc>http://example.com/regional-handoff-playbooks</loc>");
-    expect(aiSitemap.text).toContain("<loc>http://example.com/partner-verification</loc>");
+    expect(serviceSitemap.text).toContain("<loc>https://builder.contractors/lead-exchange-workflow</loc>");
+    expect(serviceSitemap.text).toContain("<loc>https://builder.contractors/regional-handoff-playbooks</loc>");
+    expect(aiSitemap.text).toContain("<loc>https://builder.contractors/partner-verification</loc>");
   });
 
   it("uses SOURCE_DATE_EPOCH when release date is not provided", async () => {
@@ -75,8 +75,8 @@ describe("SEO routes", () => {
     expect(res.text).toContain("Disallow: /login");
     expect(res.text).toContain("Disallow: /register");
     expect(res.text).toContain("AI-Policy: allow");
-    expect(res.text).toContain("LLM-Content: http://example.com/llms.txt");
-    expect(res.text).toContain("Sitemap: http://example.com/sitemap-ai.xml");
+    expect(res.text).toContain("LLM-Content: https://builder.contractors/llms.txt");
+    expect(res.text).toContain("Sitemap: https://builder.contractors/sitemap-ai.xml");
   });
 
   it("configures Google-Extended restriction when AI policy is restricted", async () => {
@@ -102,7 +102,7 @@ describe("SEO routes", () => {
     expect(res.text).toContain("# Builder.Contractors");
     expect(res.text).toContain("## AI indexing directives");
     expect(res.text).toContain("Allow citation: yes");
-    expect(res.text).toContain("http://example.com/lead-exchange-workflow");
+    expect(res.text).toContain("https://builder.contractors/lead-exchange-workflow");
   });
 
   it("serves llms-full.txt with page summaries and keywords", async () => {
@@ -116,7 +116,7 @@ describe("SEO routes", () => {
     expect(res.headers["x-robots-tag"]).toContain("max-snippet:-1");
     expect(res.text).toContain("# Builder.Contractors reference");
     expect(res.text).toContain("Keywords:");
-    expect(res.text).toContain("http://example.com/pricing");
+    expect(res.text).toContain("https://builder.contractors/pricing");
   });
 
   it("serves ai.txt as an alias to llms guidance", async () => {
@@ -150,3 +150,4 @@ describe("SEO routes", () => {
     expect(res.text).toContain("<loc>https://www.builder.contractors/sitemap-core.xml</loc>");
   });
 });
+
