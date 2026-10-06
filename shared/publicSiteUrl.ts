@@ -1,4 +1,4 @@
-const DEFAULT_PUBLIC_SITE_URL = "https://www.builder.contractors";
+const DEFAULT_PUBLIC_SITE_URL = "https://builder.contractors";
 
 export const DEFAULT_PUBLIC_SITE_ORIGIN = new URL(DEFAULT_PUBLIC_SITE_URL).origin;
 
@@ -17,3 +17,4 @@ export const resolvePublicSiteOrigin = (value: string | undefined): string => {
 
   return toPublicSiteOrigin(value) ?? DEFAULT_PUBLIC_SITE_ORIGIN;
 };
+
