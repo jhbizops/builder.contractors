@@ -3,7 +3,6 @@ import { geoPages } from "@/content/geoPages";
 import {
   buildFaqPageStructuredData,
   buildOrganizationWebsiteStructuredData,
-  buildProductStructuredData,
   buildServicePageStructuredData,
 } from "../structuredData";
 
@@ -17,17 +16,6 @@ describe("structured data helpers", () => {
     expect(entities[0]?.name).toBe(geoPages.faq.faqs[0]?.question);
   });
 
-  it("builds Product JSON-LD with offers for each pricing tier", () => {
-    const tiers = geoPages.pricing.tiers ?? [];
-    const data = buildProductStructuredData(tiers, geoPages.pricing.title, geoPages.pricing.summary);
-
-    expect(data["@type"]).toBe("Product");
-    const offers = data.offers as Array<Record<string, unknown>>;
-    expect(offers).toHaveLength(tiers.length);
-    expect(offers[0]?.name).toBe(tiers[0]?.name);
-    expect(offers[1]?.price).toBe("99.00");
-  });
-
   it("builds service page graph with Service, FAQPage and BreadcrumbList", () => {
     const data = buildServicePageStructuredData(geoPages.pricing, geoPages.pricing.slug);
     const graph = data["@graph"] as Array<Record<string, unknown>>;
@@ -37,7 +25,30 @@ describe("structured data helpers", () => {
     expect(graph[2]?.["@type"]).toBe("Service");
     expect((graph[2]?.areaServed as Array<unknown>).length).toBeGreaterThan(0);
     expect(graph[3]?.["@type"]).toBe("FAQPage");
+    const offers = graph[2]?.offers as Array<Record<string, unknown>>;
+    expect(offers).toHaveLength(3);
+    expect(offers[0]).toMatchObject({ name: "Starter", price: "0.00", priceCurrency: "AUD" });
+    expect(offers[1]).toMatchObject({
+      name: "Growth",
+      priceSpecification: { "@type": "UnitPriceSpecification", price: "99.00", priceCurrency: "AUD", unitCode: "MON" },
+    });
+    expect(offers[2]).toMatchObject({ name: "Enterprise" });
+    expect(offers[2]).not.toHaveProperty("price");
+    expect(offers[2]).not.toHaveProperty("priceSpecification");
+    expect(graph[2]).not.toHaveProperty("minimumCharge");
   });
+
+  it.each(["Custom", "Contact us", "From $99", "$99 - $199", "$99 or more", "not priced"]) (
+    "does not invent a price for ambiguous label %s",
+    (priceLabel) => {
+      const tier = { name: "Example", priceLabel, description: "Quote", features: [] };
+      const data = buildServicePageStructuredData({ ...geoPages.pricing, tiers: [tier] }, "/pricing");
+      const service = (data["@graph"] as Array<Record<string, unknown>>).find((node) => node["@type"] === "Service");
+      const offer = (service?.offers as Array<Record<string, unknown>>)[0];
+      expect(offer).not.toHaveProperty("price");
+      expect(offer).not.toHaveProperty("priceSpecification");
+    },
+  );
 
   it("creates a coherent homepage graph around construction referral workflows", () => {
     const homeFaqs = [
