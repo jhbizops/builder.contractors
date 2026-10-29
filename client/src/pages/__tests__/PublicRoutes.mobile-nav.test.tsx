@@ -66,4 +66,18 @@ describe("public routes mobile navigation", () => {
     expect(within(dialog).getByRole("link", { name: "Get Started" })).toBeInTheDocument();
     expect(within(dialog).getByTestId("button-country-selector")).toBeInTheDocument();
   });
+
+  it.each(["/pricing", "/au/pricing", "/us/pricing", "/uk/pricing"])("renders service schema without product schema on %s", (path) => {
+    window.history.pushState({}, "", path);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><Pricing /></QueryClientProvider>);
+
+    const scripts = Array.from(document.head.querySelectorAll<HTMLScriptElement>('script[data-structured-data]'));
+    const nodes = scripts.flatMap((script) => {
+      const data = JSON.parse(script.textContent || "{}");
+      return data["@graph"] ?? [data];
+    });
+    expect(nodes.some((node) => node["@type"] === "Service")).toBe(true);
+    expect(nodes.some((node) => node["@type"] === "Product")).toBe(false);
+  });
 });

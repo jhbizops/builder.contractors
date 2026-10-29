@@ -9,7 +9,6 @@ import {
 import {
   buildFaqPageStructuredData,
   buildOrganizationWebsiteStructuredData,
-  buildProductStructuredData,
   buildServicePageStructuredData,
 } from "@/lib/structuredData";
 
@@ -87,12 +86,6 @@ export const buildMarketingHeadMarkup = (page: MarketingRenderPage, baseUrl: str
 
   if (content.faqs.length > 0) {
     structuredDataScripts.push(jsonLdScript("faq", buildFaqPageStructuredData(content.faqs)));
-  }
-
-  if (content.tiers?.length) {
-    structuredDataScripts.push(
-      jsonLdScript("product", buildProductStructuredData(content.tiers, content.title, content.summary)),
-    );
   }
 
   const alternateMarkup = alternateLinks

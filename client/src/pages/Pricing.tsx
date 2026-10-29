@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getGeoPageContent } from "@/content/geoPages";
 import { resolveMarketingLocaleFromPath } from "@/content/locales";
 import { StructuredData } from "@/components/StructuredData";
-import { buildProductStructuredData, buildServicePageStructuredData } from "@/lib/structuredData";
+import { buildServicePageStructuredData } from "@/lib/structuredData";
 import { AISummaryBlock } from "@/components/AISummaryBlock";
 
 export default function Pricing() {
@@ -27,10 +27,6 @@ export default function Pricing() {
     >
       {content.tiers ? (
         <>
-          <StructuredData
-            id="pricing-structured-data"
-            data={buildProductStructuredData(content.tiers, content.title, content.summary)}
-          />
           <StructuredData
             id="pricing-service-structured-data"
             data={buildServicePageStructuredData(content, content.slug)}

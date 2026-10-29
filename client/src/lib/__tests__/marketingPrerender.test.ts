@@ -21,8 +21,19 @@ describe("marketing prerender helpers", () => {
 
     expect(headMarkup).toContain("<title>Pricing for Builder.Contractors</title>");
     expect(headMarkup).toContain('rel="canonical" href="https://www.builder.contractors/pricing"');
-    expect(headMarkup).toContain('"@type":"Product"');
+    expect(headMarkup).not.toContain('"@type":"Product"');
     expect(headMarkup).toContain('"@type":"Service"');
+  });
+
+  it("retains service markup without merchant Product markup on all marketing routes", () => {
+    for (const page of getMarketingRenderPages()) {
+      const head = buildMarketingHeadMarkup(page, "https://www.builder.contractors");
+      const scripts = [...head.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/g)]
+        .map((match) => JSON.parse(match[1]));
+      const nodes = scripts.flatMap((script) => script["@graph"] ?? [script]);
+      expect(nodes.some((node) => node["@type"] === "Service"), page.canonicalPath).toBe(true);
+      expect(nodes.some((node) => node["@type"] === "Product"), page.canonicalPath).toBe(false);
+    }
   });
 
   it("builds localized canonical and alternate tags for locale-prefixed pages", () => {

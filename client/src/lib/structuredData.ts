@@ -15,19 +15,25 @@ const BASE_URL = DEFAULT_PUBLIC_SITE_ORIGIN;
 
 
 const parsePrice = (priceLabel: string): string | undefined => {
-  const match = priceLabel.match(/\$([\d,.]+)/);
-  return match ? Number.parseFloat(match[1].replace(/,/g, "")).toFixed(2) : undefined;
+  const label = priceLabel.trim();
+  if (/^free$/i.test(label)) return "0.00";
+  // Only encode a definite displayed price, never a quote or a range.
+  const match = label.match(/^\$((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?:\s*\/\s*month)?$/i);
+  if (!match) return undefined;
+  const amount = Number.parseFloat(match[1].replace(/,/g, ""));
+  return Number.isFinite(amount) ? amount.toFixed(2) : undefined;
 };
 
 const defaultOfferForTier = (tier: PricingTier): JsonLdValue => {
   const parsedPrice = parsePrice(tier.priceLabel);
+  const monthly = /\/\s*month\s*$/i.test(tier.priceLabel);
   return {
     "@type": "Offer",
     name: tier.name,
     description: tier.description,
-    priceCurrency: "AUD",
-    ...(parsedPrice ? { price: parsedPrice } : { priceSpecification: { "@type": "PriceSpecification", priceCurrency: "AUD", price: 0, description: tier.priceLabel } }),
-    availability: "https://schema.org/InStock",
+    ...(parsedPrice === undefined ? {} : monthly
+      ? { priceSpecification: { "@type": "UnitPriceSpecification", priceCurrency: "AUD", price: parsedPrice, unitCode: "MON" } }
+      : { priceCurrency: "AUD", price: parsedPrice }),
     category: "Subscription",
   };
 };
@@ -91,17 +97,7 @@ export const buildServicePageStructuredData = (
           availableLanguage: ["en-AU", "en-US", "en-GB"],
         },
         mainEntityOfPage: { "@id": pageId },
-        ...(offers.length > 0
-          ? {
-              offers,
-              minimumCharge: {
-                "@type": "MonetaryAmount",
-                currency: "AUD",
-                value: parsePrice(page.tiers?.[1]?.priceLabel ?? "") ?? "99.00",
-              },
-              priceRange: "Free - Custom",
-            }
-          : {}),
+        ...(offers.length > 0 ? { offers } : {}),
       },
       ...(page.faqs.length > 0
         ? [
@@ -123,14 +119,6 @@ export const buildServicePageStructuredData = (
     ],
   };
 };
-
-export const buildProductStructuredData = (tiers: PricingTier[], name: string, description: string): JsonLdValue => ({
-  "@context": SCHEMA_CONTEXT,
-  "@type": "Product",
-  name,
-  description,
-  offers: tiers.map(defaultOfferForTier),
-});
 
 export const buildOrganizationWebsiteStructuredData = (
   title: string,
